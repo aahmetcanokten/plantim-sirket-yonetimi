@@ -1,0 +1,178 @@
+import React, { useEffect, useState, useContext } from "react";
+import { Platform, View, ActivityIndicator, StyleSheet, AppState } from "react-native";
+import { enableScreens } from 'react-native-screens';
+
+enableScreens();
+import { NavigationContainer } from "@react-navigation/native";
+import { createBottomTabNavigator } from "@react-navigation/bottom-tabs";
+import { createStackNavigator } from "@react-navigation/stack";
+import { AppProvider, AppContext } from "./AppContext";
+import { AuthProvider, useAuth } from "./AuthContext";
+import { ToastProvider } from "./components/ToastProvider";
+import { registerForPushNotificationsAsync, checkAndTriggerLowStockNotification } from "./utils/NotificationHelper";
+import { requestTrackingPermissionsAsync } from 'expo-tracking-transparency';
+import { SafeAreaProvider } from 'react-native-safe-area-context';
+
+import StockScreen from "./screens/StockScreen";
+import SalesScreen from "./screens/SalesScreen";
+import CustomerScreen from "./screens/CustomerScreen";
+import PurchasesScreen from "./screens/PurchasesScreen";
+import SettingsScreen from "./screens/SettingsScreen";
+import AnalyticsScreen from "./screens/AnalyticsScreen";
+import DetailedStockScreen from "./screens/DetailedStockScreen";
+import AddProductScreen from "./screens/AddProductScreen";
+import PersonnelScreen from "./screens/PersonnelScreen";
+import TaskListScreen from "./screens/TaskListScreen";
+import AssetManagementScreen from "./screens/AssetManagementScreen"; // YENİ
+import LoginScreen from "./screens/LoginScreen";
+import PaywallScreen from "./screens/PaywallScreen";
+import OnboardingScreen from "./screens/OnboardingScreen";
+import AsyncStorage from '@react-native-async-storage/async-storage';
+import ErrorBoundary from "./components/ErrorBoundary";
+import OfflineNotice from "./components/OfflineNotice";
+
+import { Ionicons } from "@expo/vector-icons";
+import { Colors } from "./Theme";
+
+const Tab = createBottomTabNavigator();
+const Stack = createStackNavigator();
+
+// REKLAM BİRİMİ ID'si KALDIRILDI
+// Uygulama Açılış Reklamı Nesnesi KALDIRILDI
+
+function MainTabs() {
+  return (
+    <Tab.Navigator
+      initialRouteName="Stok"
+      screenOptions={({ route }) => ({
+        headerShown: false,
+        tabBarIcon: ({ color, size }) => {
+          let iconName = "cube-outline";
+          if (route.name === "Satışlar") iconName = "cash-outline";
+          else if (route.name === "Stok") iconName = "cube-outline";
+          else if (route.name === "Satın Alma") iconName = "cart-outline";
+          else if (route.name === "Müşteriler") iconName = "people-outline";
+          return <Ionicons name={iconName} size={size} color={color} />;
+        },
+        tabBarActiveTintColor: Colors.primary,
+        tabBarInactiveTintColor: Colors.secondary,
+        tabBarStyle: {
+          height: Platform.OS === "ios" ? 90 : 60,
+          borderTopWidth: 0,
+          backgroundColor: "#fff",
+          ...(Platform.OS === "ios"
+            ? {
+              shadowColor: "#000",
+              shadowOffset: { width: 0, height: -4 },
+              shadowOpacity: 0.06,
+              shadowRadius: 12,
+            }
+            : { elevation: 8 }),
+        },
+      })}
+    >
+      <Tab.Screen name="Stok" component={StockScreen} />
+      <Tab.Screen name="Satışlar" component={SalesScreen} />
+      <Tab.Screen name="Satın Alma" component={PurchasesScreen} />
+      <Tab.Screen name="Müşteriler" component={CustomerScreen} />
+    </Tab.Navigator>
+  );
+}
+
+
+function RootNavigator() {
+  const { session, loading } = useAuth();
+  const { isPremium, products } = useContext(AppContext);
+  const [isFirstLaunch, setIsFirstLaunch] = useState(null);
+
+  // Uygulama açıldığında veya ürünler değiştiğinde stok kontrolü yap
+  useEffect(() => {
+    if (session && products && products.length > 0) {
+      checkAndTriggerLowStockNotification(products);
+    }
+  }, [products, session]);
+
+  useEffect(() => {
+    AsyncStorage.getItem('alreadyLaunched').then(value => {
+      if (value == null) {
+        setIsFirstLaunch(true); // First time launch
+      } else {
+        setIsFirstLaunch(false); // Already launched
+      }
+    });
+  }, []);
+
+  if (loading || isFirstLaunch === null) {
+    return (
+      <View style={styles.loadingContainer}>
+        <ActivityIndicator size="large" color={Colors.primary} />
+      </View>
+    );
+  }
+
+  return (
+    <Stack.Navigator screenOptions={{ headerShown: false }}>
+      {session ? (
+        <>
+          <Stack.Screen name="MainTabs" component={MainTabs} />
+          <Stack.Screen name="Ayarlar" component={SettingsScreen} />
+          <Stack.Screen name="Analytics" component={AnalyticsScreen} />
+          <Stack.Screen name="DetailedStockScreen" component={DetailedStockScreen} />
+          <Stack.Screen name="AddProductScreen" component={AddProductScreen} />
+          <Stack.Screen name="PersonnelScreen" component={PersonnelScreen} />
+          <Stack.Screen name="TaskListScreen" component={TaskListScreen} />
+          <Stack.Screen name="AssetManagementScreen" component={AssetManagementScreen} />
+          <Stack.Screen name="Paywall" component={PaywallScreen} options={{ presentation: 'modal' }} />
+        </>
+      ) : (
+        <>
+          {isFirstLaunch && (
+            <Stack.Screen name="Onboarding" component={OnboardingScreen} />
+          )}
+          <Stack.Screen name="Login" component={LoginScreen} />
+        </>
+      )}
+    </Stack.Navigator>
+  );
+}
+
+export default function App() {
+  useEffect(() => {
+    registerForPushNotificationsAsync();
+
+    // iOS için Takip İzni İste (ATT)
+    (async () => {
+      if (Platform.OS === 'ios') {
+        const { status } = await requestTrackingPermissionsAsync();
+        if (status === 'granted') {
+          console.log('Tracking permission granted.');
+        }
+      }
+    })();
+  }, []);
+
+  return (
+    <ErrorBoundary>
+      <AuthProvider>
+        <SafeAreaProvider>
+          <OfflineNotice />
+          <AppProvider>
+            <ToastProvider>
+              <NavigationContainer>
+                <RootNavigator />
+              </NavigationContainer>
+            </ToastProvider>
+          </AppProvider>
+        </SafeAreaProvider>
+      </AuthProvider>
+    </ErrorBoundary>
+  );
+}
+
+const styles = StyleSheet.create({
+  loadingContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+});

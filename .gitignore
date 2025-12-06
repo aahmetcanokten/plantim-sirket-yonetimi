@@ -1,0 +1,12 @@
+node_modules
+.expo
+.vscode
+.DS_Store
+android/
+ios/
+dist/
+web-build/
+*.jks
+*.p12
+*.keystore
+*.mobileprovision

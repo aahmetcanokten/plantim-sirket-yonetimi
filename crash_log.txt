@@ -1,0 +1,334 @@
+Incident Identifier: 6A05B507-9243-4263-911B-BC80B790BAA6
+Distributor ID:      com.apple.TestFlight
+Hardware Model:      iPhone12,1
+Process:             Plantim [79568]
+Path:                /private/var/containers/Bundle/Application/3EA2F4D4-A62D-4128-B47B-8A363FEAB2B0/Plantim.app/Plantim
+Identifier:          com.acanokten.plantim
+Version:             1.0.0 (1.0.14)
+AppStoreTools:       17B101
+AppVariant:          1:iPhone12,1:26
+Beta:                YES
+Code Type:           ARM-64 (Native)
+Role:                Foreground
+Parent Process:      launchd [1]
+Coalition:           com.acanokten.plantim [5351]
+
+Date/Time:           2025-12-05 10:01:44.5520 +0300
+Launch Time:         2025-12-05 10:01:44.1506 +0300
+OS Version:          iPhone OS 26.1 (23B85)
+Release Type:        User
+Baseband Version:    7.00.00
+Report Version:      104
+
+Exception Type:  EXC_CRASH (SIGABRT)
+Exception Codes: 0x0000000000000000, 0x0000000000000000
+Termination Reason: SIGNAL 6 Abort trap: 6
+Terminating Process: Plantim [79568]
+
+Triggered by Thread:  9
+
+
+Thread 0 name:
+Thread 0:
+0   libsystem_kernel.dylib        	0x00000002354e7cd4 mach_msg2_trap + 8
+1   libsystem_kernel.dylib        	0x00000002354eb2f8 mach_msg2_internal + 76 (mach_msg.c:201)
+2   libsystem_kernel.dylib        	0x00000002354eb214 mach_msg_overwrite + 428 (mach_msg.c:0)
+3   libsystem_kernel.dylib        	0x00000002354eb05c mach_msg + 24 (mach_msg.c:323)
+4   libdispatch.dylib             	0x00000001c401be84 _dispatch_mach_send_and_wait_for_reply + 548 (mach.c:1989)
+5   libdispatch.dylib             	0x00000001c401c224 dispatch_mach_send_with_result_and_wait_for_reply + 60 (mach.c:2026)
+6   libxpc.dylib                  	0x000000019fd30e04 xpc_connection_send_message_with_reply_sync + 256 (connection.c:4182)
+7   CoreFoundation                	0x000000018bd11d40 __103-[CFPrefsSearchListSource synchronouslySendSystemMessage:andUserMessage:andDirectMessage:replyHandler:]_block_invoke_2 + 44 (CFPrefsSearchListSource.m:1058)
+8   CoreFoundation                	0x000000018bd56da8 -[_CFXPreferences withConnectionForRole:andUserIdentifier:performBlock:] + 52 (CFXPreferences.m:1807)
+9   CoreFoundation                	0x000000018bd11cec __103-[CFPrefsSearchListSource synchronouslySendSystemMessage:andUserMessage:andDirectMessage:replyHandler:]_block_invoke + 148 (CFPrefsSearchListSource.m:1056)
+10  libdispatch.dylib             	0x00000001c401a804 _dispatch_client_callout2 + 16 (client_callout.mm:94)
+11  libdispatch.dylib             	0x00000001c4015760 _dispatch_apply_invoke3 + 336 (apply.c:161)
+12  libdispatch.dylib             	0x00000001c401a7ec _dispatch_client_callout + 16 (client_callout.mm:85)
+13  libdispatch.dylib             	0x00000001c40039e0 _dispatch_once_callout + 32 (once.c:52)
+14  libdispatch.dylib             	0x00000001c4015e08 _dispatch_apply_invoke_and_wait + 372 (apply.c:269)
+15  libdispatch.dylib             	0x00000001c4014efc _dispatch_apply_with_attr_f + 1312 (apply.c:654)
+16  libdispatch.dylib             	0x00000001c4015084 dispatch_apply + 96 (apply.c:681)
+17  CoreFoundation                	0x000000018bd11e10 __103-[CFPrefsSearchListSource synchronouslySendSystemMessage:andUserMessage:andDirectMessage:replyHandler:]_block_invoke_3 + 132 (CFPrefsSearchListSource.m:1079)
+18  CoreFoundation                	0x000000018bbfef7c CFPREFERENCES_IS_WAITING_FOR_SYSTEM_AND_USER_CFPREFSDS + 100 (CFPrefsSearchListSource.m:972)
+19  CoreFoundation                	0x000000018bd51050 -[CFPrefsSearchListSource synchronouslySendSystemMessage:andUserMessage:andDirectMessage:replyHandler:] + 240 (CFPrefsSearchListSource.m:1078)
+20  CoreFoundation                	0x000000018bd51be8 -[CFPrefsSearchListSource alreadylocked_generationCountFromListOfSources:count:] + 260 (CFPrefsSearchListSource.m:1125)
+21  CoreFoundation                	0x000000018bd51660 -[CFPrefsSearchListSource alreadylocked_getDictionary:] + 476 (CFPrefsSearchListSource.m:1223)
+22  CoreFoundation                	0x000000018bd10a04 -[CFPrefsSearchListSource alreadylocked_copyValueForKey:] + 172 (CFPrefsSearchListSource.m:649)
+23  CoreFoundation                	0x000000018bccbefc -[CFPrefsSource copyValueForKey:] + 44 (CFPrefsSource.m:949)
+24  CoreFoundation                	0x000000018bd38bfc __76-[_CFXPreferences copyAppValueForKey:identifier:container:configurationURL:]_block_invoke + 32 (CFXPreferences.m:1205)
+25  CoreFoundation                	0x000000018bd13248 __108-[_CFXPreferences(SearchListAdditions) withSearchListForIdentifier:container:cloudConfigurationURL:perform:]_block_invoke + 396 (CFPrefsSearchListSource.m:1773)
+26  CoreFoundation                	0x000000018bbb5524 normalizeQuintuplet + 404 (CFPrefsSearchListSource.m:79)
+27  CoreFoundation                	0x000000018bd51dec -[_CFXPreferences withSearchListForIdentifier:container:cloudConfigurationURL:perform:] + 164 (CFPrefsSearchListSource.m:1645)
+28  CoreFoundation                	0x000000018bd38b80 -[_CFXPreferences copyAppValueForKey:identifier:container:configurationURL:] + 156 (CFXPreferences.m:1201)
+29  CoreFoundation                	0x000000018bbb4a8c _CFPreferencesCopyAppValueWithContainerAndConfiguration + 112 (CFXPreferences.m:2271)
+30  CoreFoundation                	0x000000018bc2a5a4 _CFPreferencesGetAppIntegerValueWithContainer + 52 (CFXPreferences.m:2306)
+31  WebKit                        	0x00000001a6049794 WebKit::WebProcessPool::platformInitializeWebProcess(WebKit::WebProcessProxy const&, WebKit::WebProcessCreationParameters&) + 516 (WebProcessPoolCocoa.mm:406)
+32  WebKit                        	0x00000001a6047f40 WebKit::WebProcessPool::initializeNewWebProcess(WebKit::WebProcessProxy&, WebKit::WebsiteDataStore*, WebKit::WebProcessProxy::IsPrewarmed) + 2096 (WebProcessPool.cpp:1072)
+33  WebKit                        	0x00000001a6044d3c WebKit::WebProcessPool::createNewWebProcess(WebKit::WebsiteDataStore*, WebKit::WebProcessProxy::LockdownMode, WebKit::WebProcessProxy::IsPrewarmed, WebCore::CrossOriginMode) + 80 (WebProcessPool.cpp:856)
+34  WebKit                        	0x00000001a6b380c8 WebKit::WebProcessPool::processForSite(WebKit::WebsiteDataStore&, std::__1::optional<WebCore::Site> const&, WebKit::WebProcessProxy::LockdownMode, API::PageConfiguration const&, WebCore::ProcessSwa... + 1172 (WebProcessPool.cpp:1290)
+35  WebKit                        	0x00000001a6084cc4 WebKit::WebProcessPool::createWebPage(WebKit::PageClient&, WTF::Ref<API::PageConfiguration, WTF::RawPtrTraits<API::PageConfiguration>, WTF::DefaultRefDerefTraits<API::PageConfiguration>>&&) + 580 (WebProcessPool.cpp:1329)
+36  WebKit                        	0x00000001a70a7054 -[WKContentView _commonInitializationWithProcessPool:configuration:] + 68 (WKContentView.mm:254)
+37  WebKit                        	0x00000001a70a7814 -[WKContentView initWithFrame:processPool:configuration:webView:] + 164 (WKContentView.mm:486)
+38  WebKit                        	0x00000001a65b8efc -[WKWebView _initializeWithConfiguration:] + 688 (WKWebView.mm:649)
+39  WebKit                        	0x00000001a65ba2c0 -[WKWebView initWithFrame:configuration:] + 72 (WKWebView.mm:879)
+40  Plantim                       	0x0000000100bc3194 GADMRAIDEnvironmentScript + 1612
+41  Plantim                       	0x0000000100ae97d0 GADJSScriptForFunctionName + 696
+42  Plantim                       	0x0000000100b79948 GADDispatchAsyncSafeMainQueue + 52
+43  Plantim                       	0x0000000100ae9748 GADJSScriptForFunctionName + 560
+44  Plantim                       	0x0000000100ba2018 GAD_GADSDKCoreContext_arm64_12_11_0 + 3320
+45  Plantim                       	0x0000000100bbce64 GADLoadNativeAdsJSContext + 4580
+46  libdispatch.dylib             	0x00000001c4000adc _dispatch_call_block_and_release + 32 (init.c:1575)
+47  libdispatch.dylib             	0x00000001c401a7ec _dispatch_client_callout + 16 (client_callout.mm:85)
+48  libdispatch.dylib             	0x00000001c4037b24 _dispatch_main_queue_drain.cold.5 + 812 (queue.c:8181)
+49  libdispatch.dylib             	0x00000001c400fec8 _dispatch_main_queue_drain + 180 (queue.c:8162)
+50  libdispatch.dylib             	0x00000001c400fe04 _dispatch_main_queue_callback_4CF + 44 (queue.c:8341)
+51  CoreFoundation                	0x000000018bc0c2c8 __CFRUNLOOP_IS_SERVICING_THE_MAIN_DISPATCH_QUEUE__ + 16 (CFRunLoop.c:1820)
+52  CoreFoundation                	0x000000018bbbfb3c __CFRunLoopRun + 1944 (CFRunLoop.c:3177)
+53  CoreFoundation                	0x000000018bbbea6c _CFRunLoopRunSpecificWithOptions + 532 (CFRunLoop.c:3462)
+54  GraphicsServices              	0x000000022c7cc498 GSEventRunModal + 120 (GSEvent.c:2049)
+55  UIKitCore                     	0x0000000191582ba4 -[UIApplication _run] + 792 (UIApplication.m:3902)
+56  UIKitCore                     	0x000000019152ba78 UIApplicationMain + 336 (UIApplication.m:5577)
+57  Plantim                       	0x0000000100939620 main + 64 (AppDelegate.swift:6)
+58  dyld                          	0x0000000188bd6e28 start + 7116 (dyldMain.cpp:1477)
+
+Thread 1 name:
+Thread 1:
+0   SensorKitHelper               	0x000000026de20ec0 objc_msgSend$isMediaEventsStreamAuthorizedWithCompletionHandler: + 32
+1   SensorKitHelper               	0x000000026de1ca30 __83+[SRHDataCollectionController isMediaEventsCollectionEnabledFor:completionHandler:]_block_invoke_2 + 60 (SRHDataCollectionController.m:116)
+2   libdispatch.dylib             	0x00000001c4000adc _dispatch_call_block_and_release + 32 (init.c:1575)
+3   libdispatch.dylib             	0x00000001c401a7ec _dispatch_client_callout + 16 (client_callout.mm:85)
+4   libdispatch.dylib             	0x00000001c4009468 _dispatch_lane_serial_drain + 740 (queue.c:3991)
+5   libdispatch.dylib             	0x00000001c4009f44 _dispatch_lane_invoke + 388 (queue.c:4082)
+6   libdispatch.dylib             	0x00000001c40143ec _dispatch_root_queue_drain_deferred_wlh + 292 (queue.c:7265)
+7   libdispatch.dylib             	0x00000001c4013ce4 _dispatch_workloop_worker_thread + 692 (queue.c:6859)
+8   libsystem_pthread.dylib       	0x00000001e7c0a3b8 _pthread_wqthread + 292 (pthread.c:2696)
+9   libsystem_pthread.dylib       	0x00000001e7c098c0 start_wqthread + 8
+
+Thread 2:
+
+Thread 3 name:
+Thread 3:
+0   libsystem_kernel.dylib        	0x00000002354e7cd4 mach_msg2_trap + 8
+1   libsystem_kernel.dylib        	0x00000002354eb2f8 mach_msg2_internal + 76 (mach_msg.c:201)
+2   libsystem_kernel.dylib        	0x00000002354eb214 mach_msg_overwrite + 428 (mach_msg.c:0)
+3   libsystem_kernel.dylib        	0x00000002354eb05c mach_msg + 24 (mach_msg.c:323)
+4   libdispatch.dylib             	0x00000001c401be84 _dispatch_mach_send_and_wait_for_reply + 548 (mach.c:1989)
+5   libdispatch.dylib             	0x00000001c401c224 dispatch_mach_send_with_result_and_wait_for_reply + 60 (mach.c:2026)
+6   libxpc.dylib                  	0x000000019fd30e04 xpc_connection_send_message_with_reply_sync + 256 (connection.c:4182)
+7   CoreFoundation                	0x000000018bd11d40 __103-[CFPrefsSearchListSource synchronouslySendSystemMessage:andUserMessage:andDirectMessage:replyHandler:]_block_invoke_2 + 44 (CFPrefsSearchListSource.m:1058)
+8   CoreFoundation                	0x000000018bd56da8 -[_CFXPreferences withConnectionForRole:andUserIdentifier:performBlock:] + 52 (CFXPreferences.m:1807)
+9   CoreFoundation                	0x000000018bd11cec __103-[CFPrefsSearchListSource synchronouslySendSystemMessage:andUserMessage:andDirectMessage:replyHandler:]_block_invoke + 148 (CFPrefsSearchListSource.m:1056)
+10  libdispatch.dylib             	0x00000001c401a804 _dispatch_client_callout2 + 16 (client_callout.mm:94)
+11  libdispatch.dylib             	0x00000001c4015760 _dispatch_apply_invoke3 + 336 (apply.c:161)
+12  libdispatch.dylib             	0x00000001c401a7ec _dispatch_client_callout + 16 (client_callout.mm:85)
+13  libdispatch.dylib             	0x00000001c40039e0 _dispatch_once_callout + 32 (once.c:52)
+14  libdispatch.dylib             	0x00000001c40148a0 _dispatch_apply_invoke + 252 (apply.c:262)
+15  libdispatch.dylib             	0x00000001c401a7ec _dispatch_client_callout + 16 (client_callout.mm:85)
+16  libdispatch.dylib             	0x00000001c403742c <deduplicated_symbol> + 32
+17  libdispatch.dylib             	0x00000001c40130bc _dispatch_root_queue_drain + 736 (queue.c:7409)
+18  libdispatch.dylib             	0x00000001c40136fc _dispatch_worker_thread2 + 180 (queue.c:7487)
+19  libsystem_pthread.dylib       	0x00000001e7c0a37c _pthread_wqthread + 232 (pthread.c:2709)
+20  libsystem_pthread.dylib       	0x00000001e7c098c0 start_wqthread + 8
+
+Thread 4 name:
+Thread 4:
+0   AttributeGraph                	0x00000001bd3ce104 AG::swift::metadata_visitor::visit_field(AG::swift::metadata const*, AG::swift::field_record const&, unsigned long, unsigned long) + 28 (ag-swift-metadata.cc:648)
+1   AttributeGraph                	0x00000001bd3cef80 AG::swift::metadata::visit(AG::swift::metadata_visitor&) const + 1240 (ag-swift-metadata.cc:439)
+2   AttributeGraph                	0x00000001bd3ce3fc AG::LayoutDescriptor::make_layout(AG::swift::metadata const*, AGComparisonMode, AG::LayoutDescriptor::HeapMode) + 140 (ag-value.cc:1690)
+3   AttributeGraph                	0x00000001bd3cce3c AG::(anonymous namespace)::TypeDescriptorCache::fetch(AG::swift::metadata const*, unsigned int, AG::LayoutDescriptor::HeapMode, int) + 388 (ag-value.cc:1810)
+4   AttributeGraph                	0x00000001bd3cbab0 AG::LayoutDescriptor::Builder::should_visit_fields(AG::swift::metadata const*, bool) + 64 (ag-value.cc:1261)
+5   AttributeGraph                	0x00000001bd3ce254 AG::LayoutDescriptor::Builder::visit_element(AG::swift::metadata const*, AG::swift::metadata::ref_kind, unsigned long, unsigned long) + 120 (ag-value.cc:1312)
+6   AttributeGraph                	0x00000001bd3ce19c AG::swift::metadata_visitor::visit_field(AG::swift::metadata const*, AG::swift::field_record const&, unsigned long, unsigned long) + 180 (ag-swift-metadata.cc:661)
+7   AttributeGraph                	0x00000001bd3cef80 AG::swift::metadata::visit(AG::swift::metadata_visitor&) const + 1240 (ag-swift-metadata.cc:439)
+8   AttributeGraph                	0x00000001bd3ce3fc AG::LayoutDescriptor::make_layout(AG::swift::metadata const*, AGComparisonMode, AG::LayoutDescriptor::HeapMode) + 140 (ag-value.cc:1690)
+9   AttributeGraph                	0x00000001bd3cce3c AG::(anonymous namespace)::TypeDescriptorCache::fetch(AG::swift::metadata const*, unsigned int, AG::LayoutDescriptor::HeapMode, int) + 388 (ag-value.cc:1810)
+10  AttributeGraph                	0x00000001bd3cbab0 AG::LayoutDescriptor::Builder::should_visit_fields(AG::swift::metadata const*, bool) + 64 (ag-value.cc:1261)
+11  AttributeGraph                	0x00000001bd3ce254 AG::LayoutDescriptor::Builder::visit_element(AG::swift::metadata const*, AG::swift::metadata::ref_kind, unsigned long, unsigned long) + 120 (ag-value.cc:1312)
+12  AttributeGraph                	0x00000001bd3ce19c AG::swift::metadata_visitor::visit_field(AG::swift::metadata const*, AG::swift::field_record const&, unsigned long, unsigned long) + 180 (ag-swift-metadata.cc:661)
+13  AttributeGraph                	0x00000001bd3cef80 AG::swift::metadata::visit(AG::swift::metadata_visitor&) const + 1240 (ag-swift-metadata.cc:439)
+14  AttributeGraph                	0x00000001bd3ce3fc AG::LayoutDescriptor::make_layout(AG::swift::metadata const*, AGComparisonMode, AG::LayoutDescriptor::HeapMode) + 140 (ag-value.cc:1690)
+32  AttributeGraph                	0x00000001bd3cce3c AG::(anonymous namespace)::TypeDescriptorCache::fetch(AG::swift::metadata const*, unsigned int, AG::LayoutDescriptor::HeapMode, int) + 388 (ag-value.cc:1810)
+33  AttributeGraph                	0x00000001bd3cbab0 AG::LayoutDescriptor::Builder::should_visit_fields(AG::swift::metadata const*, bool) + 64 (ag-value.cc:1261)
+34  AttributeGraph                	0x00000001bd3ce254 AG::LayoutDescriptor::Builder::visit_element(AG::swift::metadata const*, AG::swift::metadata::ref_kind, unsigned long, unsigned long) + 120 (ag-value.cc:1312)
+35  AttributeGraph                	0x00000001bd3ce19c AG::swift::metadata_visitor::visit_field(AG::swift::metadata const*, AG::swift::field_record const&, unsigned long, unsigned long) + 180 (ag-swift-metadata.cc:661)
+36  AttributeGraph                	0x00000001bd3cef80 AG::swift::metadata::visit(AG::swift::metadata_visitor&) const + 1240 (ag-swift-metadata.cc:439)
+37  AttributeGraph                	0x00000001bd3ce3fc AG::LayoutDescriptor::make_layout(AG::swift::metadata const*, AGComparisonMode, AG::LayoutDescriptor::HeapMode) + 140 (ag-value.cc:1690)
+38  AttributeGraph                	0x00000001bd3cce3c AG::(anonymous namespace)::TypeDescriptorCache::fetch(AG::swift::metadata const*, unsigned int, AG::LayoutDescriptor::HeapMode, int) + 388 (ag-value.cc:1810)
+39  AttributeGraph                	0x00000001bd3cbab0 AG::LayoutDescriptor::Builder::should_visit_fields(AG::swift::metadata const*, bool) + 64 (ag-value.cc:1261)
+40  AttributeGraph                	0x00000001bd3ce254 AG::LayoutDescriptor::Builder::visit_element(AG::swift::metadata const*, AG::swift::metadata::ref_kind, unsigned long, unsigned long) + 120 (ag-value.cc:1312)
+41  AttributeGraph                	0x00000001bd3ce19c AG::swift::metadata_visitor::visit_field(AG::swift::metadata const*, AG::swift::field_record const&, unsigned long, unsigned long) + 180 (ag-swift-metadata.cc:661)
+42  AttributeGraph                	0x00000001bd3cef80 AG::swift::metadata::visit(AG::swift::metadata_visitor&) const + 1240 (ag-swift-metadata.cc:439)
+43  AttributeGraph                	0x00000001bd3ce3fc AG::LayoutDescriptor::make_layout(AG::swift::metadata const*, AGComparisonMode, AG::LayoutDescriptor::HeapMode) + 140 (ag-value.cc:1690)
+44  AttributeGraph                	0x00000001bd3cce3c AG::(anonymous namespace)::TypeDescriptorCache::fetch(AG::swift::metadata const*, unsigned int, AG::LayoutDescriptor::HeapMode, int) + 388 (ag-value.cc:1810)
+45  AttributeGraph                	0x00000001bd3cbab0 AG::LayoutDescriptor::Builder::should_visit_fields(AG::swift::metadata const*, bool) + 64 (ag-value.cc:1261)
+46  AttributeGraph                	0x00000001bd3ce254 AG::LayoutDescriptor::Builder::visit_element(AG::swift::metadata const*, AG::swift::metadata::ref_kind, unsigned long, unsigned long) + 120 (ag-value.cc:1312)
+47  AttributeGraph                	0x00000001bd3ce19c AG::swift::metadata_visitor::visit_field(AG::swift::metadata const*, AG::swift::field_record const&, unsigned long, unsigned long) + 180 (ag-swift-metadata.cc:661)
+48  AttributeGraph                	0x00000001bd3cef80 AG::swift::metadata::visit(AG::swift::metadata_visitor&) const + 1240 (ag-swift-metadata.cc:439)
+49  AttributeGraph                	0x00000001bd3ce3fc AG::LayoutDescriptor::make_layout(AG::swift::metadata const*, AGComparisonMode, AG::LayoutDescriptor::HeapMode) + 140 (ag-value.cc:1690)
+50  AttributeGraph                	0x00000001bd3ce634 AG::(anonymous namespace)::TypeDescriptorCache::drain_queue(void*) + 360 (ag-value.cc:1870)
+51  libdispatch.dylib             	0x00000001c401a7ec _dispatch_client_callout + 16 (client_callout.mm:85)
+52  libdispatch.dylib             	0x00000001c403742c <deduplicated_symbol> + 32
+53  libdispatch.dylib             	0x00000001c40130bc _dispatch_root_queue_drain + 736 (queue.c:7409)
+54  libdispatch.dylib             	0x00000001c40136fc _dispatch_worker_thread2 + 180 (queue.c:7487)
+55  libsystem_pthread.dylib       	0x00000001e7c0a37c _pthread_wqthread + 232 (pthread.c:2709)
+56  libsystem_pthread.dylib       	0x00000001e7c098c0 start_wqthread + 8
+
+Thread 5 name:
+Thread 5:
+0   libobjc.A.dylib               	0x0000000188b566a4 getMethodNoSuper_nolock(objc_class*, objc_selector*) + 940 (objc-runtime-new.mm:7365)
+1   libobjc.A.dylib               	0x0000000188b56d90 lookUpImpOrForward + 404 (objc-runtime-new.mm:7768)
+2   libobjc.A.dylib               	0x0000000188b65150 class_getInstanceMethod + 64 (objc-runtime-new.mm:7427)
+3   Foundation                    	0x000000018926ac7c setProtocolMetdataWithMethods + 172 (NSXPCInterface.m:501)
+4   Foundation                    	0x000000018927be30 setProtocolMetadata + 260 (NSXPCInterface.m:562)
+5   Foundation                    	0x0000000189c94e34 -[NSXPCInterface setProtocol:] + 280 (NSXPCInterface.m:613)
+6   Foundation                    	0x0000000189c94ab4 +[NSXPCInterface interfaceWithProtocol:] + 44 (NSXPCInterface.m:136)
+7   CoreServices                  	0x000000018a105d1c __31+[_LSDReadService XPCInterface]_block_invoke + 60 (LSDReadService.mm:129)
+8   libdispatch.dylib             	0x00000001c401a7ec _dispatch_client_callout + 16 (client_callout.mm:85)
+9   libdispatch.dylib             	0x00000001c40039e0 _dispatch_once_callout + 32 (once.c:52)
+10  CoreServices                  	0x000000018a105cdc +[_LSDReadService XPCInterface] + 156 (LSDReadService.mm:128)
+11  CoreServices                  	0x000000018a1048a8 ___LSDServiceGetXPCConnection_block_invoke_2 + 140 (LSDService.mm:436)
+12  CoreServices                  	0x000000018a105bb4 LaunchServices::_LSLazyLoadObjectForKeyWithLock(NSMutableDictionary*, objc_object*, LaunchServices::unfair_lock_mutex&, objc_object* () block_pointer) + 132 (LSSynchronization.mm:63)
+13  CoreServices                  	0x000000018a1054d8 _LSDServiceGetXPCConnection + 232 (LSDService.mm:421)
+14  CoreServices                  	0x000000018a110e2c _LSDServiceGetXPCProxyForServiceClass + 32 (LSDService.mm:470)
+15  CoreServices                  	0x000000018a1f2018 +[_LSDService synchronousXPCProxyWithErrorHandler:] + 72 (LSDService.mm:493)
+16  CoreServices                  	0x000000018a19a0ec __75+[LSBundleRecord _bundleRecordForAuditToken:checkNSBundleMainBundle:error:]_block_invoke_2 + 180 (LSBundleRecord.mm:410)
+17  CoreServices                  	0x000000018a110f98 _LSRetryForConnectionInterrupted + 56 (LSErrorUtils.mm:203)
+18  CoreServices                  	0x000000018a199cc4 +[LSBundleRecord _bundleRecordForAuditToken:checkNSBundleMainBundle:error:] + 544 (LSBundleRecord.mm:408)
+19  CoreServices                  	0x000000018a0ffe58 +[LSBundleRecord bundleRecordForCurrentProcess] + 304 (LSBundleRecord.mm:116)
+20  BrowserEngineKit              	0x00000001a5fbd5e8 WebContentProcess.init(bundleIdentifier:onInterruption:) + 96 (Processes.swift:174)
+21  BrowserEngineKit              	0x00000001a5fbf789 closure #1 in static __BEWebContentProcess.webContentProcess(bundleIdentifier:interruptionHandler:completion:) + 1 (Processes.swift:508)
+22  BrowserEngineKit              	0x00000001a5fc01bd <deduplicated_symbol> + 1
+23  BrowserEngineKit              	0x00000001a5fc07b9 <deduplicated_symbol> + 1
+24  BrowserEngineKit              	0x00000001a5fc01bd <deduplicated_symbol> + 1
+25  libswift_Concurrency.dylib    	0x000000018a0cbc75 completeTaskWithClosure(swift::AsyncContext*, swift::SwiftError*) + 1 (Task.cpp:546)
+
+Thread 6 name:
+Thread 6:
+0   libsystem_kernel.dylib        	0x00000002354e7cd4 mach_msg2_trap + 8
+1   libsystem_kernel.dylib        	0x00000002354eb2f8 mach_msg2_internal + 76 (mach_msg.c:201)
+2   libsystem_kernel.dylib        	0x00000002354eb214 mach_msg_overwrite + 428 (mach_msg.c:0)
+3   libsystem_kernel.dylib        	0x00000002354eb05c mach_msg + 24 (mach_msg.c:323)
+4   CoreFoundation                	0x000000018bbe8868 __CFRunLoopServiceMachPort + 160 (CFRunLoop.c:2650)
+5   CoreFoundation                	0x000000018bbbf848 __CFRunLoopRun + 1188 (CFRunLoop.c:3035)
+6   CoreFoundation                	0x000000018bbbea6c _CFRunLoopRunSpecificWithOptions + 532 (CFRunLoop.c:3462)
+7   Foundation                    	0x0000000189bbad60 -[NSRunLoop(NSRunLoop) runMode:beforeDate:] + 212 (NSRunLoop.m:375)
+8   Foundation                    	0x0000000189bbaf38 -[NSRunLoop(NSRunLoop) runUntilDate:] + 64 (NSRunLoop.m:422)
+9   UIKitCore                     	0x0000000191557cac -[UIEventFetcher threadMain] + 408 (UIEventFetcher.m:1333)
+10  Foundation                    	0x000000018927a21c __NSThread__start__ + 732 (NSThread.m:997)
+11  libsystem_pthread.dylib       	0x00000001e7c0d44c _pthread_start + 136 (pthread.c:931)
+12  libsystem_pthread.dylib       	0x00000001e7c098cc thread_start + 8
+
+Thread 7:
+
+Thread 8 name:
+Thread 8:
+0   libsystem_kernel.dylib        	0x00000002354ed770 __open + 8
+1   libsystem_kernel.dylib        	0x00000002354ed75c open + 40 (open-base.c:101)
+2   JavaScriptCore                	0x00000001a0ba8248 WTF::FileSystemImpl::readOrMakeSalt(WTF::String const&) + 180 (FileSystem.cpp:395)
+3   WebKit                        	0x00000001a603f094 WTF::Detail::CallableWrapper<WebKit::WebsiteDataStore::resolveDirectoriesAsynchronously()::$_0, void>::call() + 304 (Function.h:53)
+4   JavaScriptCore                	0x00000001a0ba80e8 void WTF::dispatchWorkItem<WTF::(anonymous namespace)::DispatchWorkItem>(void*) + 60 (WorkQueueCocoa.cpp:47)
+5   libdispatch.dylib             	0x00000001c401a7ec _dispatch_client_callout + 16 (client_callout.mm:85)
+6   libdispatch.dylib             	0x00000001c4009468 _dispatch_lane_serial_drain + 740 (queue.c:3991)
+7   libdispatch.dylib             	0x00000001c4009f44 _dispatch_lane_invoke + 388 (queue.c:4082)
+8   libdispatch.dylib             	0x00000001c40143ec _dispatch_root_queue_drain_deferred_wlh + 292 (queue.c:7265)
+9   libdispatch.dylib             	0x00000001c4013ce4 _dispatch_workloop_worker_thread + 692 (queue.c:6859)
+10  libsystem_pthread.dylib       	0x00000001e7c0a3b8 _pthread_wqthread + 292 (pthread.c:2696)
+11  libsystem_pthread.dylib       	0x00000001e7c098c0 start_wqthread + 8
+
+Thread 9 name:
+Thread 9 Crashed:
+0   libsystem_kernel.dylib        	0x00000002354f20cc __pthread_kill + 8
+1   libsystem_pthread.dylib       	0x00000001e7c10810 pthread_kill + 268 (pthread.c:1721)
+2   libsystem_c.dylib             	0x0000000197443ff4 __abort + 132 (abort.c:163)
+3   libsystem_c.dylib             	0x0000000197443f70 abort + 136 (abort.c:130)
+4   libc++abi.dylib               	0x0000000188c83808 __abort_message + 132 (abort_message.cpp:66)
+5   libc++abi.dylib               	0x0000000188c7246c demangling_terminate_handler() + 280 (cxa_default_handlers.cpp:71)
+6   libobjc.A.dylib               	0x0000000188b83f88 _objc_terminate() + 172 (objc-exception.mm:499)
+7   libc++abi.dylib               	0x0000000188c82bdc std::__terminate(void (*)()) + 16 (cxa_handlers.cpp:59)
+8   libc++abi.dylib               	0x0000000188c865c8 __cxa_rethrow + 188 (cxa_exception.cpp:658)
+9   libobjc.A.dylib               	0x0000000188b90558 objc_exception_rethrow + 44 (objc-exception.mm:399)
+10  React                         	0x0000000101cfb51c invocation function for block in facebook::react::ObjCTurboModule::performVoidMethodInvocation(facebook::jsi::Runtime&, char const*, NSInvocation*, NSMutableArray*) + 192
+11  React                         	0x0000000101d004a8 std::__1::__function::__func<facebook::react::ObjCTurboModule::performVoidMethodInvocation(facebook::jsi::Runtime&, char const*, NSInvocation*, NSMutableArray*)::$_1, std::__1::allocator<facebook::... + 88
+12  libdispatch.dylib             	0x00000001c4000adc _dispatch_call_block_and_release + 32 (init.c:1575)
+13  libdispatch.dylib             	0x00000001c401a7ec _dispatch_client_callout + 16 (client_callout.mm:85)
+14  libdispatch.dylib             	0x00000001c4009468 _dispatch_lane_serial_drain + 740 (queue.c:3991)
+15  libdispatch.dylib             	0x00000001c4009f44 _dispatch_lane_invoke + 388 (queue.c:4082)
+16  libdispatch.dylib             	0x00000001c40143ec _dispatch_root_queue_drain_deferred_wlh + 292 (queue.c:7265)
+17  libdispatch.dylib             	0x00000001c4013ce4 _dispatch_workloop_worker_thread + 692 (queue.c:6859)
+18  libsystem_pthread.dylib       	0x00000001e7c0a3b8 _pthread_wqthread + 292 (pthread.c:2696)
+19  libsystem_pthread.dylib       	0x00000001e7c098c0 start_wqthread + 8
+
+Thread 10 name:
+Thread 10:
+0   libsystem_kernel.dylib        	0x00000002354e7cd4 mach_msg2_trap + 8
+1   libsystem_kernel.dylib        	0x00000002354eb2f8 mach_msg2_internal + 76 (mach_msg.c:201)
+2   libsystem_kernel.dylib        	0x00000002354eb214 mach_msg_overwrite + 428 (mach_msg.c:0)
+3   libsystem_kernel.dylib        	0x00000002354eb05c mach_msg + 24 (mach_msg.c:323)
+4   CoreFoundation                	0x000000018bbe8868 __CFRunLoopServiceMachPort + 160 (CFRunLoop.c:2650)
+5   CoreFoundation                	0x000000018bbbf848 __CFRunLoopRun + 1188 (CFRunLoop.c:3035)
+6   CoreFoundation                	0x000000018bbbea6c _CFRunLoopRunSpecificWithOptions + 532 (CFRunLoop.c:3462)
+7   React                         	0x0000000101c90f14 +[RCTJSThreadManager runRunLoop] + 252
+8   Foundation                    	0x000000018927a21c __NSThread__start__ + 732 (NSThread.m:997)
+9   libsystem_pthread.dylib       	0x00000001e7c0d44c _pthread_start + 136 (pthread.c:931)
+10  libsystem_pthread.dylib       	0x00000001e7c098cc thread_start + 8
+
+Thread 11 name:
+Thread 11:
+0   libsystem_kernel.dylib        	0x00000002354ed5d4 __psynch_cvwait + 8
+1   libsystem_pthread.dylib       	0x00000001e7c0bb58 _pthread_cond_wait + 984 (pthread_cond.c:862)
+2   libc++.1.dylib                	0x000000019ad716fc std::__1::condition_variable::wait(std::__1::unique_lock<std::__1::mutex>&) + 32 (condition_variable.cpp:30)
+3   hermes                        	0x00000001025cf9c4 hermes::vm::HadesGC::Executor::worker() + 116
+4   hermes                        	0x00000001025cf92c void* std::__1::__thread_proxy[abi:nn180100]<std::__1::tuple<std::__1::unique_ptr<std::__1::__thread_struct, std::__1::default_delete<std::__1::__thread_struct>>, hermes::vm::HadesGC::Executor::Exe... + 44
+5   libsystem_pthread.dylib       	0x00000001e7c0d44c _pthread_start + 136 (pthread.c:931)
+6   libsystem_pthread.dylib       	0x00000001e7c098cc thread_start + 8
+
+Thread 12 name:
+Thread 12:
+0   libsystem_kernel.dylib        	0x00000002354ed5d4 __psynch_cvwait + 8
+1   libsystem_pthread.dylib       	0x00000001e7c0bb58 _pthread_cond_wait + 984 (pthread_cond.c:862)
+2   JavaScriptCore                	0x00000001a0a22e74 scavenger_thread_main + 1440 (pas_scavenger.c:397)
+3   libsystem_pthread.dylib       	0x00000001e7c0d44c _pthread_start + 136 (pthread.c:931)
+4   libsystem_pthread.dylib       	0x00000001e7c098cc thread_start + 8
+
+
+Thread 9 crashed with ARM Thread State (64-bit):
+    x0: 0x0000000000000000   x1: 0x0000000000000000   x2: 0x0000000000000000   x3: 0x0000000000000000
+    x4: 0x0000000000000000   x5: 0x0000000000989680   x6: 0x0000000000000064   x7: 0x0000000000000060
+    x8: 0x3059d2a5c30d5e0c   x9: 0x3059d2a4ac966e0c  x10: 0x00000000000003e8  x11: 0x0000010000000000
+   x12: 0x00000000fffffffd  x13: 0x0000000000000000  x14: 0x0000000000000000  x15: 0x0000000000000000
+   x16: 0x0000000000000148  x17: 0x000000016f9b3000  x18: 0x0000000000000000  x19: 0x0000000000000006
+   x20: 0x0000000000004703  x21: 0x000000016f9b30e0  x22: 0x434c4e47432b2b00  x23: 0x000000010817ade0
+   x24: 0x00000001082cd2c0  x25: 0x0000000000000000  x26: 0x0000000000000000  x27: 0x0000000000000000
+   x28: 0x0000000000000114   fp: 0x000000016f9b2670   lr: 0x00000001e7c10810
+    sp: 0x000000016f9b2650   pc: 0x00000002354f20cc cpsr: 0x40000000
+   esr: 0x56000080 (Syscall)
+
+
+Binary Images:
+        0x100934000 -         0x10135bfff Plantim arm64  <0f14adee30993aa1861ca6724cde2efa> /var/containers/Bundle/Application/3EA2F4D4-A62D-4128-B47B-8A363FEAB2B0/Plantim.app/Plantim
+        0x1016dc000 -         0x101763fff ReactNativeDependencies arm64  <b35f1182b82e33728a74a4fe502c0906> /private/var/containers/Bundle/Application/3EA2F4D4-A62D-4128-B47B-8A363FEAB2B0/Plantim.app/Frameworks/ReactNativeDependencies.framework/ReactNativeDependencies
+        0x10196c000 -         0x101977fff libobjc-trampolines.dylib arm64e  <a068c18d51c33c9aa2875c9c122ada7d> /private/preboot/Cryptexes/OS/usr/lib/libobjc-trampolines.dylib
+        0x1019f0000 -         0x101e2bfff React arm64  <76fbcee9351730b39dc662c4e914e908> /private/var/containers/Bundle/Application/3EA2F4D4-A62D-4128-B47B-8A363FEAB2B0/Plantim.app/Frameworks/React.framework/React
+        0x102500000 -         0x102703fff hermes arm64  <80d5528f2c783b90b90f747e89a9f880> /private/var/containers/Bundle/Application/3EA2F4D4-A62D-4128-B47B-8A363FEAB2B0/Plantim.app/Frameworks/hermes.framework/hermes
+        0x188b50000 -         0x188ba1b2f libobjc.A.dylib arm64e  <af9349a3834f369eace5c50571c9c7ba> /usr/lib/libobjc.A.dylib
+        0x188bd2000 -         0x188c70ad7 dyld arm64e  <ef27e3863cff3752b152d96a0aa9effd> /usr/lib/dyld
+        0x188c71000 -         0x188c8b6c7 libc++abi.dylib arm64e  <15769a08e2653b56a58f292ba6cca306> /usr/lib/libc++abi.dylib
+        0x189218000 -         0x18a05e7df Foundation arm64e  <218da4dc727a3341b59e8fdb39a2d7c4> /System/Library/Frameworks/Foundation.framework/Foundation
+        0x18a05f000 -         0x18a0e826f libswift_Concurrency.dylib arm64e  <d785a303cb4a30228462001cd20258e3> /usr/lib/swift/libswift_Concurrency.dylib
+        0x18a0e9000 -         0x18a3489bf CoreServices arm64e  <c28f44ca1e643ee89990d036b2ced8c5> /System/Library/Frameworks/CoreServices.framework/CoreServices
+        0x18bba2000 -         0x18c1265ff CoreFoundation arm64e  <b4a0233bf37d3ef6a977e4f36199c5a4> /System/Library/Frameworks/CoreFoundation.framework/CoreFoundation
+        0x1914e5000 -         0x1939330df UIKitCore arm64e  <a0e1cefbfd0136f9b82351b092e4dbc6> /System/Library/PrivateFrameworks/UIKitCore.framework/UIKitCore
+        0x195ad4000 -         0x196a0281f SwiftUICore arm64e  <e6bab95e48ae3002a66217d13da4e489> /System/Library/Frameworks/SwiftUICore.framework/SwiftUICore
+        0x1973cc000 -         0x19744c5af libsystem_c.dylib arm64e  <30fa7d3557d53b47a6306fa25fbd0bfb> /usr/lib/system/libsystem_c.dylib
+        0x19ad4f000 -         0x19ade1de3 libc++.1.dylib arm64e  <e48ff12207063a36980f32612622047e> /usr/lib/libc++.1.dylib
+        0x19fd1f000 -         0x19fd70f9f libxpc.dylib arm64e  <d5e4a802dd5d31dd917967cb206ae3c2> /usr/lib/system/libxpc.dylib
+        0x1a0a15000 -         0x1a253049f JavaScriptCore arm64e  <9e1fe0bce8d23653a93cb2adcc9ef055> /System/Library/Frameworks/JavaScriptCore.framework/JavaScriptCore
+        0x1a5fbb000 -         0x1a5fe865f BrowserEngineKit arm64e  <9f91b4b43aba3621a164be8afd0685ac> /System/Library/Frameworks/BrowserEngineKit.framework/BrowserEngineKit
+        0x1a5fe9000 -         0x1a75980df WebKit arm64e  <f23211048c0534efbb9e5f9fceab779b> /System/Library/Frameworks/WebKit.framework/WebKit
+        0x1bd3c7000 -         0x1bd40e49f AttributeGraph arm64e  <5848d176e6423b2d9ea560f797f39338> /System/Library/PrivateFrameworks/AttributeGraph.framework/AttributeGraph
+        0x1c3fff000 -         0x1c404525f libdispatch.dylib arm64e  <6a1b4fabb32633738bab8e8464c68c66> /usr/lib/system/libdispatch.dylib
+        0x1e7c09000 -         0x1e7c1544f libsystem_pthread.dylib arm64e  <6e1be86b581a306790653412103e1df4> /usr/lib/system/libsystem_pthread.dylib
+        0x22c7cb000 -         0x22c7d37ff GraphicsServices arm64e  <3688150f0fff38a4914910b3c47b53b1> /System/Library/PrivateFrameworks/GraphicsServices.framework/GraphicsServices
+        0x2354e7000 -         0x235521d2b libsystem_kernel.dylib arm64e  <ff136c45738b3f6e82e57340e51a1478> /usr/lib/system/libsystem_kernel.dylib
+        0x26de1a000 -         0x26de213bf SensorKitHelper arm64e  <94a4de32bd0f325d8488b79800027075> /System/Library/PrivateFrameworks/SensorKitHelper.framework/SensorKitHelper
+
+EOF
