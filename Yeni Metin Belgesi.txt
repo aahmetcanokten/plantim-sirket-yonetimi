@@ -1,0 +1,49 @@
+Starting Metro Bundler
+iOS ./index.js ▓▓▓▓▓▓▓▓▓▓░░░░░░ 63.4% ( 824/1035)
+iOS Bundling failed 5638ms index.js (1449 modules)
+Unable to resolve module expo-updates from /Users/expo/workingdir/build/components/ErrorBoundary.js: expo-updates could not be found within the project or in these directories:
+  node_modules
+[0m [90m 3 |[39m [36mimport[39m { [33mIonicons[39m } [36mfrom[39m [32m'@expo/vector-icons'[39m[33m;[39m
+ [90m 4 |[39m [36mimport[39m { [33mColors[39m } [36mfrom[39m [32m'../Theme'[39m[33m;[39m
+[31m[1m>[22m[39m[90m 5 |[39m [36mimport[39m [33m*[39m [36mas[39m [33mUpdates[39m [36mfrom[39m [32m'expo-updates'[39m[33m;[39m
+ [90m   |[39m                           [31m[1m^[22m[39m
+ [90m 6 |[39m
+ [90m 7 |[39m [36mexport[39m [36mdefault[39m [36mclass[39m [33mErrorBoundary[39m [36mextends[39m [33mComponent[39m {
+ [90m 8 |[39m     constructor(props) {[0m
+
+Import stack:
+
+ components/ErrorBoundary.js
+ | import "expo-updates"
+
+ App.js
+ | import "./components/ErrorBoundary"
+
+ index.js
+ | import "./App"
+
+ 
+ | import "/Users/expo/workingdir/build/index.js"
+Error: Unable to resolve module expo-updates from /Users/expo/workingdir/build/components/ErrorBoundary.js: expo-updates could not be found within the project or in these directories:
+  node_modules
+[0m [90m 3 |[39m [36mimport[39m { [33mIonicons[39m } [36mfrom[39m [32m'@expo/vector-icons'[39m[33m;[39m
+ [90m 4 |[39m [36mimport[39m { [33mColors[39m } [36mfrom[39m [32m'../Theme'[39m[33m;[39m
+[31m[1m>[22m[39m[90m 5 |[39m [36mimport[39m [33m*[39m [36mas[39m [33mUpdates[39m [36mfrom[39m [32m'expo-updates'[39m[33m;[39m
+ [90m   |[39m                           [31m[1m^[22m[39m
+ [90m 6 |[39m
+ [90m 7 |[39m [36mexport[39m [36mdefault[39m [36mclass[39m [33mErrorBoundary[39m [36mextends[39m [33mComponent[39m {
+ [90m 8 |[39m     constructor(props) {[0m
+
+Import stack:
+
+ components/ErrorBoundary.js
+ | import "expo-updates"
+
+ App.js
+ | import "./components/ErrorBoundary"
+
+ index.js
+ | import "./App"
+
+ 
+ | import "/Users/expo/workingdir/build/index.js"
