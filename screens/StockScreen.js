@@ -24,6 +24,7 @@ import BarcodeScannerModal from "../components/BarcodeScannerModal";
 import { scheduleShipmentNotification } from "../utils/NotificationHelper";
 import { triggerHaptic, HapticType, requestStoreReview } from "../utils/FeedbackHelper";
 import { SkeletonProductItem } from "../components/Skeleton";
+import AssemblyModal from "../components/AssemblyModal";
 
 export default function StockScreen({ navigation }) {
   const {
@@ -51,6 +52,7 @@ export default function StockScreen({ navigation }) {
   const [invoicePayload, setInvoicePayload] = useState(null);
   const [sortOption, setSortOption] = useState("nameAZ");
   const [scannerVisible, setScannerVisible] = useState(false);
+  const [assemblyModalVisible, setAssemblyModalVisible] = useState(false);
 
   const openCustomerSelection = (product) => {
     if (!isPremium && sales.length >= 20) {
@@ -193,12 +195,34 @@ export default function StockScreen({ navigation }) {
   const navigateToDetailedStock = () => { if (navigation && navigation.navigate) { navigation.navigate('DetailedStockScreen'); } };
   const navigateToAddProduct = () => { if (navigation && navigation.navigate) { navigation.navigate('AddProductScreen'); } };
 
+  const handleAssemblyPress = () => {
+    if (!isPremium && products.length >= 5) {
+      Alert.alert(
+        "Limit Aşıldı",
+        "Ücretsiz planda limitiniz doldu. Montajlı ürün üretmek için Premium'a geçin veya ürün silin.",
+        [
+          { text: "Vazgeç", style: "cancel" },
+          { text: "Premium Al", onPress: () => navigation.navigate("Paywall") }
+        ]
+      );
+      return;
+    }
+    setAssemblyModalVisible(true);
+  };
+
   const renderHeader = () => (
     <View>
       <TouchableOpacity style={styles.addButton} onPress={navigateToAddProduct} activeOpacity={0.8}>
         <Ionicons name={"add-circle-outline"} size={24} color="#fff" />
         <Text style={styles.addButtonText}>Yeni Ürün Ekle</Text>
       </TouchableOpacity>
+
+
+      <TouchableOpacity style={[styles.addButton, { backgroundColor: Colors.warning }]} onPress={handleAssemblyPress} activeOpacity={0.8}>
+        <Ionicons name="construct-outline" size={24} color="#fff" />
+        <Text style={styles.addButtonText}>Montaj / Üretim Yap</Text>
+      </TouchableOpacity>
+
       <TouchableOpacity style={styles.detailButton} onPress={navigateToDetailedStock} activeOpacity={0.8}>
         <Ionicons name="stats-chart-outline" size={20} color="#fff" />
         <Text style={styles.detailButtonText}>Detaylı Stok Analizi</Text>
@@ -225,11 +249,11 @@ export default function StockScreen({ navigation }) {
       </View>
 
       <Text style={styles.listTitle}>Stok Listesi ({filteredAndSortedProducts.length})</Text>
-    </View>
+    </View >
   );
 
   return (
-    <ImmersiveLayout title="Stok" subtitle={`${products.length} ürün`} noScrollView={true}>
+    <ImmersiveLayout title="Stok" subtitle={`${products.length} ürün`} noScrollView={false}>
       {appDataLoading ? (
         <ScrollView contentContainerStyle={styles.flatListContent}>
           {renderHeader()}
@@ -238,15 +262,18 @@ export default function StockScreen({ navigation }) {
           ))}
         </ScrollView>
       ) : (
-        <FlatList
-          data={filteredAndSortedProducts}
-          keyExtractor={(i) => i.id}
-          renderItem={renderProductItem}
-          ListHeaderComponent={renderHeader}
-          contentContainerStyle={styles.flatListContent}
-          initialNumToRender={10}
-          ListEmptyComponent={<Text style={styles.emptyListText}>Stokta ürün bulunamadı.</Text>}
-        />
+        <>
+          {renderHeader()}
+          <FlatList
+            data={filteredAndSortedProducts}
+            keyExtractor={(i) => i.id}
+            renderItem={renderProductItem}
+            scrollEnabled={false}
+            contentContainerStyle={{ paddingBottom: 100 }}
+            initialNumToRender={10}
+            ListEmptyComponent={<Text style={styles.emptyListText}>Stokta ürün bulunamadı.</Text>}
+          />
+        </>
       )}
 
       {/* --- SATIŞ MODALI (DÜZELTİLDİ) --- */}
@@ -343,6 +370,15 @@ export default function StockScreen({ navigation }) {
       <InvoiceModal visible={invoiceModalVisible} initialInvoice={""} initialShipmentDate={new Date().toISOString()} onSave={(invoiceNum, shipmentDateISO) => finalizeSaleWithInvoice(invoiceNum, shipmentDateISO)} onCancel={() => { setInvoiceModalVisible(false); setInvoicePayload(null); }} onGenerate={() => generateInvoiceNumber()} productInfo={invoicePayload ? { name: invoicePayload.product.name, quantity: invoicePayload.quantity, totalPrice: (invoicePayload.quantity * invoicePayload.price).toFixed(2) } : null} />
 
       <BarcodeScannerModal visible={scannerVisible} onClose={() => setScannerVisible(false)} onScanned={handleScan} />
+
+      <AssemblyModal
+        visible={assemblyModalVisible}
+        onClose={() => setAssemblyModalVisible(false)}
+        onComplete={() => {
+          triggerHaptic(HapticType.SUCCESS);
+          requestStoreReview();
+        }}
+      />
 
       {/* REKLAM ALANI */}
       {/* REKLAM ALANI KALDIRILDI */}

@@ -28,6 +28,14 @@ export default function AssetManagementScreen({ navigation }) {
     const [scannerVisible, setScannerVisible] = useState(false);
 
     // Form States
+    const [name, setName] = useState("");
+    const [model, setModel] = useState("");
+    const [serialNumber, setSerialNumber] = useState("");
+
+    const getPersonName = (id) => {
+        const person = personnel.find(p => p.id === id);
+        return person ? person.name : "Bilinmiyor";
+    };
 
     const filteredAssets = useMemo(() => {
         let list = [...assets];
@@ -76,6 +84,137 @@ export default function AssetManagementScreen({ navigation }) {
         setModel("");
         setSerialNumber("");
         setModalVisible(true);
+    };
+
+    const handleEditAsset = (asset) => {
+        setSelectedAsset(asset);
+        setName(asset.name || "");
+        setModel(asset.model || "");
+        setSerialNumber(asset.serial_number || "");
+        setModalVisible(true);
+    };
+
+    const handleSaveAsset = () => {
+        const trimmedName = name.trim();
+
+        if (!trimmedName) {
+            Alert.alert("Hata", "Lütfen ürün adını girin.");
+            return;
+        }
+
+        const assetData = {
+            name: trimmedName,
+            model: model.trim(),
+            serial_number: serialNumber.trim(),
+        };
+
+        if (selectedAsset) {
+            updateAsset({ ...selectedAsset, ...assetData });
+        } else {
+            addAsset(assetData);
+        }
+
+        setModalVisible(false);
+    };
+
+    const handleDeleteAsset = (id) => {
+        Alert.alert(
+            "Sil",
+            "Bu demirbaşı silmek istediğinize emin misiniz?",
+            [
+                { text: "Vazgeç", style: "cancel" },
+                { text: "Sil", style: "destructive", onPress: () => deleteAsset(id) }
+            ]
+        );
+    };
+
+    const openAssignModal = (asset) => {
+        setSelectedAsset(asset);
+        setAssignModalVisible(true);
+    };
+
+    const handleAssign = (personId) => {
+        if (selectedAsset) {
+            assignAsset(selectedAsset.id, personId);
+            setAssignModalVisible(false);
+            setSelectedAsset(null);
+        }
+    };
+
+    const handleReturn = (asset) => {
+        Alert.alert(
+            "İade Al",
+            "Bu ürünü iade almak istediğinize emin misiniz?",
+            [
+                { text: "Vazgeç", style: "cancel" },
+                { text: "İade Al", onPress: () => unassignAsset(asset.id) }
+            ]
+        );
+    };
+
+    const renderAssetItem = ({ item }) => {
+        const assignedPerson = item.assigned_person_id ? personnel.find(p => p.id === item.assigned_person_id) : null;
+
+        return (
+            <View style={styles.card}>
+                <View style={styles.cardHeader}>
+                    <View>
+                        <Text style={styles.assetName}>{item.name}</Text>
+                        <Text style={styles.assetModel}>{item.model}</Text>
+                    </View>
+                    <View style={[styles.statusBadge, { backgroundColor: item.status === 'ASSIGNED' ? '#DCFCE7' : '#F3F4F6' }]}>
+                        <Text style={[styles.statusText, { color: item.status === 'ASSIGNED' ? '#166534' : Colors.secondary }]}>
+                            {item.status === 'ASSIGNED' ? 'ZİMMETLİ' : 'BOŞTA'}
+                        </Text>
+                    </View>
+                </View>
+
+                <View style={styles.divider} />
+
+                <View style={styles.cardBody}>
+                    <View style={styles.infoRow}>
+                        <Ionicons name="barcode-outline" size={16} color={Colors.secondary} />
+                        <Text style={styles.infoText}>{item.serial_number || 'Seri No Yok'}</Text>
+                    </View>
+
+                    {item.status === 'ASSIGNED' && assignedPerson && (
+                        <View style={styles.assignmentInfo}>
+                            <View style={styles.infoRow}>
+                                <Ionicons name="person-outline" size={16} color={Colors.iosBlue} />
+                                <Text style={[styles.infoText, { color: Colors.iosBlue, fontWeight: '600' }]}>
+                                    {assignedPerson.name}
+                                </Text>
+                            </View>
+                            <Text style={{ fontSize: 11, color: Colors.secondary, marginLeft: 24 }}>
+                                {new Date(item.assigned_date).toLocaleDateString()} tarihinde verildi
+                            </Text>
+                        </View>
+                    )}
+                </View>
+
+                <View style={styles.cardActions}>
+                    {item.status === 'AVAILABLE' ? (
+                        <TouchableOpacity style={[styles.actionBtn, styles.assignBtn]} onPress={() => openAssignModal(item)}>
+                            <Ionicons name="person-add-outline" size={16} color="#fff" />
+                            <Text style={styles.assignBtnText}>Zimmetle</Text>
+                        </TouchableOpacity>
+                    ) : (
+                        <TouchableOpacity style={[styles.actionBtn, styles.returnBtn]} onPress={() => handleReturn(item)}>
+                            <Ionicons name="arrow-undo-outline" size={16} color="#fff" />
+                            <Text style={styles.returnBtnText}>İade Al</Text>
+                        </TouchableOpacity>
+                    )}
+
+                    <TouchableOpacity style={[styles.iconBtn, { marginRight: 8 }]} onPress={() => handleEditAsset(item)}>
+                        <Ionicons name="create-outline" size={20} color={Colors.textPrimary} />
+                    </TouchableOpacity>
+
+                    <TouchableOpacity style={styles.iconBtn} onPress={() => handleDeleteAsset(item.id)}>
+                        <Ionicons name="trash-outline" size={20} color={Colors.error} />
+                    </TouchableOpacity>
+                </View>
+            </View>
+        );
     };
 
     return (

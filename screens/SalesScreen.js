@@ -222,7 +222,7 @@ export default function SalesScreen() {
       title="Satışlar"
       subtitle={activeTab === 'active' ? `Sevk Bekleyen (${filtered.length})` : `Tamamlanan (${filtered.length})`}
       right={rightButton}
-      noScrollView={true}
+      noScrollView={false}
     >
       {/* 1. Üst Alan: Analiz ve Sekmeler */}
       <View style={styles.headerContainer}>
@@ -306,6 +306,7 @@ export default function SalesScreen() {
         <FlatList
           data={visibleData}
           keyExtractor={(item) => item.id}
+          scrollEnabled={false} // İç içe scroll sorununu önlemek için
           contentContainerStyle={{ paddingBottom: 100, paddingHorizontal: 4 }}
           showsVerticalScrollIndicator={false}
           ListEmptyComponent={
@@ -415,14 +416,19 @@ export default function SalesScreen() {
               </View>
             );
           }}
-          onEndReached={loadMoreItems}
-          onEndReachedThreshold={0.5}
+          // Nested FlatList does not support onEndReached correctly.
+          // We provide a manual "Load More" button footer instead.
           ListFooterComponent={() => {
-            if (visibleData.length === filtered.length && filtered.length > pageSize) {
-              return <Text style={styles.footerText}>Tüm kayıtlar yüklendi</Text>;
+            const hasMore = visibleData.length < filtered.length;
+            if (hasMore) {
+              return (
+                <TouchableOpacity onPress={loadMoreItems} style={{ padding: 15, alignItems: 'center', backgroundColor: '#F0F9FF', borderRadius: 10, marginTop: 10 }}>
+                  <Text style={{ color: Colors.iosBlue, fontWeight: '700' }}>Daha Fazla Göster</Text>
+                </TouchableOpacity>
+              );
             }
-            if (visibleData.length < filtered.length) {
-              return <ActivityIndicator size="small" color={Colors.iosBlue} style={{ marginVertical: 20 }} />;
+            if (visibleData.length > 0 && !hasMore) {
+              return <Text style={styles.footerText}>Tüm kayıtlar yüklendi</Text>;
             }
             return <View style={{ height: 20 }} />;
           }}
