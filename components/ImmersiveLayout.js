@@ -128,7 +128,7 @@ export default function ImmersiveLayout(props) {
       {/* Ana İçerik Alanı */}
       {noScrollView ? (
         <View style={[styles.scrollContainerCompact, { flex: 1 }]}>
-          <View style={styles.innerContentCompact}>
+          <View style={[styles.innerContentCompact, { flex: 1 }]}>
             {children}
             <AdBanner />
           </View>

@@ -16,22 +16,19 @@ import ImmersiveLayout from "../components/ImmersiveLayout";
 import { Colors, IOSShadow } from "../Theme";
 import { AppContext } from "../AppContext";
 import KeyboardSafeView from "../components/KeyboardSafeView";
-
+import BarcodeScannerModal from "../components/BarcodeScannerModal";
 
 export default function AssetManagementScreen({ navigation }) {
     const { assets, addAsset, updateAsset, deleteAsset, assignAsset, unassignAsset, personnel, isPremium } = useContext(AppContext);
-
     const [activeTab, setActiveTab] = useState("all"); // all, available, assigned
     const [modalVisible, setModalVisible] = useState(false);
     const [assignModalVisible, setAssignModalVisible] = useState(false);
     const [selectedAsset, setSelectedAsset] = useState(null);
+    const [searchQuery, setSearchQuery] = useState("");
+    const [scannerVisible, setScannerVisible] = useState(false);
 
     // Form States
-    const [name, setName] = useState("");
-    const [model, setModel] = useState("");
-    const [serialNumber, setSerialNumber] = useState("");
 
-    // Filtered Assets
     const filteredAssets = useMemo(() => {
         let list = [...assets];
         if (activeTab === "available") {
@@ -39,11 +36,41 @@ export default function AssetManagementScreen({ navigation }) {
         } else if (activeTab === "assigned") {
             list = list.filter(a => a.status === 'ASSIGNED');
         }
+
+        if (searchQuery) {
+            const lowerQuery = searchQuery.toLowerCase();
+            list = list.filter(a => {
+                const assignedPersonName = a.assigned_person_id ? getPersonName(a.assigned_person_id) : "";
+                return (
+                    (a.name && a.name.toLowerCase().includes(lowerQuery)) ||
+                    (a.model && a.model.toLowerCase().includes(lowerQuery)) ||
+                    (a.serial_number && a.serial_number.toLowerCase().includes(lowerQuery)) ||
+                    (assignedPersonName && assignedPersonName.toLowerCase().includes(lowerQuery))
+                );
+            });
+        }
         return list;
-    }, [assets, activeTab]);
+    }, [assets, activeTab, searchQuery, personnel]); // personnel dependency ekledik çünkü isim araması var
 
     // Handlers
+    const handleScan = (data) => {
+        setSerialNumber(data);
+        setScannerVisible(false);
+    };
+
     const handleOpenAddModal = () => {
+        if (!isPremium && assets.length >= 3) {
+            Alert.alert(
+                "Premium Özellik",
+                "Ücretsiz planda en fazla 3 demirbaş ekleyebilirsiniz. Sınırsız ekleme için Premium'a geçin.",
+                [
+                    { text: "Vazgeç", style: "cancel" },
+                    { text: "Premium Al", onPress: () => navigation.navigate("Paywall") }
+                ]
+            );
+            return;
+        }
+
         setSelectedAsset(null);
         setName("");
         setModel("");
@@ -51,130 +78,27 @@ export default function AssetManagementScreen({ navigation }) {
         setModalVisible(true);
     };
 
-    const handleSaveAsset = async () => {
-        if (!name.trim()) {
-            Alert.alert("Hata", "Ürün adı zorunludur.");
-            return;
-        }
-
-        const assetData = {
-            name: name.trim(),
-            model: model.trim(),
-            serial_number: serialNumber.trim(),
-        };
-
-        if (selectedAsset) {
-            await updateAsset({ ...selectedAsset, ...assetData });
-        } else {
-            await addAsset(assetData);
-        }
-        setModalVisible(false);
-    };
-
-    const handleDelete = (id) => {
-        Alert.alert("Silme Onayı", "Bu ürünü envanterden silmek istediğinize emin misiniz?", [
-            { text: "Vazgeç", style: "cancel" },
-            { text: "Sil", style: "destructive", onPress: () => deleteAsset(id) }
-        ]);
-    };
-
-    const handleOpenAssignModal = (asset) => {
-        setSelectedAsset(asset);
-        setAssignModalVisible(true);
-    };
-
-    const handleAssign = async (personId) => {
-        if (selectedAsset) {
-            await assignAsset(selectedAsset.id, personId);
-            setAssignModalVisible(false);
-            setSelectedAsset(null);
-        }
-    };
-
-    const handleUnassign = (asset) => {
-        Alert.alert("İade Al", `${asset.name} ürününü zimmetten düşmek ve envantere geri almak istiyor musunuz?`, [
-            { text: "Vazgeç", style: "cancel" },
-            { text: "Evet, İade Al", onPress: () => unassignAsset(asset.id) }
-        ]);
-    };
-
-    const getPersonName = (id) => {
-        const person = personnel.find(p => p.id === id);
-        return person ? person.name : "Bilinmiyor";
-    };
-
-    const formatDate = (dateString) => {
-        if (!dateString) return "-";
-        return new Date(dateString).toLocaleDateString('tr-TR');
-    };
-
-    const renderAssetItem = ({ item }) => {
-        const isAssigned = item.status === 'ASSIGNED';
-
-        return (
-            <View style={styles.card}>
-                <View style={styles.cardHeader}>
-                    <View style={{ flex: 1 }}>
-                        <Text style={styles.assetName}>{item.name}</Text>
-                        <Text style={styles.assetModel}>{item.model || "Model Belirtilmedi"}</Text>
-                    </View>
-                    <View style={[styles.statusBadge, { backgroundColor: isAssigned ? '#FEF3C7' : '#D1FAE5' }]}>
-                        <Text style={[styles.statusText, { color: isAssigned ? '#D97706' : '#059669' }]}>
-                            {isAssigned ? "ZİMMETLİ" : "BOŞTA"}
-                        </Text>
-                    </View>
-                </View>
-
-                <View style={styles.divider} />
-
-                <View style={styles.cardBody}>
-                    <View style={styles.infoRow}>
-                        <Ionicons name="barcode-outline" size={16} color={Colors.secondary} />
-                        <Text style={styles.infoText}>Seri No: {item.serial_number || "-"}</Text>
-                    </View>
-
-                    {isAssigned && (
-                        <View style={styles.assignmentInfo}>
-                            <View style={styles.infoRow}>
-                                <Ionicons name="person" size={16} color={Colors.iosBlue} />
-                                <Text style={[styles.infoText, { color: Colors.iosBlue, fontWeight: '600' }]}>
-                                    {getPersonName(item.assigned_person_id)}
-                                </Text>
-                            </View>
-                            <View style={styles.infoRow}>
-                                <Ionicons name="calendar" size={16} color={Colors.secondary} />
-                                <Text style={styles.infoText}>
-                                    {formatDate(item.assigned_date)}
-                                </Text>
-                            </View>
-                        </View>
-                    )}
-                </View>
-
-                <View style={styles.cardActions}>
-                    {!isAssigned ? (
-                        <TouchableOpacity style={[styles.actionBtn, styles.assignBtn]} onPress={() => handleOpenAssignModal(item)}>
-                            <Ionicons name="person-add-outline" size={16} color="#fff" />
-                            <Text style={styles.assignBtnText}>Zimmetle</Text>
-                        </TouchableOpacity>
-                    ) : (
-                        <TouchableOpacity style={[styles.actionBtn, styles.returnBtn]} onPress={() => handleUnassign(item)}>
-                            <Ionicons name="return-down-back-outline" size={16} color="#fff" />
-                            <Text style={styles.returnBtnText}>İade Al</Text>
-                        </TouchableOpacity>
-                    )}
-
-                    <TouchableOpacity style={styles.iconBtn} onPress={() => handleDelete(item.id)}>
-                        <Ionicons name="trash-outline" size={18} color={Colors.critical} />
-                    </TouchableOpacity>
-                </View>
-            </View>
-        );
-    };
-
     return (
         <ImmersiveLayout title="Zimmet Yönetimi" subtitle={`${filteredAssets.length} kayıt`} onGoBack={() => navigation.goBack()}>
 
+            {/* ARAMA ÇUBUĞU */}
+            <View style={styles.searchContainer}>
+                <Ionicons name="search" size={20} color={Colors.secondary} style={styles.searchIcon} />
+                <TextInput
+                    style={styles.searchInput}
+                    placeholder="Ara (Ürün, Model, Personel, Seri No)..."
+                    value={searchQuery}
+                    onChangeText={setSearchQuery}
+                    placeholderTextColor={Colors.secondary}
+                />
+                {searchQuery.length > 0 && (
+                    <TouchableOpacity onPress={() => setSearchQuery("")}>
+                        <Ionicons name="close-circle" size={20} color={Colors.secondary} />
+                    </TouchableOpacity>
+                )}
+            </View>
+
+            {/* Tabs */}
             {/* Tabs */}
             <View style={styles.tabContainer}>
                 <TouchableOpacity style={[styles.tab, activeTab === 'all' && styles.activeTab]} onPress={() => setActiveTab('all')}>
@@ -223,7 +147,17 @@ export default function AssetManagementScreen({ navigation }) {
                             <TextInput style={styles.input} value={model} onChangeText={setModel} placeholder="Örn: A2338" />
 
                             <Text style={styles.label}>Seri Numarası</Text>
-                            <TextInput style={styles.input} value={serialNumber} onChangeText={setSerialNumber} placeholder="Örn: C02..." />
+                            <View style={styles.serialInputContainer}>
+                                <TextInput
+                                    style={[styles.input, { flex: 1, marginRight: 10 }]}
+                                    value={serialNumber}
+                                    onChangeText={setSerialNumber}
+                                    placeholder="Örn: C02..."
+                                />
+                                <TouchableOpacity style={styles.scanButton} onPress={() => setScannerVisible(true)}>
+                                    <Ionicons name="barcode-outline" size={24} color="#fff" />
+                                </TouchableOpacity>
+                            </View>
 
                             <TouchableOpacity style={styles.saveBtn} onPress={handleSaveAsset}>
                                 <Text style={styles.saveBtnText}>Kaydet</Text>
@@ -231,7 +165,9 @@ export default function AssetManagementScreen({ navigation }) {
                         </View>
                     </View>
                 </KeyboardSafeView>
-            </Modal>
+            </Modal >
+
+            <BarcodeScannerModal visible={scannerVisible} onClose={() => setScannerVisible(false)} onScanned={handleScan} />
 
             {/* Assign Modal */}
             <Modal visible={assignModalVisible} animationType="slide" transparent>
@@ -266,7 +202,7 @@ export default function AssetManagementScreen({ navigation }) {
             {/* REKLAM ALANI */}
 
 
-        </ImmersiveLayout>
+        </ImmersiveLayout >
     );
 }
 
@@ -512,5 +448,38 @@ const styles = StyleSheet.create({
         fontSize: 15,
         color: Colors.textPrimary,
         fontWeight: '500',
+    },
+    // New Styles
+    searchContainer: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        backgroundColor: '#fff',
+        borderRadius: 12,
+        paddingHorizontal: 12,
+        marginBottom: 16,
+        marginHorizontal: 16,
+        height: 48,
+        ...IOSShadow,
+    },
+    searchIcon: {
+        marginRight: 10,
+    },
+    searchInput: {
+        flex: 1,
+        fontSize: 15,
+        color: Colors.textPrimary,
+        height: '100%',
+    },
+    serialInputContainer: {
+        flexDirection: 'row',
+        alignItems: 'center',
+    },
+    scanButton: {
+        backgroundColor: Colors.secondary,
+        width: 44,
+        height: 44,
+        borderRadius: 10,
+        alignItems: 'center',
+        justifyContent: 'center',
     },
 });

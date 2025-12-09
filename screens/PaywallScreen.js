@@ -79,7 +79,7 @@ export default function PaywallScreen({ navigation }) {
                 <View style={styles.header}>
                     <Ionicons name="leaf-outline" size={60} color={Colors.iosBlue} />
                     <Text style={styles.title}>PLANTİM Premium</Text>
-                    <Text style={styles.subtitle}>Sadece 150 TL/Ay ile sınırları kaldırın.</Text>
+                    <Text style={styles.subtitle}>Sadece 250 TL/Ay ile sınırları kaldırın.</Text>
                 </View>
 
                 <View style={styles.featuresList}>

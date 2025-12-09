@@ -69,18 +69,19 @@ export default function OnboardingScreen({ navigation }) {
     };
 
     const skip = () => {
-        const lastSlideIndex = SLIDES.length - 1;
-        const offset = lastSlideIndex * width;
-        flatListRef?.current?.scrollToOffset({ offset });
-        setCurrentSlideIndex(lastSlideIndex);
+        finishOnboarding();
     };
 
     const finishOnboarding = async () => {
         try {
             await AsyncStorage.setItem('alreadyLaunched', 'true');
-            navigation.replace('Login');
         } catch (error) {
             console.log('Error @setItem: ', error);
+        } finally {
+            navigation.reset({
+                index: 0,
+                routes: [{ name: 'Login' }],
+            });
         }
     };
 
@@ -106,9 +107,11 @@ export default function OnboardingScreen({ navigation }) {
                 {/* Buttons */}
                 <View style={styles.btnContainer}>
                     {currentSlideIndex === SLIDES.length - 1 ? (
-                        <TouchableOpacity style={styles.btn} onPress={finishOnboarding}>
-                            <Text style={styles.btnText}>Başla</Text>
-                        </TouchableOpacity>
+                        <View style={{ flexDirection: 'row' }}>
+                            <TouchableOpacity style={styles.btn} onPress={finishOnboarding}>
+                                <Text style={styles.btnText}>Başla</Text>
+                            </TouchableOpacity>
+                        </View>
                     ) : (
                         <View style={{ flexDirection: 'row' }}>
                             <TouchableOpacity

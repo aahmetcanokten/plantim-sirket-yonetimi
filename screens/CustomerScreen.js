@@ -104,7 +104,7 @@ const CustomerListItem = ({ item, onEdit, onDelete, orderCount }) => (
         <View style={customerListStyles.infoRow}>
             {/* TELEFON / ARA BUTONU */}
             <TouchableOpacity
-                style={[customerListStyles.infoItem, { backgroundColor: '#F0F9FF', padding: 8, borderRadius: 8, marginRight: 12, flex: 0, minWidth: 130, borderWidth: 1, borderColor: '#BAE6FD' }]}
+                style={[customerListStyles.infoItem, { backgroundColor: '#F0F9FF', padding: 8, borderRadius: 8, marginRight: 12, flex: 0, minWidth: 155, borderWidth: 1, borderColor: '#BAE6FD' }]}
                 onPress={() => {
                     if (item.phone) {
                         Linking.openURL(`tel:${item.phone}`);
@@ -114,7 +114,7 @@ const CustomerListItem = ({ item, onEdit, onDelete, orderCount }) => (
                 }}
             >
                 <Ionicons name="call" size={16} color={Colors.iosBlue} />
-                <Text style={[customerListStyles.infoText, { color: Colors.iosBlue, fontWeight: '700', flex: 1, fontSize: 11 }]}>{item.phone || "-"}</Text>
+                <Text numberOfLines={1} style={[customerListStyles.infoText, { color: Colors.iosBlue, fontWeight: '700', flex: 1, fontSize: 10 }]}>{item.phone || "-"}</Text>
                 {item.phone && <Ionicons name="chevron-forward" size={14} color={Colors.iosBlue} style={{ marginLeft: 4 }} />}
             </TouchableOpacity>
 

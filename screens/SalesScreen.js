@@ -22,6 +22,7 @@ import { Ionicons } from "@expo/vector-icons";
 import InvoiceModal from "../components/InvoiceModal";
 import { triggerHaptic, HapticType, requestStoreReview } from "../utils/FeedbackHelper";
 import { SkeletonProductItem } from "../components/Skeleton";
+import CompositeSaleModal from "../components/CompositeSaleModal";
 
 
 export default function SalesScreen() {
@@ -119,7 +120,46 @@ export default function SalesScreen() {
     );
   };
 
-  // YENİ İŞLEV: Satışı Sevk Edildi Olarak İşaretleme
+  // YENİ INVOICEMODAL İÇE AKTARILDI
+  const [compositeModalVisible, setCompositeModalVisible] = useState(false);
+
+  // Satış Ekleme Menüsü
+  const handleNewSalePress = () => {
+    Alert.alert(
+      "Yeni Satış",
+      "Lütfen satış türünü seçin:",
+      [
+        {
+          text: "Standart Ürün",
+          onPress: () => navigation.navigate("Stock"),
+          style: "default"
+        },
+        {
+          text: "Montajlı/Kompozit Ürün",
+          onPress: () => {
+            if (!isPremium && sales.length >= 20) {
+              Alert.alert(
+                "Limit Aşıldı",
+                "Ücretsiz planda maksimum 20 satış yapabilirsiniz. Sınırsız satış için Premium'a geçin.",
+                [
+                  { text: "Vazgeç", style: "cancel" },
+                  { text: "Premium Al", onPress: () => navigation.navigate("Paywall") }
+                ]
+              );
+              return;
+            }
+            setCompositeModalVisible(true);
+          },
+          style: "default"
+        },
+        {
+          text: "İptal",
+          style: "cancel"
+        }
+      ]
+    );
+  };
+
   const markAsShipped = (sale) => {
     triggerHaptic(HapticType.IMPACT_LIGHT);
     Alert.alert(
@@ -186,6 +226,18 @@ export default function SalesScreen() {
     >
       {/* 1. Üst Alan: Analiz ve Sekmeler */}
       <View style={styles.headerContainer}>
+        {/* YENİ SATIŞ BUTONU */}
+        <TouchableOpacity
+          style={styles.newSaleButton}
+          onPress={handleNewSalePress}
+          activeOpacity={0.8}
+        >
+          <View style={styles.newSaleIconWrapper}>
+            <Ionicons name="add" size={24} color="#fff" />
+          </View>
+          <Text style={styles.newSaleButtonText}>Yeni Satış Oluştur</Text>
+        </TouchableOpacity>
+
         <TouchableOpacity
           style={styles.analyzeButton}
           onPress={() => navigation.navigate("Analytics")}
@@ -390,6 +442,16 @@ export default function SalesScreen() {
         onGenerate={editingSale?.invoiceNumber ? null : () => { /* generateInvoiceNumber logic here */ }}
       />
 
+      {/* Composite Sale Modal */}
+      <CompositeSaleModal
+        visible={compositeModalVisible}
+        onClose={() => setCompositeModalVisible(false)}
+        onComplete={() => {
+          triggerHaptic(HapticType.SUCCESS);
+          // Liste otomatik güncellenir çünkü AppContext sales değişti
+        }}
+      />
+
       {/* REKLAM ALANI */}
 
     </ImmersiveLayout>
@@ -436,6 +498,30 @@ const styles = StyleSheet.create({
     fontWeight: "600",
     fontSize: 14,
   },
+  // --- Yeni Satış Butonu ---
+  newSaleButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: Colors.iosGreen, // Yeşil veya dikkat çekici bir renk
+    paddingVertical: 14,
+    borderRadius: 12,
+    marginBottom: 12,
+    shadowColor: Colors.iosGreen,
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.3,
+    shadowRadius: 6,
+    elevation: 4,
+  },
+  newSaleIconWrapper: {
+    marginRight: 8,
+  },
+  newSaleButtonText: {
+    color: '#fff',
+    fontWeight: '700',
+    fontSize: 16,
+  },
+
   tabContainer: {
     flexDirection: 'row',
     backgroundColor: '#E5E5EA', // iOS Segmented Control arka planı

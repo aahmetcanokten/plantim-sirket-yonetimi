@@ -34,6 +34,7 @@ export default function StockScreen({ navigation }) {
     addSale,
     generateInvoiceNumber,
     isPremium,
+    sales,
     appDataLoading,
   } = useContext(AppContext);
   const toast = useToast();
@@ -52,6 +53,18 @@ export default function StockScreen({ navigation }) {
   const [scannerVisible, setScannerVisible] = useState(false);
 
   const openCustomerSelection = (product) => {
+    if (!isPremium && sales.length >= 20) {
+      Alert.alert(
+        "Limit Aşıldı",
+        "Ücretsiz planda maksimum 20 satış yapabilirsiniz. Sınırsız satış için Premium'a geçin.",
+        [
+          { text: "Vazgeç", style: "cancel" },
+          { text: "Premium Al", onPress: () => navigation.navigate("Paywall") }
+        ]
+      );
+      return;
+    }
+
     setSelectedProduct(product);
     setSaleQuantity("1");
     setSalePrice(product.price ? String(product.price) : "");
@@ -180,8 +193,8 @@ export default function StockScreen({ navigation }) {
   const navigateToDetailedStock = () => { if (navigation && navigation.navigate) { navigation.navigate('DetailedStockScreen'); } };
   const navigateToAddProduct = () => { if (navigation && navigation.navigate) { navigation.navigate('AddProductScreen'); } };
 
-  return (
-    <ImmersiveLayout title="Stok" subtitle={`${products.length} ürün`} noScrollView={true}>
+  const renderHeader = () => (
+    <View>
       <TouchableOpacity style={styles.addButton} onPress={navigateToAddProduct} activeOpacity={0.8}>
         <Ionicons name={"add-circle-outline"} size={24} color="#fff" />
         <Text style={styles.addButtonText}>Yeni Ürün Ekle</Text>
@@ -212,18 +225,24 @@ export default function StockScreen({ navigation }) {
       </View>
 
       <Text style={styles.listTitle}>Stok Listesi ({filteredAndSortedProducts.length})</Text>
+    </View>
+  );
 
+  return (
+    <ImmersiveLayout title="Stok" subtitle={`${products.length} ürün`} noScrollView={true}>
       {appDataLoading ? (
-        <View style={styles.flatListContent}>
+        <ScrollView contentContainerStyle={styles.flatListContent}>
+          {renderHeader()}
           {[1, 2, 3, 4, 5].map((key) => (
             <SkeletonProductItem key={key} />
           ))}
-        </View>
+        </ScrollView>
       ) : (
         <FlatList
           data={filteredAndSortedProducts}
           keyExtractor={(i) => i.id}
           renderItem={renderProductItem}
+          ListHeaderComponent={renderHeader}
           contentContainerStyle={styles.flatListContent}
           initialNumToRender={10}
           ListEmptyComponent={<Text style={styles.emptyListText}>Stokta ürün bulunamadı.</Text>}

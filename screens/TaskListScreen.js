@@ -23,7 +23,8 @@ import { AppContext } from "../AppContext";
 export default function TaskListScreen({ navigation }) {
   const { personnel, updatePersonnel, isPremium } = useContext(AppContext);
   const [activeTab, setActiveTab] = useState("open");
-  const [filterPersonId, setFilterPersonId] = useState("ALL");
+  const [searchQuery, setSearchQuery] = useState("");
+  const [sortOrder, setSortOrder] = useState("asc"); // 'asc' or 'desc'
   const [dateFilter, setDateFilter] = useState("ALL");
   const [taskModalVisible, setTaskModalVisible] = useState(false);
   const [editingTask, setEditingTask] = useState(null);
@@ -56,9 +57,13 @@ export default function TaskListScreen({ navigation }) {
   }, [personnel]);
 
   const tasksFilteredByPerson = useMemo(() => {
-    if (filterPersonId === "ALL") return allFlatTasks;
-    return allFlatTasks.filter((t) => t.personId === filterPersonId);
-  }, [allFlatTasks, filterPersonId]);
+    if (!searchQuery) return allFlatTasks;
+    const lowerQ = searchQuery.toLowerCase();
+    return allFlatTasks.filter((t) =>
+      t.personName.toLowerCase().includes(lowerQ) ||
+      t.title.toLowerCase().includes(lowerQ)
+    );
+  }, [allFlatTasks, searchQuery]);
 
   const stats = useMemo(() => {
     const total = tasksFilteredByPerson.length;
@@ -66,8 +71,7 @@ export default function TaskListScreen({ navigation }) {
     const open = tasksFilteredByPerson.filter((t) => !t.isCompleted).length;
     let overdue = 0;
     tasksFilteredByPerson.forEach(t => { if (!t.isCompleted && isOverdue(t.dueDate)) overdue++; });
-    const completionRate = total === 0 ? 0 : Math.round((completed / total) * 100);
-    return { total, completed, open, overdue, completionRate };
+    return { total, completed, open, overdue };
   }, [tasksFilteredByPerson]);
 
   const tasksToShow = useMemo(() => {
@@ -102,9 +106,11 @@ export default function TaskListScreen({ navigation }) {
     return list.sort((a, b) => {
       const dateA = a.dueDate ? a.dueDate.split('.').reverse().join('') : '99999999';
       const dateB = b.dueDate ? b.dueDate.split('.').reverse().join('') : '99999999';
-      return dateA.localeCompare(dateB);
+      return sortOrder === 'asc'
+        ? dateA.localeCompare(dateB)
+        : dateB.localeCompare(dateA);
     });
-  }, [tasksFilteredByPerson, activeTab, dateFilter]);
+  }, [tasksFilteredByPerson, activeTab, dateFilter, sortOrder]);
 
   function isOverdue(dueDateStr) {
     if (!dueDateStr) return false;
@@ -135,7 +141,7 @@ export default function TaskListScreen({ navigation }) {
         title: "",
         description: "",
         dueDate: "",
-        assignedPersonId: filterPersonId !== "ALL" ? filterPersonId : null,
+        assignedPersonId: null,
       });
     }
     setTaskModalVisible(true);
@@ -246,23 +252,31 @@ export default function TaskListScreen({ navigation }) {
 
   // --- Render Components ---
 
-  const renderFilterBar = () => (
-    <View style={styles.filterBarContainer}>
-      <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ paddingHorizontal: 16, paddingBottom: 12 }}>
-        <TouchableOpacity style={[styles.filterChip, filterPersonId === "ALL" && styles.filterChipActive]} onPress={() => setFilterPersonId("ALL")}>
-          <Text style={[styles.filterChipText, filterPersonId === "ALL" && styles.filterChipTextActive]}>Tümü</Text>
-        </TouchableOpacity>
-        {personnel.map((p) => (
-          <TouchableOpacity key={p.id} style={[styles.filterChip, filterPersonId === p.id && styles.filterChipActive]} onPress={() => setFilterPersonId(p.id)}>
-            <View style={[styles.filterAvatar, filterPersonId === p.id && { backgroundColor: '#fff' }]}>
-              <Text style={[styles.filterAvatarText, filterPersonId === p.id && { color: Colors.primary }]}>
-                {p.name.charAt(0).toUpperCase()}
-              </Text>
-            </View>
-            <Text style={[styles.filterChipText, filterPersonId === p.id && styles.filterChipTextActive]}>{p.name.split(" ")[0]}</Text>
+  const renderSearchAndSort = () => (
+    <View style={styles.searchSortContainer}>
+      <View style={styles.searchInputWrapper}>
+        <Ionicons name="search-outline" size={18} color={Colors.secondary} style={{ marginRight: 8 }} />
+        <TextInput
+          style={styles.searchInput}
+          placeholder="Personel veya görev ara..."
+          value={searchQuery}
+          onChangeText={setSearchQuery}
+          placeholderTextColor={Colors.secondary}
+        />
+        {searchQuery.length > 0 && (
+          <TouchableOpacity onPress={() => setSearchQuery("")}>
+            <Ionicons name="close-circle" size={18} color={Colors.secondary} />
           </TouchableOpacity>
-        ))}
-      </ScrollView>
+        )}
+      </View>
+
+      <TouchableOpacity
+        style={styles.sortButton}
+        onPress={() => setSortOrder(prev => prev === 'asc' ? 'desc' : 'asc')}
+      >
+        <Ionicons name={sortOrder === 'asc' ? "arrow-up" : "arrow-down"} size={16} color={Colors.textPrimary} />
+        <Text style={styles.sortButtonText}>Tarih</Text>
+      </TouchableOpacity>
     </View>
   );
 
@@ -347,7 +361,7 @@ export default function TaskListScreen({ navigation }) {
   return (
     <ImmersiveLayout title="Görev Yönetimi" subtitle="Ekip performansı ve takibi" onGoBack={() => navigation.goBack()}>
       <View style={styles.container}>
-        {renderFilterBar()}
+        {renderSearchAndSort()}
 
         <View style={styles.statsRow}>
           <View style={styles.statItem}>
@@ -359,7 +373,9 @@ export default function TaskListScreen({ navigation }) {
               <Text style={styles.statLabel}>Açık</Text>
             </View>
           </View>
+
           <View style={styles.statDivider} />
+
           <View style={styles.statItem}>
             <View style={[styles.statIconContainer, { backgroundColor: '#FEE2E2' }]}>
               <Ionicons name="time-outline" size={20} color={Colors.critical} />
@@ -367,16 +383,6 @@ export default function TaskListScreen({ navigation }) {
             <View>
               <Text style={[styles.statValue, { color: Colors.critical }]}>{stats.overdue}</Text>
               <Text style={styles.statLabel}>Geciken</Text>
-            </View>
-          </View>
-          <View style={styles.statDivider} />
-          <View style={styles.statItem}>
-            <View style={[styles.statIconContainer, { backgroundColor: '#DCFCE7' }]}>
-              <Ionicons name="checkmark-done-outline" size={20} color={Colors.success} />
-            </View>
-            <View>
-              <Text style={[styles.statValue, { color: Colors.success }]}>%{stats.completionRate}</Text>
-              <Text style={styles.statLabel}>Başarı</Text>
             </View>
           </View>
         </View>
@@ -476,33 +482,31 @@ export default function TaskListScreen({ navigation }) {
             </View>
           </KeyboardAvoidingView>
         </Modal>
-      </View>
+      </View >
 
       {/* REKLAM ALANI */}
 
-    </ImmersiveLayout>
+    </ImmersiveLayout >
   );
 }
 
 const styles = StyleSheet.create({
   container: { flex: 1, paddingTop: 16 },
 
-  // Filter Bar
-  filterBarContainer: { marginBottom: 16 },
-  filterChip: { flexDirection: 'row', alignItems: 'center', paddingHorizontal: 12, paddingVertical: 8, backgroundColor: "#fff", borderRadius: 24, marginRight: 8, borderWidth: 1, borderColor: "#E5E7EB", shadowColor: "#000", shadowOffset: { width: 0, height: 1 }, shadowOpacity: 0.05, shadowRadius: 2, elevation: 1 },
-  filterChipActive: { backgroundColor: Colors.primary, borderColor: Colors.primary },
-  filterChipText: { color: "#4B5563", fontWeight: "600", fontSize: 13 },
-  filterChipTextActive: { color: "#fff" },
-  filterAvatar: { width: 24, height: 24, borderRadius: 12, backgroundColor: '#F3F4F6', alignItems: 'center', justifyContent: 'center', marginRight: 8 },
-  filterAvatarText: { fontSize: 12, fontWeight: '700', color: '#6B7280' },
+  // Filter & Search
+  searchSortContainer: { flexDirection: 'row', paddingHorizontal: 16, marginBottom: 16, gap: 10 },
+  searchInputWrapper: { flex: 1, flexDirection: 'row', alignItems: 'center', backgroundColor: '#fff', borderRadius: 12, paddingHorizontal: 12, height: 44, borderWidth: 1, borderColor: '#E5E7EB' },
+  searchInput: { flex: 1, height: '100%', fontSize: 14, color: Colors.textPrimary },
+  sortButton: { flexDirection: 'row', alignItems: 'center', backgroundColor: '#fff', paddingHorizontal: 16, borderRadius: 12, height: 44, borderWidth: 1, borderColor: '#E5E7EB', gap: 6 },
+  sortButtonText: { fontSize: 13, fontWeight: '600', color: Colors.textPrimary },
 
   // Stats Row
-  statsRow: { flexDirection: "row", backgroundColor: "#fff", marginHorizontal: 16, marginBottom: 20, borderRadius: 16, padding: 16, shadowColor: "#000", shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.05, shadowRadius: 8, elevation: 2, justifyContent: 'space-between', alignItems: 'center' },
-  statItem: { flexDirection: 'row', alignItems: 'center', flex: 1, justifyContent: 'center' },
-  statIconContainer: { width: 36, height: 36, borderRadius: 18, alignItems: 'center', justifyContent: 'center', marginRight: 10 },
-  statValue: { fontSize: 18, fontWeight: "800", color: "#1F2937" },
-  statLabel: { fontSize: 11, color: "#6B7280", fontWeight: "500" },
-  statDivider: { width: 1, height: 30, backgroundColor: '#F3F4F6' },
+  statsRow: { flexDirection: "row", backgroundColor: "#fff", marginHorizontal: 16, marginBottom: 20, borderRadius: 16, padding: 16, shadowColor: "#000", shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.05, shadowRadius: 8, elevation: 2, justifyContent: 'space-around', alignItems: 'center' },
+  statItem: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', minWidth: 100 },
+  statIconContainer: { width: 40, height: 40, borderRadius: 20, alignItems: 'center', justifyContent: 'center', marginRight: 12 },
+  statValue: { fontSize: 20, fontWeight: "800", color: "#1F2937" },
+  statLabel: { fontSize: 12, color: "#6B7280", fontWeight: "600" },
+  statDivider: { width: 1, height: 40, backgroundColor: '#F3F4F6' },
 
   // Tabs
   tabContainer: { flexDirection: "row", backgroundColor: "#F3F4F6", marginHorizontal: 16, marginBottom: 16, borderRadius: 12, padding: 4 },
@@ -545,7 +549,8 @@ const styles = StyleSheet.create({
   emptyText: { color: "#9CA3AF", fontSize: 14, textAlign: 'center', maxWidth: 250 },
 
   // FAB
-  fab: { position: 'absolute', right: 20, bottom: 30, width: 56, height: 56, borderRadius: 28, backgroundColor: Colors.primary, alignItems: 'center', justifyContent: 'center', shadowColor: Colors.primary, shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.4, shadowRadius: 10, elevation: 6 },
+  // FAB
+  fab: { position: 'absolute', right: 20, bottom: 30, width: 56, height: 56, borderRadius: 28, backgroundColor: Colors.iosBlue || "#007AFF", alignItems: 'center', justifyContent: 'center', shadowColor: "#000", shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.3, shadowRadius: 8, elevation: 6 },
 
   // Modal
   modalContainer: { flex: 1, justifyContent: "flex-end", backgroundColor: "rgba(0,0,0,0.5)" },

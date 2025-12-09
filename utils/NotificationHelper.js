@@ -42,25 +42,45 @@ export async function registerForPushNotificationsAsync() {
 export async function scheduleShipmentNotification(productName, shipmentDateISO) {
     try {
         const shipmentDate = new Date(shipmentDateISO);
+
+        // Saat ayarı: Bildirimlerin sabah 09:00'da gelmesi daha kullanıcı dostu olabilir
+        // Eğer shipmentDateISO'da saat bilgisi varsa onu koruruz, yoksa veya 00:00 ise sabah 9 yaparız.
+        // Ancak basitlik adına, verilen saati baz alıyoruz.
+
         const now = new Date();
 
-        if (shipmentDate <= now) return;
+        // 1. TAM GÜNÜNDE BİLDİRİM
+        if (shipmentDate > now) {
+            await Notifications.scheduleNotificationAsync({
+                content: {
+                    title: "Sevkiyat Günü Geldi! 🚛",
+                    body: `${productName} için bugün sevkiyat günü.`,
+                    sound: true,
+                    data: { productName, shipmentDate: shipmentDateISO },
+                },
+                trigger: { date: shipmentDate },
+            });
+            console.log(`Bildirim kuruldu (Gün): ${productName} - ${shipmentDate}`);
+        }
 
-        const trigger = {
-            date: shipmentDate,
-        };
+        // 2. İKİ GÜN ÖNCE BİLDİRİM
+        const twoDaysBefore = new Date(shipmentDate);
+        twoDaysBefore.setDate(shipmentDate.getDate() - 2);
 
-        await Notifications.scheduleNotificationAsync({
-            content: {
-                title: "Sevkiyat Zamanı! 🚚",
-                body: `${productName} ürününün sevkiyat tarihi geldi.`,
-                sound: true,
-                data: { productName, shipmentDate: shipmentDateISO },
-            },
-            trigger,
-        });
+        // Eğer 2 gün öncesi şu andan ilerideyse kur
+        if (twoDaysBefore > now) {
+            await Notifications.scheduleNotificationAsync({
+                content: {
+                    title: "Sevkiyat Yaklaşıyor ⏳",
+                    body: `${productName} ürününün sevkiyatına 2 gün kaldı.`,
+                    sound: true,
+                    data: { productName, shipmentDate: shipmentDateISO },
+                },
+                trigger: { date: twoDaysBefore },
+            });
+            console.log(`Bildirim kuruldu (2 Gün Önce): ${productName} - ${twoDaysBefore}`);
+        }
 
-        console.log(`Bildirim kuruldu: ${productName} - ${shipmentDate}`);
     } catch (error) {
         console.log("Bildirim kurulamadı:", error);
     }

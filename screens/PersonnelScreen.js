@@ -57,7 +57,17 @@ export default function PersonnelScreen({ navigation }) {
   // const checkAdmin = () => { ... };
 
   const openAddPerson = () => {
-    // Admin kontrolü kaldırıldı
+    if (!isPremium && personnel.length >= 2) {
+      Alert.alert(
+        "Premium Özellik",
+        "Ücretsiz planda en fazla 2 personel ekleyebilirsiniz. Sınırsız ekleme için Premium'a geçin.",
+        [
+          { text: "Vazgeç", style: "cancel" },
+          { text: "Premium Al", onPress: () => navigation.navigate("Paywall") }
+        ]
+      );
+      return;
+    }
     setFormPerson({ id: null, name: "", role: "", phone: "", hireDate: "", annualLeaveEntitlement: "", tasks: [] });
     setPersonnelModalVisible(true);
   };
