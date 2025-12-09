@@ -55,7 +55,8 @@
           "userTrackingPermission": "Bu izin, size daha uygun reklamlar sunabilmemiz için gereklidir."
         }
       ],
-      "expo-font"
+      "expo-font",
+      "expo-secure-store"
     ],
     "extra": {
       "eas": {
