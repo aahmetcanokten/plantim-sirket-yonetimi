@@ -36,6 +36,11 @@ export default function CompositeSaleModal({ visible, onClose, onComplete }) {
     const [selectedCustomer, setSelectedCustomer] = useState(null);
     const [shipmentDate, setShipmentDate] = useState(new Date());
 
+    // YENİ: Miktar Giriş Modalı için State
+    const [qtyModalVisible, setQtyModalVisible] = useState(false);
+    const [qtyTargetItem, setQtyTargetItem] = useState(null); // { product, currentQty }
+    const [qtyInputValue, setQtyInputValue] = useState("");
+
     // Reset state when modal opens
     useEffect(() => {
         if (visible) {
@@ -46,6 +51,9 @@ export default function CompositeSaleModal({ visible, onClose, onComplete }) {
             setSalePrice("");
             setSelectedCustomer(null);
             setShipmentDate(new Date());
+            setQtyModalVisible(false);
+            setQtyTargetItem(null);
+            setQtyInputValue("");
         }
     }, [visible]);
 
@@ -79,6 +87,48 @@ export default function CompositeSaleModal({ visible, onClose, onComplete }) {
 
             return { ...prev, [product.id]: newQty };
         });
+    };
+
+    // YENİ: Manuel Miktar Güncelleme
+    const handleManualQtyUpdate = () => {
+        if (!qtyTargetItem) return;
+        const val = parseInt(qtyInputValue, 10);
+
+        if (isNaN(val) || val <= 0) {
+            // 0 veya geçersizse silmek mi istiyor? Yoksa hata mı?
+            // Şimdilik 0 ise sil, geçersiz ise uyarı ver.
+            if (val === 0) {
+                setSelectedItems(prev => {
+                    const { [qtyTargetItem.product.id]: _, ...rest } = prev;
+                    return rest;
+                });
+                closeQtyModal();
+                return;
+            }
+            Alert.alert("Hata", "Lütfen geçerli bir miktar girin.");
+            return;
+        }
+
+        const product = qtyTargetItem.product;
+        if (val > product.quantity) {
+            Alert.alert("Stok Yetersiz", `${product.name} için maksimum stok: ${product.quantity}`);
+            return;
+        }
+
+        setSelectedItems(prev => ({ ...prev, [product.id]: val }));
+        closeQtyModal();
+    };
+
+    const openQtyModal = (product, currentQty) => {
+        setQtyTargetItem({ product, currentQty });
+        setQtyInputValue(String(currentQty));
+        setQtyModalVisible(true);
+    };
+
+    const closeQtyModal = () => {
+        setQtyModalVisible(false);
+        setQtyTargetItem(null);
+        setQtyInputValue("");
     };
 
     const getSelectedItemCount = () => Object.keys(selectedItems).length;
@@ -184,7 +234,11 @@ export default function CompositeSaleModal({ visible, onClose, onComplete }) {
                             <TouchableOpacity onPress={() => toggleItemSelection(item, -1)} style={styles.qtyBtn}>
                                 <Ionicons name="remove" size={18} color={Colors.iosBlue} />
                             </TouchableOpacity>
-                            <Text style={styles.qtyText}>{selectedQty}</Text>
+
+                            {/* Miktara tıklayınca manuel giriş aç */}
+                            <TouchableOpacity onPress={() => openQtyModal(item, selectedQty)}>
+                                <Text style={styles.qtyText}>{selectedQty}</Text>
+                            </TouchableOpacity>
                         </>
                     )}
                     <TouchableOpacity onPress={() => toggleItemSelection(item, 1)} style={[styles.qtyBtn, { backgroundColor: Colors.iosBlue }]}>
@@ -258,7 +312,7 @@ export default function CompositeSaleModal({ visible, onClose, onComplete }) {
                                     <Text style={styles.summaryNote}>{getSelectedItemCount()} bileşen stoktan düşülecek.</Text>
                                 </View>
 
-                                <Text style={styles.label}>Oluşturulacak Ürün Adı</Text>
+                                <Text style={styles.label}>Sipariş Numarası veya Satılacak Ürün Adı</Text>
                                 <TextInput
                                     style={styles.input}
                                     placeholder="Örn: Özel Montaj Masa"
@@ -294,7 +348,7 @@ export default function CompositeSaleModal({ visible, onClose, onComplete }) {
                                 </View>
 
                                 <TouchableOpacity style={styles.completeBtn} onPress={handleComplete}>
-                                    <Text style={styles.completeBtnText}>Satışı Tamamla</Text>
+                                    <Text style={styles.completeBtnText}>Satış Siparişi Oluştur</Text>
                                 </TouchableOpacity>
 
                             </ScrollView>
@@ -305,11 +359,128 @@ export default function CompositeSaleModal({ visible, onClose, onComplete }) {
                     <View style={{ height: Platform.OS === 'ios' ? 34 : 0, backgroundColor: '#fff' }} />
                 </View>
             </KeyboardSafeView>
+
+
+            {/* Helper Modal for Quantity Entry */}
+            <QuantityInputModal
+                visible={qtyModalVisible}
+                value={qtyInputValue}
+                onChangeText={setQtyInputValue}
+                onClose={closeQtyModal}
+                onSave={handleManualQtyUpdate}
+                productName={qtyTargetItem?.product?.name}
+            />
+        </Modal >
+    );
+}
+
+// YENİ: Basit Miktar Giriş Modalı
+function QuantityInputModal({ visible, value, onChangeText, onClose, onSave, productName }) {
+    return (
+        <Modal visible={visible} transparent animationType="fade" onRequestClose={onClose}>
+            <View style={styles.qtyModalOverlay}>
+                <View style={styles.qtyModalContent}>
+                    <Text style={styles.qtyModalTitle}>{productName}</Text>
+                    <Text style={styles.qtyModalSub}>Miktar Giriniz:</Text>
+
+                    <TextInput
+                        style={styles.qtyInput}
+                        value={value}
+                        onChangeText={onChangeText}
+                        keyboardType="number-pad"
+                        autoFocus
+                        selectTextOnFocus
+                    />
+
+                    <View style={styles.qtyModalActions}>
+                        <TouchableOpacity style={styles.qtyCancelBtn} onPress={onClose}>
+                            <Text style={styles.qtyCancelText}>İptal</Text>
+                        </TouchableOpacity>
+                        <TouchableOpacity style={styles.qtySaveBtn} onPress={onSave}>
+                            <Text style={styles.qtySaveText}>Tamam</Text>
+                        </TouchableOpacity>
+                    </View>
+                </View>
+            </View>
         </Modal>
     );
 }
 
 const styles = StyleSheet.create({
+    qtyModalOverlay: {
+        flex: 1,
+        backgroundColor: "rgba(0,0,0,0.5)",
+        justifyContent: "center",
+        alignItems: "center",
+        padding: 20
+    },
+    qtyModalContent: {
+        backgroundColor: "#fff",
+        borderRadius: 16,
+        padding: 20,
+        width: "80%",
+        alignItems: "center",
+        shadowColor: "#000",
+        shadowOffset: { width: 0, height: 4 },
+        shadowOpacity: 0.2,
+        shadowRadius: 8,
+        elevation: 5
+    },
+    qtyModalTitle: {
+        fontSize: 16,
+        fontWeight: "700",
+        color: Colors.textPrimary,
+        marginBottom: 5,
+        textAlign: 'center'
+    },
+    qtyModalSub: {
+        fontSize: 14,
+        color: Colors.secondary,
+        marginBottom: 15
+    },
+    qtyInput: {
+        width: '100%',
+        borderWidth: 1,
+        borderColor: Colors.iosBlue,
+        borderRadius: 10,
+        padding: 12,
+        fontSize: 24,
+        textAlign: 'center',
+        fontWeight: 'bold',
+        color: Colors.textPrimary,
+        marginBottom: 20,
+        backgroundColor: '#F0F9FF'
+    },
+    qtyModalActions: {
+        flexDirection: 'row',
+        width: '100%',
+        justifyContent: 'space-between'
+    },
+    qtyCancelBtn: {
+        flex: 1,
+        padding: 12,
+        marginRight: 10,
+        alignItems: 'center',
+        borderRadius: 10,
+        backgroundColor: '#F2F4F8'
+    },
+    qtyCancelText: {
+        color: Colors.textPrimary,
+        fontWeight: "600"
+    },
+    qtySaveBtn: {
+        flex: 1,
+        padding: 12,
+        marginLeft: 10,
+        alignItems: 'center',
+        borderRadius: 10,
+        backgroundColor: Colors.iosBlue
+    },
+    qtySaveText: {
+        color: "#fff",
+        fontWeight: "600"
+    },
+
     overlay: {
         flex: 1,
         backgroundColor: "rgba(0,0,0,0.5)",

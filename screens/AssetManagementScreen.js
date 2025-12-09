@@ -200,7 +200,7 @@ export default function AssetManagementScreen({ navigation }) {
                         </TouchableOpacity>
                     ) : (
                         <TouchableOpacity style={[styles.actionBtn, styles.returnBtn]} onPress={() => handleReturn(item)}>
-                            <Ionicons name="arrow-undo-outline" size={16} color="#fff" />
+                            <Ionicons name="arrow-undo-outline" size={16} color="#000" />
                             <Text style={styles.returnBtnText}>İade Al</Text>
                         </TouchableOpacity>
                     )}
@@ -462,7 +462,7 @@ const styles = StyleSheet.create({
         backgroundColor: Colors.warning,
     },
     returnBtnText: {
-        color: '#fff',
+        color: '#000',
         fontWeight: '600',
         marginLeft: 6,
         fontSize: 13,

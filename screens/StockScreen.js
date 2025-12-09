@@ -219,8 +219,8 @@ export default function StockScreen({ navigation }) {
 
 
       <TouchableOpacity style={[styles.addButton, { backgroundColor: Colors.warning }]} onPress={handleAssemblyPress} activeOpacity={0.8}>
-        <Ionicons name="construct-outline" size={24} color="#fff" />
-        <Text style={styles.addButtonText}>Montaj / Üretim Yap</Text>
+        <Ionicons name="construct-outline" size={24} color="#000" />
+        <Text style={[styles.addButtonText, { color: '#000' }]}>Montaj / Üretim Yap</Text>
       </TouchableOpacity>
 
       <TouchableOpacity style={styles.detailButton} onPress={navigateToDetailedStock} activeOpacity={0.8}>

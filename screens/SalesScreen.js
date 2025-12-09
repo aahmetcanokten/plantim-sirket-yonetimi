@@ -124,41 +124,24 @@ export default function SalesScreen() {
   const [compositeModalVisible, setCompositeModalVisible] = useState(false);
 
   // Satış Ekleme Menüsü
+  // Satış Ekleme Menüsü - GÜNCELLENDİ: Direkt Kompozit/Sipariş Ekranı Açılıyor
   const handleNewSalePress = () => {
-    Alert.alert(
-      "Yeni Satış",
-      "Lütfen satış türünü seçin:",
-      [
-        {
-          text: "Standart Ürün",
-          onPress: () => navigation.navigate("Stock"),
-          style: "default"
-        },
-        {
-          text: "Montajlı/Kompozit Ürün",
-          onPress: () => {
-            if (!isPremium && sales.length >= 20) {
-              Alert.alert(
-                "Limit Aşıldı",
-                "Ücretsiz planda maksimum 20 satış yapabilirsiniz. Sınırsız satış için Premium'a geçin.",
-                [
-                  { text: "Vazgeç", style: "cancel" },
-                  { text: "Premium Al", onPress: () => navigation.navigate("Paywall") }
-                ]
-              );
-              return;
-            }
-            setCompositeModalVisible(true);
-          },
-          style: "default"
-        },
-        {
-          text: "İptal",
-          style: "cancel"
-        }
-      ]
-    );
+    // Limit kontrolü (Kompozit satış için)
+    if (!isPremium && sales.length >= 20) {
+      Alert.alert(
+        "Limit Aşıldı",
+        "Ücretsiz planda maksimum 20 satış yapabilirsiniz. Sınırsız satış için Premium'a geçin.",
+        [
+          { text: "Vazgeç", style: "cancel" },
+          { text: "Premium Al", onPress: () => navigation.navigate("Paywall") }
+        ]
+      );
+      return;
+    }
+    // Direkt modalı aç
+    setCompositeModalVisible(true);
   };
+
 
   const markAsShipped = (sale) => {
     triggerHaptic(HapticType.IMPACT_LIGHT);
