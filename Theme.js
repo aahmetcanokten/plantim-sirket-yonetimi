@@ -10,6 +10,8 @@ export const Colors = {
   critical: "#FF3B30",
   textPrimary: "#0B1220",
   secondary: "#64748B",
+  warning: "#F59E0B",
+  profit: "#34C759",
 };
 
 export const IOSShadow = Platform.select({
