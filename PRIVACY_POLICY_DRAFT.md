@@ -1,52 +1,74 @@
-# Gizlilik Politikası
+# Privacy Policy for Plantim
 
-**Son Güncelleme:** 23 Kasım 2024
+**Last Updated:** December 11, 2025
 
-Bu Gizlilik Politikası, **Plantim** ("Uygulama") uygulamasını kullandığınızda bilgilerinizin nasıl toplandığını, kullanıldığını ve paylaşıldığını açıklar.
+## 1. Introduction
 
-## 1. Toplanan Bilgiler
+Welcome to **Plantim** ("we," "our," or "us"). We are committed to protecting your privacy and ensuring that your personal and business data is handled securely and transparently.
 
-### 1.1. Kişisel Bilgiler
-Uygulamayı kullanırken, kimliğinizi belirlemek veya sizinle iletişime geçmek için kullanılabilecek belirli kişisel bilgileri bize sağlamanızı isteyebiliriz. Bu bilgiler şunları içerebilir:
-- E-posta adresi (Hesap oluşturma ve giriş işlemleri için)
-- Şirket bilgileri (Ad, Adres, Vergi Numarası - Fatura ve yönetim işlemleri için)
+This Privacy Policy explains how we collect, use, and protect your information when you use our mobile application, **Plantim** (the "App"), facilitating stock management, sales tracking, and business resource planning.
 
-### 1.2. Kullanım Verileri
-Uygulamayı kullandığınızda, cihazınızın İnternet Protokolü (IP) adresi, cihaz türü, işletim sistemi sürümü, uygulamanın kullanım saati ve tarihi gibi bilgiler otomatik olarak toplanabilir.
+By using the App, you agree to the collection and use of information in accordance with this policy.
 
-### 1.3. Araç ve Görev Bilgileri
-Uygulama içerisinde kaydettiğiniz araç bilgileri (plaka, model, servis geçmişi) ve personel görev verileri, hizmetin sağlanması amacıyla veritabanımızda saklanır.
+## 2. Information We Collect
 
-## 2. Bilgilerin Kullanımı
+We collect only the information necessary to provide and improve our services.
 
-Topladığımız bilgileri aşağıdaki amaçlarla kullanırız:
-- Uygulamayı sağlamak ve bakımını yapmak
-- Hesabınızı yönetmek
-- Size hizmetle ilgili güncellemeleri ve bildirimleri göndermek
-- Müşteri desteği sağlamak
-- Uygulama içi satın alımları işlemek (Premium üyelik vb.)
+### A. Personal Information
+When you create an account, we may collect:
+- **Email Address:** To identify your account and secure your data.
+- **Business Data:** Information you input into the app (e.g., product names, customer names, phone numbers, sales records, personnel details). This data is stored securely in our database to synchronize across your devices.
 
-## 3. Üçüncü Taraf Hizmetleri
+### B. Device and Usage Data
+We may collect minimal device information primarily for debugging and critical app functionality (via Expo services), such as:
+- Device model and operating system version.
+- Crash reports (if the app malfunctions).
 
-Uygulamamız, verilerinizi işlemek veya reklam göstermek için üçüncü taraf hizmet sağlayıcılarını kullanabilir. Bu sağlayıcıların kendi gizlilik politikaları bulunmaktadır:
+**Note:** We have **removed all advertising and third-party behavioral tracking SDKs** from our application. We do not sell your personal data to advertisers.
 
-- **Supabase:** Veritabanı ve kimlik doğrulama hizmetleri için kullanılır.
-- **Google AdMob:** Uygulama içinde reklam gösterimi için kullanılır. Reklam kişiselleştirme amacıyla cihaz tanımlayıcılarını kullanabilir.
-- **RevenueCat:** Uygulama içi satın alma işlemlerini yönetmek için kullanılır.
+## 3. How We Use Your Information
 
-## 4. Veri Güvenliği
+We use the collected data for the following purposes:
+- **Service Provision:** To store and manage your inventory, sales, and customer lists securely in the cloud.
+- **Account Management:** To manage your registration, login, and subscription status.
+- **Performance:** To prevent fraud, fix bugs, and optimize app performance.
 
-Kişisel bilgilerinizin güvenliği bizim için önemlidir, ancak internet üzerinden hiçbir iletim yönteminin veya elektronik depolama yönteminin %100 güvenli olmadığını unutmayın. Bilgilerinizi korumak için ticari olarak kabul edilebilir yöntemleri kullanmaya çalışsak da, mutlak güvenliğini garanti edemeyiz.
+## 4. Camera and Permissions
 
-## 5. Hesabın Silinmesi
+The App requests access to your device's **Camera**.
+- **Purpose:** The camera is used **solely** for scanning barcodes and QR codes to quickly add products or search for items in your inventory.
+- **Privacy:** We do not record, save, or transmit video or images from your camera to any external server. The processing happens locally on your device or instantaneously for the purpose of reading the code.
 
-Kullanıcılar, uygulama içerisindeki "Ayarlar" menüsünden "Hesabımı Sil" seçeneğini kullanarak hesaplarını ve ilişkili tüm verilerini kalıcı olarak silme hakkına sahiptir.
+## 5. Third-Party Services
 
-## 6. Bu Politikadaki Değişiklikler
+We use trusted third-party services to operate our infrastructure. These partners have their own privacy policies ensuring data security:
 
-Gizlilik Politikamızı zaman zaman güncelleyebiliriz. Yeni Gizlilik Politikasını bu sayfada yayınlayarak sizi herhangi bir değişiklikten haberdar edeceğiz.
+- **Supabase:** We use Supabase as our backend database to store your encrypted user and business data.
+  * [Supabase Privacy Policy](https://supabase.com/privacy)
 
-## 7. İletişim
+- **RevenueCat:** We use RevenueCat to manage in-app purchases and subscriptions (Premium features). They process necessary purchase data but do not have access to your specific business inventory details.
+  * [RevenueCat Privacy Policy](https://www.revenuecat.com/privacy)
 
-Bu Gizlilik Politikası hakkında herhangi bir sorunuz varsa, bizimle iletişime geçebilirsiniz:
-- E-posta: [Destek E-posta Adresiniz]
+## 6. Data Security
+
+We implement industry-standard security measures to protect your data, including encryption in transit (SSL/TLS) and secure database storage. However, no method of transmission over the internet is 100% secure, and we cannot guarantee absolute security.
+
+## 7. Data Retention and Deletion
+
+- **Retention:** We retain your data as long as your account is active.
+- **Deletion:** You have the right to request the deletion of your account and all associated data. You can usually perform this action within the App's settings ("Delete Account") or by contacting us directly.
+
+## 8. Children’s Privacy
+
+Plantim is a business tool designed for professionals. We do not knowingly collect personally identifiable information from children under the age of 13. If we discover a child has provided us with personal information, we will immediately delete it from our servers.
+
+## 9. Changes to This Privacy Policy
+
+We may update our Privacy Policy from time to time. We will notify you of any changes by posting the new Privacy Policy on this page and updating the "Last Updated" date. You are advised to review this page periodically for any changes.
+
+## 10. Contact Us
+
+If you have any questions or suggestions about our Privacy Policy, please do not hesitate to contact us at:
+
+**Email:** [support@email.com]  
+*(Please replace this with your actual support email)*

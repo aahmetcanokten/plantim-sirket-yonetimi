@@ -474,25 +474,15 @@ export default function SettingsScreen({ navigation }) {
         {/* HAKKINDA BÖLÜMÜ */}
         <Text style={styles.sectionHeader}>Hakkında</Text>
 
-        <MenuLinkCard
-          title="Gizlilik Politikası"
-          subtitle="Veri kullanımı ve gizlilik hakları"
-          icon="shield-checkmark-outline"
-          color="#5856D6"
-          onPress={() => {
-            Linking.openURL("https://docs.google.com/document/d/1rklxAoHqGFZMChJ8Hsa4be943dsqZ_C3l8KZ587Qe3c/edit?usp=sharing");
-          }}
-        />
-
-        <MenuLinkCard
-          title="Kullanım Koşulları (EULA)"
-          subtitle="Hizmet şartları ve yasal anlaşma"
-          icon="document-text-outline"
-          color="#8E8E93"
-          onPress={() => {
-            Linking.openURL("https://www.apple.com/legal/internet-services/itunes/dev/stdeula/");
-          }}
-        />
+        <View style={styles.footerLinksContainer}>
+          <TouchableOpacity onPress={() => Linking.openURL("https://fearless-playground-057.notion.site/Privacy-Policy-2c685b6f3cbc80b6a9ded3063bc09948?source=copy_link")}>
+            <Text style={styles.footerLinkText}>Gizlilik Politikası</Text>
+          </TouchableOpacity>
+          <Text style={styles.footerLinkDivider}>•</Text>
+          <TouchableOpacity onPress={() => Linking.openURL("https://www.apple.com/legal/internet-services/itunes/dev/stdeula/")}>
+            <Text style={styles.footerLinkText}>Kullanım Koşulları (EULA)</Text>
+          </TouchableOpacity>
+        </View>
 
       </ScrollView>
 
@@ -705,5 +695,21 @@ const styles = StyleSheet.create({
   },
   optionBtnTextSelected: {
     color: '#fff'
+  },
+  footerLinksContainer: {
+    flexDirection: 'row',
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginTop: 20,
+    marginBottom: 40
+  },
+  footerLinkText: {
+    fontSize: 12,
+    color: '#888', // Colors.secondary eşdeğeri veya benzeri bir renk
+    textDecorationLine: 'underline'
+  },
+  footerLinkDivider: {
+    marginHorizontal: 10,
+    color: '#ccc'
   }
 });

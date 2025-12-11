@@ -14,7 +14,7 @@
     "ios": {
       "supportsTablet": true,
       "bundleIdentifier": "com.acanokten.plantim",
-      "buildNumber": "1.0.6",
+      "buildNumber": "1.0.7",
       "infoPlist": {
         "NSCameraUsageDescription": "Barkod taramak için kamera izni gereklidir.",
         "ITSAppUsesNonExemptEncryption": false
@@ -47,12 +47,6 @@
         "expo-camera",
         {
           "cameraPermission": "Barkod taramak için kamera izni gereklidir."
-        }
-      ],
-      [
-        "expo-tracking-transparency",
-        {
-          "userTrackingPermission": "Bu izin, size daha uygun reklamlar sunabilmemiz için gereklidir."
         }
       ],
       "expo-font",

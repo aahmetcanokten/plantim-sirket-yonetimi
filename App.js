@@ -10,7 +10,7 @@ import { AppProvider, AppContext } from "./AppContext";
 import { AuthProvider, useAuth } from "./AuthContext";
 import { ToastProvider } from "./components/ToastProvider";
 import { registerForPushNotificationsAsync, checkAndTriggerLowStockNotification } from "./utils/NotificationHelper";
-import { requestTrackingPermissionsAsync } from 'expo-tracking-transparency';
+
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 
 import StockScreen from "./screens/StockScreen";
@@ -140,15 +140,7 @@ export default function App() {
   useEffect(() => {
     registerForPushNotificationsAsync();
 
-    // iOS için Takip İzni İste (ATT)
-    (async () => {
-      if (Platform.OS === 'ios') {
-        const { status } = await requestTrackingPermissionsAsync();
-        if (status === 'granted') {
-          console.log('Tracking permission granted.');
-        }
-      }
-    })();
+
   }, []);
 
   return (

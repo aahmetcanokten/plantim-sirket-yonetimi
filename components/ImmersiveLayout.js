@@ -3,7 +3,7 @@ import { Animated, View, Text, StyleSheet, Platform, TouchableOpacity, SafeAreaV
 import { useNavigation } from "@react-navigation/native";
 import { Ionicons } from "@expo/vector-icons";
 import { Colors } from "../Theme";
-import AdBanner from "./AdBanner";
+
 
 /*
   ImmersiveLayout - Açık renkli, kompakt (iOS stili) başlıklar için revize edildi.
@@ -130,7 +130,7 @@ export default function ImmersiveLayout(props) {
         <View style={[styles.scrollContainerCompact, { flex: 1 }]}>
           <View style={[styles.innerContentCompact, { flex: 1 }]}>
             {children}
-            <AdBanner />
+
           </View>
         </View>
       ) : (
@@ -140,7 +140,7 @@ export default function ImmersiveLayout(props) {
         >
           <View style={styles.innerContentCompact}>
             {children}
-            <AdBanner />
+
           </View>
         </ScrollView>
       )}
