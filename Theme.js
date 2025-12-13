@@ -12,6 +12,8 @@ export const Colors = {
   secondary: "#64748B",
   warning: "#F59E0B",
   profit: "#34C759",
+  primary: "#0A84FF",
+  success: "#34C759",
 };
 
 export const IOSShadow = Platform.select({

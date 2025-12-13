@@ -34,7 +34,9 @@ export function AppProvider({ children }) {
   const [assets, setAssets] = useState([]);
   const [company, setCompany] = useState({ name: "Şirketim", address: "", taxId: "", requireInvoice: false });
 
-  const [isPremium, setIsPremium] = useState(false);
+  const [dbPremium, setDbPremium] = useState(false);
+  const [rcPremium, setRcPremium] = useState(false);
+  const isPremium = dbPremium || rcPremium;
   const [appDataLoading, setAppDataLoading] = useState(false);
 
   // --- RevenueCat Başlatma ve Dinleme ---
@@ -47,7 +49,7 @@ export function AppProvider({ children }) {
       try {
         const customerInfo = await Purchases.getCustomerInfo();
         if (customerInfo.entitlements.active['premium']) {
-          setIsPremium(true);
+          setRcPremium(true);
         }
       } catch (e) {
         // Hata yok sayılabilir
@@ -58,9 +60,9 @@ export function AppProvider({ children }) {
 
     const customerInfoUpdateListener = (info) => {
       if (info.entitlements.active['premium']) {
-        setIsPremium(true);
+        setRcPremium(true);
       } else {
-        setIsPremium(false);
+        setRcPremium(false);
       }
     };
 
@@ -96,12 +98,15 @@ export function AppProvider({ children }) {
             supabase.from('personnel').select('*').eq('user_id', userId).order('name', { ascending: true }),
             supabase.from('vehicles').select('*').eq('user_id', userId).order('created_at', { ascending: false }),
             supabase.from('purchases').select('*').eq('user_id', userId).order('created_at', { ascending: false }),
-            supabase.from('users').select('is_premium').eq('id', userId).single(),
+            supabase.from('user_profiles').select('is_premium').eq('user_id', userId).maybeSingle(),
             supabase.from('companies').select('*').eq('user_id', userId).maybeSingle()
           ]);
 
           if (userRes.data && userRes.data.is_premium) {
-            setIsPremium(true);
+            setDbPremium(true);
+          } else {
+            // Eğer kayıt yoksa ama session varsa, kullanıcıyı oluşturmayı dene (Opsiyonel güvenli önlem)
+            setDbPremium(false);
           }
 
           setCustomers(customerRes.data || []);
@@ -169,7 +174,8 @@ export function AppProvider({ children }) {
         setVehicles([]);
         setPurchases([]);
         setAssets([]);
-        setIsPremium(false);
+        setDbPremium(false);
+        setRcPremium(false);
         setAppDataLoading(false);
       }
     };
@@ -439,8 +445,11 @@ export function AppProvider({ children }) {
     try {
       const { customerInfo } = await Purchases.purchasePackage(packageToPurchase);
       if (customerInfo.entitlements.active['premium']) {
-        setIsPremium(true);
-        if (session && supabase) await supabase.from('users').update({ is_premium: true }).eq('id', session.user.id);
+        setRcPremium(true);
+        if (session && supabase) {
+          await supabase.from('user_profiles').update({ is_premium: true }).eq('user_id', session.user.id);
+          setDbPremium(true);
+        }
         return true;
       }
     } catch (e) {
@@ -453,8 +462,11 @@ export function AppProvider({ children }) {
     try {
       const customerInfo = await Purchases.restorePurchases();
       if (customerInfo.entitlements.active['premium']) {
-        setIsPremium(true);
-        if (session && supabase) await supabase.from('users').update({ is_premium: true }).eq('id', session.user.id);
+        setRcPremium(true);
+        if (session && supabase) {
+          await supabase.from('user_profiles').update({ is_premium: true }).eq('user_id', session.user.id);
+          setDbPremium(true);
+        }
         Alert.alert("Başarılı", "Satın alımlarınız geri yüklendi.");
         return true;
       } else {
@@ -480,7 +492,7 @@ export function AppProvider({ children }) {
         supabase.from('purchases').delete().eq('user_id', userId),
         supabase.from('assets').delete().eq('user_id', userId),
         supabase.from('companies').delete().eq('user_id', userId), // Şirket bilgisi de silinmeli
-        supabase.from('users').delete().eq('id', userId)
+        supabase.from('user_profiles').delete().eq('user_id', userId)
       ]);
       return true;
     } catch (e) {
@@ -500,7 +512,7 @@ export function AppProvider({ children }) {
         purchases, addPurchase, updatePurchase, deletePurchase, markPurchaseDelivered,
         assets, addAsset, updateAsset, deleteAsset, assignAsset, unassignAsset,
         company, updateCompanyInfo,
-        isPremium, setPremiumStatus: setIsPremium, purchasePremium, restorePurchases,
+        isPremium, setPremiumStatus: setDbPremium, purchasePremium, restorePurchases,
         getPackages: async () => {
           const offerings = await Purchases.getOfferings();
           return offerings.current;

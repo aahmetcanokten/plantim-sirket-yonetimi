@@ -79,15 +79,15 @@ export default function PaywallScreen({ navigation }) {
                 <View style={styles.header}>
                     <Ionicons name="leaf-outline" size={60} color={Colors.iosBlue} />
                     <Text style={styles.title}>PLANTİM Premium</Text>
-                    <Text style={styles.subtitle}>Sadece 250 TL/Ay ile sınırları kaldırın.</Text>
+                    <Text style={styles.subtitle}>Sınırları kaldırın.</Text>
                 </View>
 
                 <View style={styles.featuresList}>
                     <FeatureItem text="Sınırsız Stok Kartı Ekleme" />
-                    <FeatureItem text="Tamamen Reklamsız Kullanım" />
+                    <FeatureItem text="Sınırsız Envanter Ekleme" />
                     <FeatureItem text="Sınırsız Proje ve Görev Takibi" />
                     <FeatureItem text="Detaylı Raporlama ve Analizler" />
-                    <FeatureItem text="Verilerinizi PDF/Excel Olarak Dışa Aktarma" />
+                    <FeatureItem text="Verilerinizi Dışa Aktarma" />
                 </View>
 
                 {loading ? (
@@ -133,7 +133,7 @@ export default function PaywallScreen({ navigation }) {
                 </Text>
 
                 <View style={styles.linksContainer}>
-                    <TouchableOpacity onPress={() => Linking.openURL('https://docs.google.com/document/d/1rklxAoHqGFZMChJ8Hsa4be943dsqZ_C3l8KZ587Qe3c/edit?usp=sharing')}>
+                    <TouchableOpacity onPress={() => Linking.openURL('https://fearless-playground-057.notion.site/Privacy-Policy-2c685b6f3cbc80b6a9ded3063bc09948?source=copy_link')}>
                         <Text style={styles.linkText}>Gizlilik Politikası</Text>
                     </TouchableOpacity>
                     <Text style={styles.linkSeparator}>•</Text>
