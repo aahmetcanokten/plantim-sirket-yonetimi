@@ -13,6 +13,7 @@ import {
   Platform,
   ScrollView,
 } from "react-native";
+import { useTranslation } from "react-i18next";
 import ImmersiveLayout from "../components/ImmersiveLayout";
 import { Ionicons } from "@expo/vector-icons";
 import { Colors } from "../Theme";
@@ -38,6 +39,7 @@ export default function StockScreen({ navigation }) {
     sales,
     appDataLoading,
   } = useContext(AppContext);
+  const { t } = useTranslation();
   const toast = useToast();
 
   // --- State Yönetimi ---
@@ -57,11 +59,11 @@ export default function StockScreen({ navigation }) {
   const openCustomerSelection = (product) => {
     if (!isPremium && sales.length >= 20) {
       Alert.alert(
-        "Limit Aşıldı",
-        "Ücretsiz planda maksimum 20 satış yapabilirsiniz. Sınırsız satış için Premium'a geçin.",
+        t('limit_exceeded'),
+        t('sales_limit_message'),
         [
-          { text: "Vazgeç", style: "cancel" },
-          { text: "Premium Al", onPress: () => navigation.navigate("Paywall") }
+          { text: t('cancel'), style: "cancel" },
+          { text: t('get_premium'), onPress: () => navigation.navigate("Paywall") }
         ]
       );
       return;
@@ -83,31 +85,31 @@ export default function StockScreen({ navigation }) {
 
     // Premium değilse reklam izlet
     Alert.alert(
-      "Premium Özellik",
-      "Stok kartlarını düzenlemek Premium bir özelliktir.",
+      t('premium_feature'),
+      t('edit_stock_premium_message'),
       [
-        { text: "Vazgeç", style: "cancel" },
-        { text: "Premium Al", onPress: () => navigation.navigate("Paywall") }
+        { text: t('cancel'), style: "cancel" },
+        { text: t('get_premium'), onPress: () => navigation.navigate("Paywall") }
       ]
     );
   };
   const handleUpdateProduct = () => {
-    if (!editProduct || !editProduct.name || !editProduct.name.trim()) { Alert.alert("Hata", "Ürün adı boş olamaz."); return; }
+    if (!editProduct || !editProduct.name || !editProduct.name.trim()) { Alert.alert(t('error'), t('product_name_required')); return; }
     const updatedProd = { ...editProduct, id: editProduct.id, quantity: parseInt(editProduct.quantity, 10) || 0, cost: parseFloat(editProduct.cost) || 0, price: parseFloat(editProduct.price) || 0, criticalStockLimit: parseInt(editProduct.criticalStockLimit, 10) || 0 };
     updateProduct(updatedProd);
-    toast.showToast && toast.showToast(`${updatedProd.name} güncellendi`);
+    toast.showToast && toast.showToast(`${updatedProd.name} ${t('updated')}`);
     setEditModalVisible(false);
     setEditProduct(null);
     triggerHaptic(HapticType.SUCCESS);
   };
   const confirmDelete = (id, name) => {
     triggerHaptic(HapticType.WARNING);
-    Alert.alert("Silme Onayı", `${name} ürününü silmek istediğinizden emin misiniz?`, [
-      { text: "İptal", style: "cancel" },
+    Alert.alert(t('delete_confirmation'), `${name} ${t('delete_product_confirmation')}`, [
+      { text: t('cancel'), style: "cancel" },
       {
-        text: "Sil", style: "destructive", onPress: () => {
+        text: t('delete'), style: "destructive", onPress: () => {
           deleteProduct(id);
-          toast.showToast && toast.showToast("Ürün silindi");
+          toast.showToast && toast.showToast(t('product_deleted'));
           triggerHaptic(HapticType.IMPACT_MEDIUM);
         }
       }
@@ -115,7 +117,7 @@ export default function StockScreen({ navigation }) {
   };
   const proceedToInvoice = (product, customer, quantity, price) => {
     const q = parseInt(quantity, 10) || 1; const p = parseFloat(price) || 0;
-    if (q <= 0) { Alert.alert("Hata", "Miktar pozitif bir sayı olmalıdır."); return; }
+    if (q <= 0) { Alert.alert(t('error'), t('quantity_must_be_positive')); return; }
     setInvoicePayload({ product, customer, quantity: q, price: p });
     setSellModalVisible(false);
     setInvoiceModalVisible(true);
@@ -123,9 +125,9 @@ export default function StockScreen({ navigation }) {
   };
   const finalizeSaleWithInvoice = (invoiceNumber, shipmentDateISO) => {
     const payload = invoicePayload;
-    if (!payload || !payload.product || !payload.customer) { Alert.alert("Hata", "Ürün veya müşteri bilgisi eksik."); return; }
+    if (!payload || !payload.product || !payload.customer) { Alert.alert(t('error'), t('missing_product_or_customer')); return; }
     const product = payload.product; const customer = payload.customer; const q = payload.quantity; const p = payload.price;
-    if (product.quantity < q) { Alert.alert("Stok yetersiz", `Mevcut stok: ${product.quantity}`); return; }
+    if (product.quantity < q) { Alert.alert(t('insufficient_stock'), `${t('current_stock')}: ${product.quantity}`); return; }
     const updatedProduct = { ...product, quantity: product.quantity - q };
     updateProduct(updatedProduct);
 
@@ -158,7 +160,7 @@ export default function StockScreen({ navigation }) {
     setInvoiceModalVisible(false);
     setInvoicePayload(null);
     setSelectedProduct(null);
-    toast.showToast && toast.showToast("Satış kaydedildi ve sevkiyat bekleniyor.");
+    toast.showToast && toast.showToast(t('sale_recorded_waiting_shipment'));
     triggerHaptic(HapticType.SUCCESS);
     requestStoreReview(); // Satış başarılı olduğunda değerlendirme iste
   };
@@ -198,11 +200,11 @@ export default function StockScreen({ navigation }) {
   const handleAssemblyPress = () => {
     if (!isPremium && products.length >= 5) {
       Alert.alert(
-        "Limit Aşıldı",
-        "Ücretsiz planda limitiniz doldu. Montajlı ürün üretmek için Premium'a geçin veya ürün silin.",
+        t('limit_exceeded'),
+        t('assembly_limit_message'),
         [
-          { text: "Vazgeç", style: "cancel" },
-          { text: "Premium Al", onPress: () => navigation.navigate("Paywall") }
+          { text: t('cancel'), style: "cancel" },
+          { text: t('get_premium'), onPress: () => navigation.navigate("Paywall") }
         ]
       );
       return;
@@ -214,23 +216,23 @@ export default function StockScreen({ navigation }) {
     <View>
       <TouchableOpacity style={styles.addButton} onPress={navigateToAddProduct} activeOpacity={0.8}>
         <Ionicons name={"add-circle-outline"} size={24} color="#fff" />
-        <Text style={styles.addButtonText}>Yeni Ürün Ekle</Text>
+        <Text style={styles.addButtonText}>{t('add_new_product')}</Text>
       </TouchableOpacity>
 
 
       <TouchableOpacity style={[styles.addButton, { backgroundColor: Colors.warning }]} onPress={handleAssemblyPress} activeOpacity={0.8}>
         <Ionicons name="construct-outline" size={24} color="#000" />
-        <Text style={[styles.addButtonText, { color: '#000' }]}>Montaj / Üretim Yap</Text>
+        <Text style={[styles.addButtonText, { color: '#000' }]}>{t('assembly_production')}</Text>
       </TouchableOpacity>
 
       <TouchableOpacity style={styles.detailButton} onPress={navigateToDetailedStock} activeOpacity={0.8}>
         <Ionicons name="stats-chart-outline" size={20} color="#fff" />
-        <Text style={styles.detailButtonText}>Detaylı Stok Analizi</Text>
+        <Text style={styles.detailButtonText}>{t('detailed_stock_analysis')}</Text>
       </TouchableOpacity>
 
       <View style={styles.searchContainer}>
         <TextInput
-          placeholder="Ara (isim, kategori, seri no, kod)..."
+          placeholder={t('search_placeholder_stock')}
           value={searchQuery}
           onChangeText={setSearchQuery}
           style={styles.searchInput}
@@ -243,17 +245,17 @@ export default function StockScreen({ navigation }) {
       </View>
 
       <View style={styles.sortButtonContainer}>
-        <SortButton title="A-Z" currentSort={sortOption} targetSort="nameAZ" onPress={setSortOption} />
-        <SortButton title="Stok ↑" currentSort={sortOption} targetSort="stockAsc" onPress={setSortOption} />
-        <SortButton title="Stok ↓" currentSort={sortOption} targetSort="stockDesc" onPress={setSortOption} />
+        <SortButton title={t('sort_az')} currentSort={sortOption} targetSort="nameAZ" onPress={setSortOption} />
+        <SortButton title={t('sort_stock_asc')} currentSort={sortOption} targetSort="stockAsc" onPress={setSortOption} />
+        <SortButton title={t('sort_stock_desc')} currentSort={sortOption} targetSort="stockDesc" onPress={setSortOption} />
       </View>
 
-      <Text style={styles.listTitle}>Stok Listesi ({filteredAndSortedProducts.length})</Text>
+      <Text style={styles.listTitle}>{t('stock_list')} ({filteredAndSortedProducts.length})</Text>
     </View >
   );
 
   return (
-    <ImmersiveLayout title="Stok" subtitle={`${products.length} ürün`} noScrollView={false}>
+    <ImmersiveLayout title={t('stock')} subtitle={`${products.length} ürün`} noScrollView={false}>
       {appDataLoading ? (
         <ScrollView contentContainerStyle={styles.flatListContent}>
           {renderHeader()}
@@ -271,7 +273,7 @@ export default function StockScreen({ navigation }) {
             scrollEnabled={false}
             contentContainerStyle={{ paddingBottom: 100 }}
             initialNumToRender={10}
-            ListEmptyComponent={<Text style={styles.emptyListText}>Stokta ürün bulunamadı.</Text>}
+            ListEmptyComponent={<Text style={styles.emptyListText}>{t('no_products_in_stock')}</Text>}
           />
         </>
       )}
@@ -283,16 +285,16 @@ export default function StockScreen({ navigation }) {
             <View style={styles.sellModalContent}>
               <View style={styles.modalHandle} />
               <Text style={styles.modalTitle}>{selectedProduct?.name}</Text>
-              <Text style={styles.modalSubtitle}>Mevcut Stok: {selectedProduct?.quantity}</Text>
+              <Text style={styles.modalSubtitle}>{t('current_stock')}: {selectedProduct?.quantity}</Text>
 
               <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={{ paddingBottom: 20 }}>
-                <Text style={styles.inputLabel}>Satış Miktarı</Text>
+                <Text style={styles.inputLabel}>{t('sale_quantity')}</Text>
                 <TextInput style={styles.input} value={saleQuantity} onChangeText={setSaleQuantity} keyboardType="number-pad" placeholder="1" />
 
-                <Text style={styles.inputLabel}>Satış Fiyatı (₺)</Text>
+                <Text style={styles.inputLabel}>{t('sale_price')} (₺)</Text>
                 <TextInput style={styles.input} value={salePrice} onChangeText={setSalePrice} keyboardType="decimal-pad" placeholder="₺" />
 
-                <Text style={[styles.inputLabel, { marginTop: 20 }]}>Müşteri Seç</Text>
+                <Text style={[styles.inputLabel, { marginTop: 20 }]}>{t('select_customer')}</Text>
                 <View style={styles.customerListContainer}>
                   <FlatList
                     data={customers}
@@ -304,13 +306,13 @@ export default function StockScreen({ navigation }) {
                       </TouchableOpacity>
                     )}
                     style={{ flex: 1 }}
-                    ListEmptyComponent={<Text style={styles.emptyListText}>Müşteri Bulunamadı.</Text>}
+                    ListEmptyComponent={<Text style={styles.emptyListText}>{t('customer_not_found')}</Text>}
                     nestedScrollEnabled={true}
                   />
                 </View>
 
                 <TouchableOpacity style={styles.cancelButton} onPress={() => setSellModalVisible(false)}>
-                  <Text style={styles.cancelButtonText}>İptal</Text>
+                  <Text style={styles.cancelButtonText}>{t('cancel')}</Text>
                 </TouchableOpacity>
               </ScrollView>
             </View>
@@ -326,38 +328,38 @@ export default function StockScreen({ navigation }) {
           <View style={styles.modalOverlay}>
             <View style={styles.sellModalContent}>
               <View style={styles.modalHandle} />
-              <Text style={styles.modalTitle}>Ürün Düzenle</Text>
+              <Text style={styles.modalTitle}>{t('edit_product')}</Text>
               <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={{ paddingBottom: 20 }}>
-                <Text style={styles.inputLabel}>Ürün Adı</Text>
-                <TextInput style={styles.input} value={editProduct?.name} onChangeText={(text) => setEditProduct(prev => ({ ...prev, name: text }))} placeholder="Ürün Adı" />
+                <Text style={styles.inputLabel}>{t('product_name')}</Text>
+                <TextInput style={styles.input} value={editProduct?.name} onChangeText={(text) => setEditProduct(prev => ({ ...prev, name: text }))} placeholder={t('product_name')} />
 
                 <View style={styles.rowInputs}>
                   <View style={{ flex: 1, marginRight: 10 }}>
-                    <Text style={styles.inputLabel}>Stok Miktarı</Text>
+                    <Text style={styles.inputLabel}>{t('stock_quantity')}</Text>
                     <TextInput style={styles.input} value={editProduct?.quantity} onChangeText={(text) => setEditProduct(prev => ({ ...prev, quantity: text.replace(/[^0-9]/g, '') }))} keyboardType="number-pad" />
                   </View>
                   <View style={{ flex: 1 }}>
-                    <Text style={styles.inputLabel}>Kritik Limit</Text>
+                    <Text style={styles.inputLabel}>{t('critical_limit')}</Text>
                     <TextInput style={styles.input} value={editProduct?.criticalStockLimit} onChangeText={(text) => setEditProduct(prev => ({ ...prev, criticalStockLimit: text.replace(/[^0-9]/g, '') }))} keyboardType="number-pad" />
                   </View>
                 </View>
 
                 <View style={styles.rowInputs}>
                   <View style={{ flex: 1, marginRight: 10 }}>
-                    <Text style={styles.inputLabel}>Alış Fiyatı (₺)</Text>
+                    <Text style={styles.inputLabel}>{t('purchase_price')} (₺)</Text>
                     <TextInput style={styles.input} value={editProduct?.cost} onChangeText={(text) => setEditProduct(prev => ({ ...prev, cost: text.replace(/[^0-9.]/g, '') }))} keyboardType="decimal-pad" />
                   </View>
                   <View style={{ flex: 1 }}>
-                    <Text style={styles.inputLabel}>Satış Fiyatı (₺)</Text>
+                    <Text style={styles.inputLabel}>{t('sale_price')} (₺)</Text>
                     <TextInput style={styles.input} value={editProduct?.price} onChangeText={(text) => setEditProduct(prev => ({ ...prev, price: text.replace(/[^0-9.]/g, '') }))} keyboardType="decimal-pad" />
                   </View>
                 </View>
 
                 <TouchableOpacity style={[styles.saveButton, { marginTop: 25 }]} onPress={handleUpdateProduct}>
-                  <Text style={styles.saveButtonText}>Kaydet ve Güncelle</Text>
+                  <Text style={styles.saveButtonText}>{t('save_and_update')}</Text>
                 </TouchableOpacity>
                 <TouchableOpacity style={styles.cancelButton} onPress={() => setEditModalVisible(false)}>
-                  <Text style={styles.cancelButtonText}>İptal</Text>
+                  <Text style={styles.cancelButtonText}>{t('cancel')}</Text>
                 </TouchableOpacity>
               </ScrollView>
             </View>
@@ -398,7 +400,8 @@ const StockListItem = ({ item, onSell, onEdit, onDelete }) => {
   // Durum Renkleri ve Metinleri
   const statusColor = isZero ? Colors.critical : (isCritical ? Colors.warning : Colors.profit);
   const statusBg = isZero ? '#FFF5F5' : (isCritical ? '#FFFAF0' : '#F0FFF4');
-  const statusText = isZero ? 'Tükendi' : (isCritical ? 'Kritik' : 'Stokta');
+  const { t } = useTranslation();
+  const statusText = isZero ? t('out_of_stock') : (isCritical ? t('critical') : t('in_stock'));
   const statusBorder = isZero ? '#FED7D7' : (isCritical ? '#FEEBC8' : '#C6F6D5');
 
   return (
@@ -420,31 +423,31 @@ const StockListItem = ({ item, onSell, onEdit, onDelete }) => {
       <View style={styles.cardBody}>
         <View style={styles.infoRow}>
           <View style={styles.infoItem}>
-            <Text style={styles.infoLabel}>STOK</Text>
+            <Text style={styles.infoLabel}>{t('stock_label')}</Text>
             <View style={{ flexDirection: 'row', alignItems: 'center' }}>
               <Ionicons name="cube-outline" size={12} color={statusColor} style={{ marginRight: 3 }} />
               <Text style={[styles.infoValue, { color: statusColor }]}>{currentQuantity}</Text>
             </View>
           </View>
           <View style={styles.infoItem}>
-            <Text style={styles.infoLabel}>SATIŞ</Text>
+            <Text style={styles.infoLabel}>{t('sale_label')}</Text>
             <Text style={styles.infoValue}>{Number(item.price ?? 0).toFixed(2)} ₺</Text>
           </View>
           <View style={styles.infoItem}>
-            <Text style={styles.infoLabel}>MALİYET</Text>
+            <Text style={styles.infoLabel}>{t('cost_label')}</Text>
             <Text style={styles.infoValueSmall}>{Number(item.cost ?? 0).toFixed(2)} ₺</Text>
           </View>
         </View>
 
         <View style={[styles.infoRow, { marginBottom: 0, marginTop: 8 }]}>
           <View style={[styles.infoItem, { flex: 2 }]}>
-            <Text style={styles.infoLabel}>KOD / BARKOD</Text>
+            <Text style={styles.infoLabel}>{t('code_barcode_label')}</Text>
             <Text style={styles.infoValueSmall} numberOfLines={1}>
               {item.code || '-'}
             </Text>
           </View>
           <View style={[styles.infoItem, { flex: 2 }]}>
-            <Text style={styles.infoLabel}>SERİ NO</Text>
+            <Text style={styles.infoLabel}>{t('serial_no_label')}</Text>
             <Text style={styles.infoValueSmall} numberOfLines={1}>
               {item.serialNumber || '-'}
             </Text>
@@ -456,7 +459,7 @@ const StockListItem = ({ item, onSell, onEdit, onDelete }) => {
       <View style={styles.cardActions}>
         <TouchableOpacity style={[styles.actionBtn, styles.editBtn]} onPress={() => onEdit(item)}>
           <Ionicons name="create-outline" size={14} color={Colors.iosBlue} />
-          <Text style={styles.editBtnText}>Düzenle</Text>
+          <Text style={styles.editBtnText}>{t('edit')}</Text>
         </TouchableOpacity>
 
         <TouchableOpacity
@@ -465,7 +468,7 @@ const StockListItem = ({ item, onSell, onEdit, onDelete }) => {
           disabled={isZero}
         >
           <Ionicons name="cart-outline" size={14} color="#fff" />
-          <Text style={styles.sellBtnText}>Satış</Text>
+          <Text style={styles.sellBtnText}>{t('sell')}</Text>
         </TouchableOpacity>
 
         <TouchableOpacity style={styles.deleteIconBtn} onPress={() => onDelete(item.id, item.name)}>

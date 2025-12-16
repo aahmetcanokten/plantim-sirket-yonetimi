@@ -3,39 +3,13 @@ import { View, Text, StyleSheet, FlatList, Dimensions, TouchableOpacity, Image, 
 import { Ionicons } from '@expo/vector-icons';
 import { Colors } from '../Theme';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import { useTranslation } from 'react-i18next';
+import { useMemo } from 'react';
+
 
 const { width, height } = Dimensions.get('window');
 
-const SLIDES = [
-    {
-        id: '1',
-        title: 'Stok Takibi',
-        description: 'Ürünlerinizi barkod ile veya manuel ekleyin, stok adetlerinizi ve değerlerini anlık olarak takip edin.',
-        icon: 'cube-outline',
-        color: '#0A84FF', // iosBlue
-    },
-    {
-        id: '2',
-        title: 'Satış Yönetimi',
-        description: 'Müşterilerinize hızlı satış yapın, sevk durumlarını yönetin ve kar/zarar analizlerinizi inceleyin.',
-        icon: 'cart-outline',
-        color: '#34C759', // iosGreen
-    },
-    {
-        id: '3',
-        title: 'Personel & Görevler',
-        description: 'Ekibinizi oluşturun, görev atamaları yapın ve zimmet takibi ile envanterinizi güvende tutun.',
-        icon: 'people-outline',
-        color: '#AF52DE', // Purple
-    },
-    {
-        id: '4',
-        title: 'Profesyonel Raporlar',
-        description: 'Satış, stok ve personel verilerinizi tek tıkla Excel veya PDF formatında dışa aktarın.',
-        icon: 'document-text-outline',
-        color: '#FF9500', // Orange
-    }
-];
+
 
 const Slide = ({ item }) => {
     return (
@@ -50,8 +24,40 @@ const Slide = ({ item }) => {
 };
 
 export default function OnboardingScreen({ navigation }) {
+    const { t } = useTranslation();
     const [currentSlideIndex, setCurrentSlideIndex] = useState(0);
     const flatListRef = useRef(null);
+
+    const SLIDES = useMemo(() => [
+        {
+            id: '1',
+            title: t('slide1_title'),
+            description: t('slide1_desc'),
+            icon: 'cube-outline',
+            color: '#0A84FF', // iosBlue
+        },
+        {
+            id: '2',
+            title: t('slide2_title'),
+            description: t('slide2_desc'),
+            icon: 'cart-outline',
+            color: '#34C759', // iosGreen
+        },
+        {
+            id: '3',
+            title: t('slide3_title'),
+            description: t('slide3_desc'),
+            icon: 'people-outline',
+            color: '#AF52DE', // Purple
+        },
+        {
+            id: '4',
+            title: t('slide4_title'),
+            description: t('slide4_desc'),
+            icon: 'document-text-outline',
+            color: '#FF9500', // Orange
+        }
+    ], [t]);
 
     const updateCurrentSlideIndex = (e) => {
         const contentOffsetX = e.nativeEvent.contentOffset.x;
@@ -109,7 +115,7 @@ export default function OnboardingScreen({ navigation }) {
                     {currentSlideIndex === SLIDES.length - 1 ? (
                         <View style={{ flexDirection: 'row' }}>
                             <TouchableOpacity style={styles.btn} onPress={finishOnboarding}>
-                                <Text style={styles.btnText}>Başla</Text>
+                                <Text style={styles.btnText}>{t('start')}</Text>
                             </TouchableOpacity>
                         </View>
                     ) : (
@@ -118,14 +124,14 @@ export default function OnboardingScreen({ navigation }) {
                                 activeOpacity={0.8}
                                 onPress={skip}
                                 style={[styles.btn, { backgroundColor: 'transparent', borderWidth: 1, borderColor: '#ccc' }]}>
-                                <Text style={[styles.btnText, { color: '#666' }]}>Atla</Text>
+                                <Text style={[styles.btnText, { color: '#666' }]}>{t('skip')}</Text>
                             </TouchableOpacity>
                             <View style={{ width: 15 }} />
                             <TouchableOpacity
                                 activeOpacity={0.8}
                                 onPress={goToNextSlide}
                                 style={styles.btn}>
-                                <Text style={styles.btnText}>İleri</Text>
+                                <Text style={styles.btnText}>{t('next')}</Text>
                             </TouchableOpacity>
                         </View>
                     )}

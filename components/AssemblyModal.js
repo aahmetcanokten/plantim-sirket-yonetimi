@@ -18,10 +18,13 @@ import { AppContext } from "../AppContext";
 import KeyboardSafeView from "./KeyboardSafeView";
 import { useToast } from "./ToastProvider";
 import BarcodeScannerModal from "./BarcodeScannerModal";
+import { useTranslation } from "react-i18next";
+
 
 export default function AssemblyModal({ visible, onClose, onComplete }) {
     const { products, updateProduct, addProduct, isPremium } = useContext(AppContext);
     const toast = useToast();
+    const { t } = useTranslation();
 
     // Steps: 0 = Select Components, 1 = Product Details
     const [step, setStep] = useState(0);
@@ -33,7 +36,7 @@ export default function AssemblyModal({ visible, onClose, onComplete }) {
 
     // Step 1 State: New Product Details
     const [productName, setProductName] = useState("");
-    const [category, setCategory] = useState("Montajlı Ürün");
+    const [category, setCategory] = useState(t("assembly_product"));
     const [productionQuantity, setProductionQuantity] = useState("1");
     const [salePrice, setSalePrice] = useState("");
     const [criticalLimit, setCriticalLimit] = useState("5");
@@ -50,7 +53,7 @@ export default function AssemblyModal({ visible, onClose, onComplete }) {
             setSelectedItems({});
             setSearchQuery("");
             setProductName("");
-            setCategory("Montajlı Ürün");
+            setCategory(t("assembly_product"));
             setProductionQuantity("1");
             setSalePrice("");
             setCriticalLimit("5");
@@ -84,7 +87,7 @@ export default function AssemblyModal({ visible, onClose, onComplete }) {
 
             // Check stock limit
             if (newQty > product.quantity) {
-                Alert.alert("Stok Yetersiz", `${product.name} için maksimum stok: ${product.quantity}`);
+                Alert.alert(t("insufficient_stock_warning"), t("insufficient_stock_limit", { productName: product.name, quantity: product.quantity }));
                 return prev;
             }
 
@@ -110,7 +113,7 @@ export default function AssemblyModal({ visible, onClose, onComplete }) {
 
     const handleNext = () => {
         if (getSelectedItemCount() === 0) {
-            Alert.alert("Uyarı", "Lütfen en az bir bileşen seçin.");
+            Alert.alert(t("warning"), t("select_at_least_one_component"));
             return;
         }
         setStep(1);
@@ -128,13 +131,13 @@ export default function AssemblyModal({ visible, onClose, onComplete }) {
 
     const handleComplete = async () => {
         if (!productName.trim()) {
-            Alert.alert("Hata", "Lütfen ürün adı girin.");
+            Alert.alert(t("error"), t("enter_product_name"));
             return;
         }
 
         const prodQty = parseInt(productionQuantity, 10);
         if (isNaN(prodQty) || prodQty <= 0) {
-            Alert.alert("Hata", "Geçerli bir üretim adedi girin.");
+            Alert.alert(t("error"), t("enter_valid_production_quantity"));
             return;
         }
 
@@ -157,7 +160,11 @@ export default function AssemblyModal({ visible, onClose, onComplete }) {
             const prod = products.find(p => p.id === pid);
 
             if (!prod || (prod.quantity || 0) < totalQtyNeeded) {
-                Alert.alert("Yetersiz Stok", `${prod?.name || 'Ürün'} için toplam ${totalQtyNeeded} adet gerekiyor ancak stokta ${prod?.quantity || 0} adet var.`);
+                Alert.alert(t("insufficient_stock_warning"), t("insufficient_stock_detail", {
+                    productName: prod?.name || 'Ürün',
+                    needed: totalQtyNeeded,
+                    current: prod?.quantity || 0
+                }));
                 return;
             }
         }
@@ -207,7 +214,7 @@ export default function AssemblyModal({ visible, onClose, onComplete }) {
         // Burada da limit kontrolü addProduct içinde yapılıyor zaten.
 
         if (success) {
-            toast.showToast && toast.showToast(`${productName} (${prodQty} adet) üretildi ve stoğa eklendi.`);
+            toast.showToast && toast.showToast(t("production_completed", { productName, qty: prodQty }));
             onComplete();
             onClose();
         } else {
@@ -227,7 +234,7 @@ export default function AssemblyModal({ visible, onClose, onComplete }) {
             <View style={styles.itemRow}>
                 <View style={{ flex: 1 }}>
                     <Text style={styles.itemName}>{item.name}</Text>
-                    <Text style={styles.itemSub}>Stok: {item.quantity} | Maliyet: {item.cost}₺</Text>
+                    <Text style={styles.itemSub}>{t("stock_label")}: {item.quantity} | {t("cost_label")}: {item.cost}₺</Text>
                 </View>
 
                 <View style={styles.qtyControl}>
@@ -256,7 +263,7 @@ export default function AssemblyModal({ visible, onClose, onComplete }) {
                             <TouchableOpacity onPress={step === 0 ? onClose : handleBack} style={styles.closeBtn}>
                                 <Ionicons name={step === 0 ? "close" : "arrow-back"} size={24} color={Colors.textPrimary} />
                             </TouchableOpacity>
-                            <Text style={styles.title}>{step === 0 ? "Bileşen Seçimi (1 Birim İçin)" : "Ürün ve Üretim Detayları"}</Text>
+                            <Text style={styles.title}>{step === 0 ? t("component_selection_unit") : t("product_production_details")}</Text>
                             <View style={{ width: 24 }} />
                         </View>
 
@@ -267,28 +274,28 @@ export default function AssemblyModal({ visible, onClose, onComplete }) {
                                     <Ionicons name="search" size={20} color={Colors.secondary} />
                                     <TextInput
                                         style={styles.searchInput}
-                                        placeholder="Bileşen Ara..."
+                                        placeholder={t("search_component_placeholder")}
                                         value={searchQuery}
                                         onChangeText={setSearchQuery}
                                     />
                                 </View>
-                                <Text style={styles.stepNote}>Lütfen 1 adet ürün üretimi için gerekli malzemeleri seçin.</Text>
+                                <Text style={styles.stepNote}>{t("production_step_note")}</Text>
 
                                 <FlatList
                                     data={filteredProducts}
                                     keyExtractor={item => item.id}
                                     renderItem={renderProductItem}
                                     contentContainerStyle={{ padding: 16 }}
-                                    ListEmptyComponent={<Text style={styles.emptyText}>Stokta uygun bileşen bulunamadı.</Text>}
+                                    ListEmptyComponent={<Text style={styles.emptyText}>{t("no_component_in_stock")}</Text>}
                                 />
 
                                 <View style={styles.footer}>
                                     <View>
-                                        <Text style={styles.totalLabel}>Seçilen: {getSelectedItemCount()} Kalem</Text>
-                                        <Text style={styles.totalCost}>Birim Maliyet: {calculateUnitCost().toFixed(2)}₺</Text>
+                                        <Text style={styles.totalLabel}>{t("selected_items_count", { count: getSelectedItemCount() })}</Text>
+                                        <Text style={styles.totalCost}>{t("unit_cost_currency")}: {calculateUnitCost().toFixed(2)}₺</Text>
                                     </View>
                                     <TouchableOpacity style={styles.nextBtn} onPress={handleNext}>
-                                        <Text style={styles.nextBtnText}>İleri</Text>
+                                        <Text style={styles.nextBtnText}>{t("next")}</Text>
                                         <Ionicons name="arrow-forward" size={18} color="#fff" style={{ marginLeft: 4 }} />
                                     </TouchableOpacity>
                                 </View>
@@ -297,24 +304,24 @@ export default function AssemblyModal({ visible, onClose, onComplete }) {
                             // STEP 1: Product Output Details
                             <ScrollView contentContainerStyle={{ padding: 20 }}>
                                 <View style={styles.summaryBox}>
-                                    <Text style={styles.summaryTitle}>Toplam Tahmini Maliyet</Text>
+                                    <Text style={styles.summaryTitle}>{t("total_estimated_cost")}</Text>
                                     <Text style={styles.summaryCost}>
                                         {(calculateUnitCost() * (parseInt(productionQuantity) || 1)).toFixed(2)} ₺
                                     </Text>
                                     <Text style={styles.summaryNote}>
-                                        1 Birim Maliyeti: {calculateUnitCost().toFixed(2)} ₺
+                                        {t("unit_cost_label", { cost: calculateUnitCost().toFixed(2) })}
                                     </Text>
                                 </View>
 
-                                <Text style={styles.label}>Oluşturulacak Ürün Adı *</Text>
+                                <Text style={styles.label}>{t("product_name_to_create")}</Text>
                                 <TextInput
                                     style={styles.input}
-                                    placeholder="Örn: Özel Montaj Masa"
+                                    placeholder={t("composite_product_placeholder")}
                                     value={productName}
                                     onChangeText={setProductName}
                                 />
 
-                                <Text style={styles.label}>Kategori</Text>
+                                <Text style={styles.label}>{t("category")}</Text>
                                 <TextInput
                                     style={styles.input}
                                     value={category}
@@ -323,7 +330,7 @@ export default function AssemblyModal({ visible, onClose, onComplete }) {
 
                                 <View style={{ flexDirection: 'row', justifyContent: 'space-between' }}>
                                     <View style={{ width: '48%' }}>
-                                        <Text style={styles.label}>Üretim Adedi *</Text>
+                                        <Text style={styles.label}>{t("production_quantity")}</Text>
                                         <TextInput
                                             style={styles.input}
                                             placeholder="1"
@@ -333,7 +340,7 @@ export default function AssemblyModal({ visible, onClose, onComplete }) {
                                         />
                                     </View>
                                     <View style={{ width: '48%' }}>
-                                        <Text style={styles.label}>Satış Fiyatı (₺)</Text>
+                                        <Text style={styles.label}>{t("sales_price_currency")}</Text>
                                         <TextInput
                                             style={styles.input}
                                             placeholder="0.00"
@@ -344,7 +351,7 @@ export default function AssemblyModal({ visible, onClose, onComplete }) {
                                     </View>
                                 </View>
 
-                                <Text style={styles.label}>Kritik Stok Limiti</Text>
+                                <Text style={styles.label}>{t("critical_stock_limit")}</Text>
                                 <TextInput
                                     style={styles.input}
                                     placeholder="5"
@@ -353,13 +360,13 @@ export default function AssemblyModal({ visible, onClose, onComplete }) {
                                     onChangeText={setCriticalLimit}
                                 />
 
-                                <Text style={styles.label}>Ürün Kodu / Barkod</Text>
+                                <Text style={styles.label}>{t("product_code_barcode_optional")}</Text>
                                 <View style={styles.inputContainer}>
                                     <TextInput
                                         style={styles.inputWithIcon}
                                         value={productCode}
                                         onChangeText={setProductCode}
-                                        placeholder="Barkod"
+                                        placeholder={t("barcode") || "Barkod"}
                                     />
                                     <TouchableOpacity onPress={() => setScannerVisible(true)} style={styles.iconContainer}>
                                         <Ionicons name="barcode-outline" size={24} color={Colors.iosBlue} />
@@ -367,7 +374,7 @@ export default function AssemblyModal({ visible, onClose, onComplete }) {
                                 </View>
 
                                 <TouchableOpacity style={styles.completeBtn} onPress={handleComplete}>
-                                    <Text style={styles.completeBtnText}>Üretimi Tamamla ve Stoğa Ekle</Text>
+                                    <Text style={styles.completeBtnText}>{t("complete_production_add_stock")}</Text>
                                 </TouchableOpacity>
 
                             </ScrollView>

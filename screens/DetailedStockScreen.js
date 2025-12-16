@@ -2,17 +2,19 @@
 
 import React, { useContext, useMemo, useState } from "react";
 import {
-  View,
-  Text,
-  FlatList,
-  StyleSheet,
-  TouchableOpacity,
-  ScrollView,
+    View,
+    Text,
+    FlatList,
+    StyleSheet,
+    TouchableOpacity,
+    ScrollView,
 } from "react-native";
 import ImmersiveLayout from "../components/ImmersiveLayout"; // Mevcut bileşenlerden biri
 import { Ionicons } from "@expo/vector-icons";
 import { Colors } from "../Theme"; // Mevcut tema yapınızdan
 import { AppContext } from "../AppContext"; // Mevcut Context yapınızdan
+
+import { useTranslation } from "react-i18next"; // Mevcut Context yapınızdan
 
 // --- Yardımcı İşlevler ---
 const formatCurrency = (amount) => {
@@ -23,6 +25,7 @@ const formatCurrency = (amount) => {
 // --- Bileşen Başlangıcı ---
 export default function DetailedStockScreen({ navigation }) {
     const { products } = useContext(AppContext);
+    const { t } = useTranslation();
 
     // --- State Yönetimi ---
     const [filterCategory, setFilterCategory] = useState("Hepsi");
@@ -32,7 +35,7 @@ export default function DetailedStockScreen({ navigation }) {
         let totalCostValue = 0; // Toplam Maliyet Değeri
         let totalSalesValue = 0; // Toplam Potansiyel Satış Değeri
         let totalPotentialProfit = 0; // Toplam Potansiyel Kâr
-        
+
         // Ürün listesini detaylı analiz için zenginleştir
         const detailedProducts = products.map(product => {
             const quantity = product.quantity || 0;
@@ -103,35 +106,35 @@ export default function DetailedStockScreen({ navigation }) {
                 {/* Ürün Adı ve Kategori */}
                 <View style={styles.itemHeader}>
                     <Text style={styles.itemName}>{item.name}</Text>
-                    <Text style={styles.itemCategory}>{item.category || 'Belirtilmemiş'}</Text>
+                    <Text style={styles.itemCategory}>{item.category || t("unspecified")}</Text>
                 </View>
 
                 {/* Detay Satırları */}
                 <View style={styles.detailRow}>
-                    <Text style={styles.detailLabel}>Stok Miktarı:</Text>
+                    <Text style={styles.detailLabel}>{t("stock_quantity_label")}:</Text>
                     <Text style={[styles.detailValue, item.isCritical && { color: Colors.warning, fontWeight: '800' }]}>
-                        {item.quantity || 0} {item.isCritical && `(Kritik Limit: ${item.criticalLimit})`}
+                        {item.quantity || 0} {item.isCritical && `(${t("critical_limit")}: ${item.criticalLimit})`}
                     </Text>
                 </View>
                 <View style={styles.detailRow}>
-                    <Text style={styles.detailLabel}>Birim Maliyet:</Text>
+                    <Text style={styles.detailLabel}>{t("unit_cost")}:</Text>
                     <Text style={styles.detailValue}>{formatCurrency(item.cost || 0)} ₺</Text>
                 </View>
                 <View style={styles.detailRow}>
-                    <Text style={styles.detailLabel}>Birim Satış Fiyatı:</Text>
+                    <Text style={styles.detailLabel}>{t("unit_sales_price")}:</Text>
                     <Text style={styles.detailValue}>{formatCurrency(item.price || 0)} ₺</Text>
                 </View>
-                
+
                 <View style={styles.divider} />
 
                 <View style={[styles.detailRow, { marginTop: 5 }]}>
-                    <Text style={[styles.detailLabel, { fontWeight: '700' }]}>Toplam Stok Maliyeti:</Text>
+                    <Text style={[styles.detailLabel, { fontWeight: '700' }]}>{t("total_stock_cost")}:</Text>
                     <Text style={[styles.detailValue, { fontWeight: '700', color: Colors.secondary }]}>{formatCurrency(item.totalStockCost)} ₺</Text>
                 </View>
                 <View style={styles.detailRow}>
-                    <Text style={[styles.detailLabel, { fontWeight: '700' }]}>Potansiyel Kâr (Stok):</Text>
+                    <Text style={[styles.detailLabel, { fontWeight: '700' }]}>{t("potential_profit_stock")}:</Text>
                     <View style={styles.profitBadge}>
-                        <Ionicons name={profitIcon} size={14} color={profitColor} style={{marginRight: 4}} />
+                        <Ionicons name={profitIcon} size={14} color={profitColor} style={{ marginRight: 4 }} />
                         <Text style={[styles.detailValue, { color: profitColor, fontWeight: '800' }]}>{formatCurrency(item.totalStockProfit)} ₺</Text>
                     </View>
                 </View>
@@ -141,37 +144,37 @@ export default function DetailedStockScreen({ navigation }) {
 
     // --- Görünüm (Return) ---
     return (
-        <ImmersiveLayout 
-            title="Detaylı Stok Analizi" 
-            subtitle="Maliyet, Kâr ve Toplam Stok Değerleri"
+        <ImmersiveLayout
+            title={t("detailed_stock_analysis")}
+            subtitle={t("stock_analysis_subtitle")}
         >
             <ScrollView style={styles.container}>
-                
+
                 {/* Genel Metrikler */}
-                <Text style={styles.sectionTitle}>Genel Stok Metrikleri</Text>
+                <Text style={styles.sectionTitle}>{t("general_stock_metrics")}</Text>
                 <View style={styles.metricsContainer}>
-                    <MetricCard 
-                        title="Toplam Maliyet Değeri" 
-                        value={analysisData.totalCostValue} 
-                        color={Colors.secondary} 
+                    <MetricCard
+                        title={t("total_cost_value")}
+                        value={analysisData.totalCostValue}
+                        color={Colors.secondary}
                         iconName="wallet-outline"
                     />
-                    <MetricCard 
-                        title="Potansiyel Satış Değeri" 
-                        value={analysisData.totalSalesValue} 
-                        color={Colors.iosBlue} 
+                    <MetricCard
+                        title={t("potential_sales_value")}
+                        value={analysisData.totalSalesValue}
+                        color={Colors.iosBlue}
                         iconName="cash-outline"
                     />
-                    <MetricCard 
-                        title="Potansiyel Toplam Kâr" 
-                        value={analysisData.totalPotentialProfit} 
-                        color={analysisData.totalPotentialProfit >= 0 ? Colors.profit : Colors.critical} 
+                    <MetricCard
+                        title={t("total_potential_profit")}
+                        value={analysisData.totalPotentialProfit}
+                        color={analysisData.totalPotentialProfit >= 0 ? Colors.profit : Colors.critical}
                         iconName="trending-up-outline"
                     />
                 </View>
 
                 {/* Kategori Filtresi */}
-                <Text style={styles.sectionTitle}>Kategoriye Göre Filtrele</Text>
+                <Text style={styles.sectionTitle}>{t("filter_by_category")}</Text>
                 <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.categoryFilterContainer}>
                     {["Hepsi", ...analysisData.categories].map(category => (
                         <TouchableOpacity
@@ -195,17 +198,17 @@ export default function DetailedStockScreen({ navigation }) {
 
                 {/* Detaylı Ürün Listesi */}
                 <Text style={styles.sectionTitle}>
-                    Detaylı Ürün Listesi ({filteredProducts.length})
+                    {t("detailed_product_list")} ({filteredProducts.length})
                 </Text>
-                
+
                 <FlatList
                     data={filteredProducts}
                     keyExtractor={(i) => i.id}
                     renderItem={renderDetailedItem}
                     scrollEnabled={false} // Ana ScrollView içinde olduğu için FlatList'i kaydırmaz
-                    ListEmptyComponent={<Text style={styles.emptyListText}>Analiz edilecek ürün bulunamadı.</Text>}
+                    ListEmptyComponent={<Text style={styles.emptyListText}>{t("no_products_for_analysis")}</Text>}
                 />
-            
+
             </ScrollView>
         </ImmersiveLayout>
     );

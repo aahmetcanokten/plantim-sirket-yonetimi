@@ -3,10 +3,12 @@ import { Modal, View, Text, StyleSheet, TouchableOpacity, Dimensions, Vibration 
 import { CameraView, useCameraPermissions } from 'expo-camera';
 import { Ionicons } from '@expo/vector-icons';
 import { Colors } from '../Theme';
+import { useTranslation } from "react-i18next";
 
 const { width, height } = Dimensions.get('window');
 
 export default function BarcodeScannerModal({ visible, onClose, onScanned }) {
+    const { t } = useTranslation();
     const [permission, requestPermission] = useCameraPermissions();
     const [scanned, setScanned] = useState(false);
     const lastScanTime = useRef(0); // Son okuma zamanını takip et
@@ -50,15 +52,15 @@ export default function BarcodeScannerModal({ visible, onClose, onScanned }) {
                 <View style={styles.container}>
                     <View style={styles.permissionContent}>
                         <Ionicons name="camera-outline" size={64} color="#fff" style={{ marginBottom: 20 }} />
-                        <Text style={styles.permissionTitle}>Kamera İzni Gerekiyor</Text>
+                        <Text style={styles.permissionTitle}>{t('camera_permission_title')}</Text>
                         <Text style={styles.message}>
-                            Barkodları tarayarak ürünleri hızlıca bulabilmek ve stoğa ekleyebilmek için kamera erişimine izin vermeniz gerekmektedir.
+                            {t('camera_permission_message')}
                         </Text>
                         <TouchableOpacity onPress={requestPermission} style={styles.button}>
-                            <Text style={styles.buttonText}>İzin Ver</Text>
+                            <Text style={styles.buttonText}>{t('allow')}</Text>
                         </TouchableOpacity>
                         <TouchableOpacity onPress={onClose} style={[styles.button, styles.cancelButton]}>
-                            <Text style={[styles.buttonText, styles.cancelButtonText]}>Vazgeç</Text>
+                            <Text style={[styles.buttonText, styles.cancelButtonText]}>{t('give_up')}</Text>
                         </TouchableOpacity>
                     </View>
                 </View>
@@ -83,7 +85,7 @@ export default function BarcodeScannerModal({ visible, onClose, onScanned }) {
                 >
                     <View style={styles.overlay}>
                         <View style={styles.topOverlay}>
-                            <Text style={styles.scanText}>Barkodu kutucuğun içine getirin</Text>
+                            <Text style={styles.scanText}>{t('scan_barcode_instruction')}</Text>
                         </View>
                         <View style={styles.middleOverlay}>
                             <View style={styles.sideOverlay} />

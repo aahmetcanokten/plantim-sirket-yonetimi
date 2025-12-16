@@ -11,6 +11,8 @@ import {
 import { Colors, CardRadius, ButtonRadius } from "../Theme";
 import DatePickerButton from "./DatePickerButton";
 import KeyboardSafeView from "./KeyboardSafeView"; // Klavye güvenliği için eklendi
+import { useTranslation } from "react-i18next";
+
 
 export default function InvoiceModal({
   visible,
@@ -20,6 +22,7 @@ export default function InvoiceModal({
   initialShipmentDate = null,
   productInfo, // Ürün bilgisi prop olarak eklendi
 }) {
+  const { t } = useTranslation();
   const [invoiceNum, setInvoiceNum] = useState(initialInvoice);
   const [shipmentDate, setShipmentDate] = useState(
     initialShipmentDate ? new Date(initialShipmentDate) : new Date()
@@ -53,32 +56,32 @@ export default function InvoiceModal({
       <KeyboardSafeView offsetIOS={Platform.OS === "ios" ? 0 : 0}>
         <View style={styles.modalOverlay}>
           <View style={styles.modalContent}>
-            <Text style={styles.modalTitle}>Satış Kaydını Tamamla</Text>
-            <Text style={styles.modalSubtitle}>Fatura ve Sevk Bilgilerini Giriniz</Text>
+            <Text style={styles.modalTitle}>{t("complete_sales_record")}</Text>
+            <Text style={styles.modalSubtitle}>{t("enter_invoice_shipment_info")}</Text>
 
             {/* Fatura Numarası Alanı */}
-            <Text style={styles.label}>Fatura Numarası</Text>
+            <Text style={styles.label}>{t("invoice_number")}</Text>
             <View style={styles.row}>
               <TextInput
                 style={[styles.input, { flex: 1, marginRight: 10 }]}
                 value={invoiceNum}
                 onChangeText={setInvoiceNum}
-                placeholder="Fatura No"
+                placeholder={t("invoice_number_placeholder")}
               />
               <TouchableOpacity
                 style={styles.generateButton}
                 onPress={generateInvoiceNumber} // Buton artık aktif
               >
-                <Text style={styles.generateButtonText}>Oluştur</Text>
+                <Text style={styles.generateButtonText}>{t("generate")}</Text>
               </TouchableOpacity>
             </View>
 
             {/* Sevk Tarihi Alanı */}
-            <Text style={[styles.label, { marginTop: 15 }]}>Sevk Tarihi</Text>
+            <Text style={[styles.label, { marginTop: 15 }]}>{t("shipment_date")}</Text>
             <DatePickerButton
               value={shipmentDate}
               onChange={setShipmentDate}
-              placeholder="Tarih Seçiniz"
+              placeholder={t("date_picker_placeholder")}
             />
 
             {/* Ürün Bilgisi Özeti (Opsiyonel ama şık durur) */}
@@ -86,18 +89,18 @@ export default function InvoiceModal({
               <View style={styles.productInfoContainer}>
                 <Text style={styles.productInfoTitle}>{productInfo.name}</Text>
                 <Text style={styles.productInfoDetail}>
-                  Adet: {productInfo.quantity} • Tutar: {productInfo.totalPrice} ₺
+                  {t("quantity_label")} {productInfo.quantity} • {t("amount_label")} {productInfo.totalPrice} ₺
                 </Text>
               </View>
             )}
 
             {/* Aksiyon Butonları */}
             <TouchableOpacity style={styles.saveButton} onPress={handleSave}>
-              <Text style={styles.saveButtonText}>Kaydet ve Satışı Tamamla</Text>
+              <Text style={styles.saveButtonText}>{t("save_and_complete_sale")}</Text>
             </TouchableOpacity>
 
             <TouchableOpacity style={styles.cancelButton} onPress={onCancel}>
-              <Text style={styles.cancelButtonText}>İptal</Text>
+              <Text style={styles.cancelButtonText}>{t("cancel")}</Text>
             </TouchableOpacity>
           </View>
         </View>
@@ -118,7 +121,7 @@ const styles = StyleSheet.create({
     borderTopRightRadius: 24,
     padding: 24,
     // Klavye açıldığında içeriğin tamamen görünmesi için paddingBottom artırılabilir
-    paddingBottom: Platform.OS === "ios" ? 40 : 24, 
+    paddingBottom: Platform.OS === "ios" ? 40 : 24,
   },
   modalTitle: {
     fontSize: 20,
@@ -163,21 +166,21 @@ const styles = StyleSheet.create({
     fontSize: 14,
   },
   productInfoContainer: {
-      marginTop: 20,
-      padding: 12,
-      backgroundColor: "#F8FAFC",
-      borderRadius: 10,
-      borderWidth: 1,
-      borderColor: "#E2E8F0",
+    marginTop: 20,
+    padding: 12,
+    backgroundColor: "#F8FAFC",
+    borderRadius: 10,
+    borderWidth: 1,
+    borderColor: "#E2E8F0",
   },
   productInfoTitle: {
-      fontWeight: "700",
-      color: Colors.textPrimary,
+    fontWeight: "700",
+    color: Colors.textPrimary,
   },
   productInfoDetail: {
-      color: Colors.secondary,
-      fontSize: 13,
-      marginTop: 4,
+    color: Colors.secondary,
+    fontSize: 13,
+    marginTop: 4,
   },
   saveButton: {
     backgroundColor: Colors.iosGreen,

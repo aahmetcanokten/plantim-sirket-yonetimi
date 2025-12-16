@@ -2,13 +2,17 @@ import React, { useState } from "react";
 import { TouchableOpacity, Text, StyleSheet, Platform } from "react-native";
 import DateTimePicker from "@react-native-community/datetimepicker";
 import { Colors } from "../Theme";
+import { useTranslation } from "react-i18next";
+
 
 /*
   YENİ BİLEŞEN: AddPurchaseForm'un ihtiyaç duyduğu tarih seçici.
   - Bir butona basıldığında yerel (native) tarih seçiciyi açar.
 */
-export default function DatePickerButton({ value, onChange, placeholder = "Tarih Seç" }) {
+export default function DatePickerButton({ value, onChange, placeholder }) {
+  const { t, i18n } = useTranslation();
   const [show, setShow] = useState(false);
+  const displayPlaceholder = placeholder || t("date_picker_placeholder");
 
   const onDateChange = (event, selectedDate) => {
     const currentDate = selectedDate || value;
@@ -18,7 +22,7 @@ export default function DatePickerButton({ value, onChange, placeholder = "Tarih
     }
   };
 
-  const displayText = value ? value.toLocaleDateString("tr-TR") : placeholder;
+  const displayText = value ? value.toLocaleDateString(i18n.language) : displayPlaceholder;
 
   return (
     <>

@@ -1,4 +1,5 @@
 import React, { useContext, useState, useMemo } from "react";
+import { useTranslation } from "react-i18next";
 import { View, Text, TextInput, TouchableOpacity, FlatList, Modal, Alert, StyleSheet, Platform, Linking } from "react-native";
 import ImmersiveLayout from "../components/ImmersiveLayout";
 import { Colors, CardRadius, ButtonRadius, IOSShadow } from "../Theme";
@@ -10,6 +11,7 @@ import { SkeletonCustomerItem } from "../components/Skeleton";
 
 // --- Müşteri Ekleme/Düzenleme Modalı ---
 const CustomerFormModal = ({ visible, onClose, onSave, initialData = null }) => {
+    const { t } = useTranslation();
     const [companyName, setCompanyName] = useState(initialData?.companyName || initialData?.name || "");
     const [contactName, setContactName] = useState(initialData?.contactName || "");
     const [phone, setPhone] = useState(initialData?.phone || "");
@@ -28,7 +30,7 @@ const CustomerFormModal = ({ visible, onClose, onSave, initialData = null }) => 
 
     const handleSave = () => {
         if (!companyName.trim() || !contactName.trim() || !phone.trim() || !email.trim() || !cariCode.trim()) {
-            Alert.alert("Eksik Bilgi", "Lütfen tüm alanları eksiksiz doldurunuz. Tüm alanlar zorunludur.");
+            Alert.alert(t('missing_info'), t('fill_all_fields'));
             return;
         }
 
@@ -51,7 +53,7 @@ const CustomerFormModal = ({ visible, onClose, onSave, initialData = null }) => 
                 <View style={styles.modalContainer}>
                     <View style={styles.modalHeaderRow}>
                         <Text style={styles.modalHeaderTitle}>
-                            {initialData ? "Müşteri Düzenle" : "Yeni Müşteri Kartı"}
+                            {initialData ? t('edit_customer') : t('new_customer_card')}
                         </Text>
                         <TouchableOpacity onPress={onClose} style={styles.closeButton}>
                             <Ionicons name="close" size={28} color={Colors.textPrimary} />
@@ -59,23 +61,23 @@ const CustomerFormModal = ({ visible, onClose, onSave, initialData = null }) => 
                     </View>
 
                     <View style={styles.formContent}>
-                        <Text style={styles.inputLabel}>Firma Ünvanı <Text style={styles.requiredStar}>*</Text></Text>
-                        <TextInput style={styles.input} value={companyName} onChangeText={setCompanyName} placeholder="Örn: ABC Teknoloji A.Ş." />
+                        <Text style={styles.inputLabel}>{t('company_title')} <Text style={styles.requiredStar}>*</Text></Text>
+                        <TextInput style={styles.input} value={companyName} onChangeText={setCompanyName} placeholder={t('example_company')} />
 
-                        <Text style={styles.inputLabel}>Yetkili Kişi <Text style={styles.requiredStar}>*</Text></Text>
-                        <TextInput style={styles.input} value={contactName} onChangeText={setContactName} placeholder="Örn: Ahmet Yılmaz" />
+                        <Text style={styles.inputLabel}>{t('contact_person')} <Text style={styles.requiredStar}>*</Text></Text>
+                        <TextInput style={styles.input} value={contactName} onChangeText={setContactName} placeholder={t('example_name')} />
 
-                        <Text style={styles.inputLabel}>Telefon <Text style={styles.requiredStar}>*</Text></Text>
-                        <TextInput style={styles.input} value={phone} onChangeText={setPhone} keyboardType="phone-pad" placeholder="Örn: 0555 123 45 67" />
+                        <Text style={styles.inputLabel}>{t('phone')} <Text style={styles.requiredStar}>*</Text></Text>
+                        <TextInput style={styles.input} value={phone} onChangeText={setPhone} keyboardType="phone-pad" placeholder={t('example_phone')} />
 
-                        <Text style={styles.inputLabel}>E-posta <Text style={styles.requiredStar}>*</Text></Text>
-                        <TextInput style={styles.input} value={email} onChangeText={setEmail} keyboardType="email-address" autoCapitalize="none" placeholder="Örn: info@abcteknoloji.com" />
+                        <Text style={styles.inputLabel}>{t('email')} <Text style={styles.requiredStar}>*</Text></Text>
+                        <TextInput style={styles.input} value={email} onChangeText={setEmail} keyboardType="email-address" autoCapitalize="none" placeholder={t('example_email')} />
 
-                        <Text style={styles.inputLabel}>Cari Kodu <Text style={styles.requiredStar}>*</Text></Text>
-                        <TextInput style={styles.input} value={cariCode} onChangeText={setCariCode} autoCapitalize="characters" placeholder="Örn: M-001" />
+                        <Text style={styles.inputLabel}>{t('cari_code')} <Text style={styles.requiredStar}>*</Text></Text>
+                        <TextInput style={styles.input} value={cariCode} onChangeText={setCariCode} autoCapitalize="characters" placeholder={t('example_code')} />
 
                         <TouchableOpacity style={styles.saveButton} onPress={handleSave}>
-                            <Text style={styles.saveButtonText}>Kaydet</Text>
+                            <Text style={styles.saveButtonText}>{t('save')}</Text>
                         </TouchableOpacity>
                     </View>
                 </View>
@@ -84,66 +86,70 @@ const CustomerFormModal = ({ visible, onClose, onSave, initialData = null }) => 
     );
 };
 
-const CustomerListItem = ({ item, onEdit, onDelete, orderCount }) => (
-    <View style={customerListStyles.itemContainer}>
-        <View style={customerListStyles.headerRow}>
-            <Text style={customerListStyles.companyName}>{item.companyName || item.name}</Text>
-            {orderCount > 0 && (
-                <View style={customerListStyles.orderBadge}>
-                    <Ionicons name="receipt-outline" size={12} color="#fff" />
-                    <Text style={customerListStyles.orderBadgeText}>{orderCount} Sipariş</Text>
+const CustomerListItem = ({ item, onEdit, onDelete, orderCount }) => {
+    const { t } = useTranslation();
+    return (
+        <View style={customerListStyles.itemContainer}>
+            <View style={customerListStyles.headerRow}>
+                <Text style={customerListStyles.companyName}>{item.companyName || item.name}</Text>
+                {orderCount > 0 && (
+                    <View style={customerListStyles.orderBadge}>
+                        <Ionicons name="receipt-outline" size={12} color="#fff" />
+                        <Text style={customerListStyles.orderBadgeText}>{orderCount} {t('order')}</Text>
+                    </View>
+                )}
+            </View>
+            <View style={customerListStyles.contactPersonRow}>
+                <Ionicons name="person-outline" size={14} color={Colors.textPrimary} />
+                <Text style={customerListStyles.contactPersonText}>{item.contactName || t('contact_not_specified')}</Text>
+            </View>
+            <View style={customerListStyles.divider} />
+
+            <View style={customerListStyles.infoRow}>
+                {/* TELEFON / ARA BUTONU */}
+                <TouchableOpacity
+                    style={[customerListStyles.infoItem, { backgroundColor: '#F0F9FF', padding: 8, borderRadius: 8, marginRight: 12, flex: 0, minWidth: 155, borderWidth: 1, borderColor: '#BAE6FD' }]}
+                    onPress={() => {
+                        if (item.phone) {
+                            Linking.openURL(`tel:${item.phone}`);
+                        } else {
+                            Alert.alert(t('info'), t('phone_not_registered'));
+                        }
+                    }}
+                >
+                    <Ionicons name="call" size={16} color={Colors.iosBlue} />
+                    <Text numberOfLines={1} style={[customerListStyles.infoText, { color: Colors.iosBlue, fontWeight: '700', flex: 1, fontSize: 10 }]}>{item.phone || "-"}</Text>
+                    {item.phone && <Ionicons name="chevron-forward" size={14} color={Colors.iosBlue} style={{ marginLeft: 4 }} />}
+                </TouchableOpacity>
+
+                {/* EMAIL */}
+                <View style={[customerListStyles.infoItem, { flex: 1, paddingLeft: 4 }]}>
+                    <Ionicons name="mail" size={16} color={Colors.secondary} />
+                    <Text style={[customerListStyles.infoText, { color: Colors.textPrimary }]} numberOfLines={1} ellipsizeMode="tail">{item.email || "-"}</Text>
                 </View>
-            )}
-        </View>
-        <View style={customerListStyles.contactPersonRow}>
-            <Ionicons name="person-outline" size={14} color={Colors.textPrimary} />
-            <Text style={customerListStyles.contactPersonText}>{item.contactName || "Yetkili Belirtilmedi"}</Text>
-        </View>
-        <View style={customerListStyles.divider} />
+            </View>
 
-        <View style={customerListStyles.infoRow}>
-            {/* TELEFON / ARA BUTONU */}
-            <TouchableOpacity
-                style={[customerListStyles.infoItem, { backgroundColor: '#F0F9FF', padding: 8, borderRadius: 8, marginRight: 12, flex: 0, minWidth: 155, borderWidth: 1, borderColor: '#BAE6FD' }]}
-                onPress={() => {
-                    if (item.phone) {
-                        Linking.openURL(`tel:${item.phone}`);
-                    } else {
-                        Alert.alert("Bilgi", "Telefon numarası kayıtlı değil.");
-                    }
-                }}
-            >
-                <Ionicons name="call" size={16} color={Colors.iosBlue} />
-                <Text numberOfLines={1} style={[customerListStyles.infoText, { color: Colors.iosBlue, fontWeight: '700', flex: 1, fontSize: 10 }]}>{item.phone || "-"}</Text>
-                {item.phone && <Ionicons name="chevron-forward" size={14} color={Colors.iosBlue} style={{ marginLeft: 4 }} />}
-            </TouchableOpacity>
-
-            {/* EMAIL */}
-            <View style={[customerListStyles.infoItem, { flex: 1, paddingLeft: 4 }]}>
-                <Ionicons name="mail" size={16} color={Colors.secondary} />
-                <Text style={[customerListStyles.infoText, { color: Colors.textPrimary }]} numberOfLines={1} ellipsizeMode="tail">{item.email || "-"}</Text>
+            <View style={customerListStyles.footerRow}>
+                <View style={customerListStyles.cariCodeContainer}>
+                    <Text style={customerListStyles.cariCodeLabel}>{t('cari_code')}:</Text>
+                    <Text style={customerListStyles.cariCodeValue}>{item.cariCode || "-"}</Text>
+                </View>
+                <View style={customerListStyles.actionButtons}>
+                    <TouchableOpacity onPress={() => onEdit(item)} style={[customerListStyles.iconButton, { backgroundColor: '#F0F9FF' }]}>
+                        <Ionicons name="create-outline" size={18} color={Colors.iosBlue} />
+                    </TouchableOpacity>
+                    <TouchableOpacity onPress={() => onDelete(item.id, item.companyName || item.name)} style={[customerListStyles.iconButton, { backgroundColor: '#FFF5F5' }]}>
+                        <Ionicons name="trash-outline" size={18} color={Colors.critical} />
+                    </TouchableOpacity>
+                </View>
             </View>
         </View>
-
-        <View style={customerListStyles.footerRow}>
-            <View style={customerListStyles.cariCodeContainer}>
-                <Text style={customerListStyles.cariCodeLabel}>Cari Kod:</Text>
-                <Text style={customerListStyles.cariCodeValue}>{item.cariCode || "-"}</Text>
-            </View>
-            <View style={customerListStyles.actionButtons}>
-                <TouchableOpacity onPress={() => onEdit(item)} style={[customerListStyles.iconButton, { backgroundColor: '#F0F9FF' }]}>
-                    <Ionicons name="create-outline" size={18} color={Colors.iosBlue} />
-                </TouchableOpacity>
-                <TouchableOpacity onPress={() => onDelete(item.id, item.companyName || item.name)} style={[customerListStyles.iconButton, { backgroundColor: '#FFF5F5' }]}>
-                    <Ionicons name="trash-outline" size={18} color={Colors.critical} />
-                </TouchableOpacity>
-            </View>
-        </View>
-    </View>
-);
+    );
+};
 
 export default function CustomerScreen() {
     const { customers, addCustomer, updateCustomer, deleteCustomer, sales, isPremium, appDataLoading } = useContext(AppContext);
+    const { t } = useTranslation();
 
     const [searchQuery, setSearchQuery] = useState("");
     const [sortAsc, setSortAsc] = useState(true);
@@ -199,20 +205,20 @@ export default function CustomerScreen() {
     };
 
     const confirmDelete = (id, nameVal) => {
-        Alert.alert("Silme Onayı", `${nameVal} müşterisini silmek istediğinizden emin misiniz?`, [
-            { text: "İptal", style: "cancel" },
-            { text: "Sil", style: "destructive", onPress: () => deleteCustomer(id) }
+        Alert.alert(t('delete_confirmation'), `${nameVal} ${t('delete_customer_confirmation')}`, [
+            { text: t('cancel'), style: "cancel" },
+            { text: t('delete'), style: "destructive", onPress: () => deleteCustomer(id) }
         ]);
     };
 
     return (
-        <ImmersiveLayout title="Müşteri Rehberi" subtitle={`${filteredCustomers.length} kayıt`}>
+        <ImmersiveLayout title={t('customer_directory')} subtitle={t('record_count', { count: filteredCustomers.length })}>
 
             <View style={styles.filterContainer}>
                 <View style={styles.searchBar}>
                     <Ionicons name="search" size={20} color={Colors.secondary} style={{ marginRight: 8 }} />
                     <TextInput
-                        placeholder="Firma, yetkili veya cari kod ara..."
+                        placeholder={t('search_company_contact_cari')}
                         value={searchQuery}
                         onChangeText={setSearchQuery}
                         style={styles.searchInput}
@@ -251,7 +257,7 @@ export default function CustomerScreen() {
                         <View style={styles.emptyState}>
                             <Ionicons name="people-outline" size={50} color={Colors.secondary} />
                             <Text style={styles.emptyStateText}>
-                                {searchQuery ? "Arama kriterlerine uygun müşteri bulunamadı." : "Henüz kayıtlı müşteri yok."}
+                                {searchQuery ? t('no_customer_found') : t('no_registered_customer')}
                             </Text>
                         </View>
                     }
@@ -260,7 +266,7 @@ export default function CustomerScreen() {
 
             <TouchableOpacity style={styles.fab} onPress={handleOpenAddModal} activeOpacity={0.9}>
                 <Ionicons name="person-add" size={24} color="#fff" />
-                <Text style={styles.fabText}>Yeni Müşteri</Text>
+                <Text style={styles.fabText}>{t('new_customer')}</Text>
             </TouchableOpacity>
 
             <CustomerFormModal

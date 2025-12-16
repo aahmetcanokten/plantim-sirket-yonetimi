@@ -4,8 +4,10 @@ import NetInfo from '@react-native-community/netinfo';
 import { Colors } from '../Theme';
 import { Ionicons } from '@expo/vector-icons';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { useTranslation } from 'react-i18next'; // t importu
 
 export default function OfflineNotice() {
+    const { t } = useTranslation();
     const [isConnected, setIsConnected] = useState(true);
     const [animation] = useState(new Animated.Value(0));
 
@@ -37,7 +39,7 @@ export default function OfflineNotice() {
             <SafeAreaView edges={['top']} style={styles.safeArea}>
                 <View style={styles.content}>
                     <Ionicons name="cloud-offline-outline" size={20} color="#fff" style={styles.icon} />
-                    <Text style={styles.text}>İnternet bağlantısı yok</Text>
+                    <Text style={styles.text}>{t('no_internet_connection')}</Text>
                 </View>
             </SafeAreaView>
         </Animated.View>

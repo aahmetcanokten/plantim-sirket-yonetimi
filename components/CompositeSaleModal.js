@@ -18,9 +18,13 @@ import { AppContext } from "../AppContext";
 import KeyboardSafeView from "./KeyboardSafeView"; // Assuming this exists as used in StockScreen
 import DatePickerButton from "./DatePickerButton";
 import { scheduleShipmentNotification } from "../utils/NotificationHelper";
+import { useTranslation } from "react-i18next";
+
 
 export default function CompositeSaleModal({ visible, onClose, onComplete }) {
     const { products, customers, updateProduct, addSale, isPremium } = useContext(AppContext);
+    const { t } = useTranslation();
+
 
     // Steps: 0 = Select Items, 1 = Sale Details
     const [step, setStep] = useState(0);
@@ -81,7 +85,7 @@ export default function CompositeSaleModal({ visible, onClose, onComplete }) {
 
             // Check stock limit
             if (newQty > product.quantity) {
-                Alert.alert("Stok Yetersiz", `${product.name} için maksimum stok: ${product.quantity}`);
+                Alert.alert(t("insufficient_stock"), t("insufficient_stock_limit", { productName: product.name, quantity: product.quantity }));
                 return prev; // Don't change if exceeds stock
             }
 
@@ -105,13 +109,13 @@ export default function CompositeSaleModal({ visible, onClose, onComplete }) {
                 closeQtyModal();
                 return;
             }
-            Alert.alert("Hata", "Lütfen geçerli bir miktar girin.");
+            Alert.alert(t("error"), t("enter_valid_quantity"));
             return;
         }
 
         const product = qtyTargetItem.product;
         if (val > product.quantity) {
-            Alert.alert("Stok Yetersiz", `${product.name} için maksimum stok: ${product.quantity}`);
+            Alert.alert(t("insufficient_stock"), t("insufficient_stock_limit", { productName: product.name, quantity: product.quantity }));
             return;
         }
 
@@ -148,7 +152,7 @@ export default function CompositeSaleModal({ visible, onClose, onComplete }) {
 
     const handleNext = () => {
         if (getSelectedItemCount() === 0) {
-            Alert.alert("Uyarı", "Lütfen en az bir bileşen seçin.");
+            Alert.alert(t("warning"), t("select_at_least_one_component"));
             return;
         }
         setStep(1);
@@ -160,15 +164,15 @@ export default function CompositeSaleModal({ visible, onClose, onComplete }) {
 
     const handleComplete = async () => {
         if (!parentName.trim()) {
-            Alert.alert("Hata", "Lütfen ürün adı girin.");
+            Alert.alert(t("error"), t("enter_product_name"));
             return;
         }
         if (!salePrice || isNaN(parseFloat(salePrice))) {
-            Alert.alert("Hata", "Geçerli bir satış fiyatı girin.");
+            Alert.alert(t("error"), t("enter_valid_sales_price"));
             return;
         }
         if (!selectedCustomer) {
-            Alert.alert("Hata", "Lütfen bir müşteri seçin.");
+            Alert.alert(t("error"), t("select_customer_error"));
             return;
         }
 
@@ -225,7 +229,7 @@ export default function CompositeSaleModal({ visible, onClose, onComplete }) {
             <View style={styles.itemRow}>
                 <View style={{ flex: 1 }}>
                     <Text style={styles.itemName}>{item.name}</Text>
-                    <Text style={styles.itemSub}>Stok: {item.quantity} | Maliyet: {item.cost}₺</Text>
+                    <Text style={styles.itemSub}>{t("stock_label")}: {item.quantity} | {t("cost_label")}: {item.cost}₺</Text>
                 </View>
 
                 <View style={styles.qtyControl}>
@@ -267,7 +271,7 @@ export default function CompositeSaleModal({ visible, onClose, onComplete }) {
                             <TouchableOpacity onPress={step === 0 ? onClose : handleBack} style={styles.closeBtn}>
                                 <Ionicons name={step === 0 ? "close" : "arrow-back"} size={24} color={Colors.textPrimary} />
                             </TouchableOpacity>
-                            <Text style={styles.title}>{step === 0 ? "Bileşen Seçimi" : "Satış Detayları"}</Text>
+                            <Text style={styles.title}>{step === 0 ? t("component_selection") : t("sale_details")}</Text>
                             <View style={{ width: 24 }} />
                         </View>
 
@@ -278,7 +282,7 @@ export default function CompositeSaleModal({ visible, onClose, onComplete }) {
                                     <Ionicons name="search" size={20} color={Colors.secondary} />
                                     <TextInput
                                         style={styles.searchInput}
-                                        placeholder="Bileşen Ara..."
+                                        placeholder={t("search_component_placeholder")}
                                         value={searchQuery}
                                         onChangeText={setSearchQuery}
                                     />
@@ -289,16 +293,16 @@ export default function CompositeSaleModal({ visible, onClose, onComplete }) {
                                     keyExtractor={item => item.id}
                                     renderItem={renderProductItem}
                                     contentContainerStyle={{ padding: 16 }}
-                                    ListEmptyComponent={<Text style={styles.emptyText}>Stokta uygun bileşen bulunamadı.</Text>}
+                                    ListEmptyComponent={<Text style={styles.emptyText}>{t("no_component_in_stock")}</Text>}
                                 />
 
                                 <View style={styles.footer}>
                                     <View>
-                                        <Text style={styles.totalLabel}>Seçilen: {getSelectedItemCount()} Kalem</Text>
-                                        <Text style={styles.totalCost}>Tahmini Maliyet: {calculateTotalCost().toFixed(2)}₺</Text>
+                                        <Text style={styles.totalLabel}>{t("selected_items_count", { count: getSelectedItemCount() })}</Text>
+                                        <Text style={styles.totalCost}>{t("estimated_cost", { cost: calculateTotalCost().toFixed(2) })}</Text>
                                     </View>
                                     <TouchableOpacity style={styles.nextBtn} onPress={handleNext}>
-                                        <Text style={styles.nextBtnText}>İleri</Text>
+                                        <Text style={styles.nextBtnText}>{t("next")}</Text>
                                         <Ionicons name="arrow-forward" size={18} color="#fff" style={{ marginLeft: 4 }} />
                                     </TouchableOpacity>
                                 </View>
@@ -307,20 +311,20 @@ export default function CompositeSaleModal({ visible, onClose, onComplete }) {
                             // STEP 1: Details
                             <ScrollView contentContainerStyle={{ padding: 20 }}>
                                 <View style={styles.summaryBox}>
-                                    <Text style={styles.summaryTitle}>Maliyet Özeti</Text>
+                                    <Text style={styles.summaryTitle}>{t("cost_summary")}</Text>
                                     <Text style={styles.summaryCost}>{calculateTotalCost().toFixed(2)} ₺</Text>
-                                    <Text style={styles.summaryNote}>{getSelectedItemCount()} bileşen stoktan düşülecek.</Text>
+                                    <Text style={styles.summaryNote}>{t("components_will_be_deducted", { count: getSelectedItemCount() })}</Text>
                                 </View>
 
-                                <Text style={styles.label}>Sipariş Numarası veya Satılacak Ürün Adı</Text>
+                                <Text style={styles.label}>{t("order_number_or_product_name")}</Text>
                                 <TextInput
                                     style={styles.input}
-                                    placeholder="Örn: Özel Montaj Masa"
+                                    placeholder={t("composite_product_placeholder")}
                                     value={parentName}
                                     onChangeText={setParentName}
                                 />
 
-                                <Text style={styles.label}>Satış Fiyatı (₺)</Text>
+                                <Text style={styles.label}>{t("sales_price_currency")}</Text>
                                 <TextInput
                                     style={styles.input}
                                     placeholder="0.00"
@@ -329,14 +333,14 @@ export default function CompositeSaleModal({ visible, onClose, onComplete }) {
                                     onChangeText={setSalePrice}
                                 />
 
-                                <Text style={styles.label}>Sevk Tarihi</Text>
+                                <Text style={styles.label}>{t("shipment_date")}</Text>
                                 <DatePickerButton
                                     value={shipmentDate}
                                     onChange={setShipmentDate}
-                                    placeholder="Tarih Seçiniz"
+                                    placeholder={t("date_not_specified")}
                                 />
 
-                                <Text style={styles.label}>Müşteri Seçin</Text>
+                                <Text style={styles.label}>{t("select_customer")}</Text>
                                 <View style={styles.customerList}>
                                     <FlatList
                                         data={customers}
@@ -348,12 +352,11 @@ export default function CompositeSaleModal({ visible, onClose, onComplete }) {
                                 </View>
 
                                 <TouchableOpacity style={styles.completeBtn} onPress={handleComplete}>
-                                    <Text style={styles.completeBtnText}>Satış Siparişi Oluştur</Text>
+                                    <Text style={styles.completeBtnText}>{t("create_sales_order")}</Text>
                                 </TouchableOpacity>
 
                             </ScrollView>
                         )}
-
                     </View>
                     {/* Safe Area Spacer for iOS Home Indicator */}
                     <View style={{ height: Platform.OS === 'ios' ? 34 : 0, backgroundColor: '#fff' }} />
@@ -369,19 +372,20 @@ export default function CompositeSaleModal({ visible, onClose, onComplete }) {
                 onClose={closeQtyModal}
                 onSave={handleManualQtyUpdate}
                 productName={qtyTargetItem?.product?.name}
+                t={t}
             />
         </Modal >
     );
 }
 
 // YENİ: Basit Miktar Giriş Modalı
-function QuantityInputModal({ visible, value, onChangeText, onClose, onSave, productName }) {
+function QuantityInputModal({ visible, value, onChangeText, onClose, onSave, productName, t }) {
     return (
         <Modal visible={visible} transparent animationType="fade" onRequestClose={onClose}>
             <View style={styles.qtyModalOverlay}>
                 <View style={styles.qtyModalContent}>
                     <Text style={styles.qtyModalTitle}>{productName}</Text>
-                    <Text style={styles.qtyModalSub}>Miktar Giriniz:</Text>
+                    <Text style={styles.qtyModalSub}>{t("enter_quantity")}</Text>
 
                     <TextInput
                         style={styles.qtyInput}
@@ -394,10 +398,10 @@ function QuantityInputModal({ visible, value, onChangeText, onClose, onSave, pro
 
                     <View style={styles.qtyModalActions}>
                         <TouchableOpacity style={styles.qtyCancelBtn} onPress={onClose}>
-                            <Text style={styles.qtyCancelText}>İptal</Text>
+                            <Text style={styles.qtyCancelText}>{t("cancel")}</Text>
                         </TouchableOpacity>
                         <TouchableOpacity style={styles.qtySaveBtn} onPress={onSave}>
-                            <Text style={styles.qtySaveText}>Tamam</Text>
+                            <Text style={styles.qtySaveText}>{t("ok")}</Text>
                         </TouchableOpacity>
                     </View>
                 </View>

@@ -1,6 +1,8 @@
 import React, { useEffect, useState, useContext } from "react";
 import { Platform, View, ActivityIndicator, StyleSheet, AppState } from "react-native";
 import { enableScreens } from 'react-native-screens';
+import './i18n';
+import { useTranslation } from 'react-i18next';
 
 enableScreens();
 import { NavigationContainer } from "@react-navigation/native";
@@ -9,7 +11,7 @@ import { createStackNavigator } from "@react-navigation/stack";
 import { AppProvider, AppContext } from "./AppContext";
 import { AuthProvider, useAuth } from "./AuthContext";
 import { ToastProvider } from "./components/ToastProvider";
-import { registerForPushNotificationsAsync, checkAndTriggerLowStockNotification } from "./utils/NotificationHelper";
+import { registerForPushNotificationsAsync, checkAndTriggerLowStockNotification, resetBadgeCount } from "./utils/NotificationHelper";
 
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 
@@ -41,6 +43,8 @@ const Stack = createStackNavigator();
 // Uygulama Açılış Reklamı Nesnesi KALDIRILDI
 
 function MainTabs() {
+  const { t } = useTranslation();
+
   return (
     <Tab.Navigator
       initialRouteName="Stok"
@@ -71,10 +75,10 @@ function MainTabs() {
         },
       })}
     >
-      <Tab.Screen name="Stok" component={StockScreen} />
-      <Tab.Screen name="Satışlar" component={SalesScreen} />
-      <Tab.Screen name="Satın Alma" component={PurchasesScreen} />
-      <Tab.Screen name="Müşteriler" component={CustomerScreen} />
+      <Tab.Screen name="Stok" component={StockScreen} options={{ tabBarLabel: t('stock') }} />
+      <Tab.Screen name="Satışlar" component={SalesScreen} options={{ tabBarLabel: t('sales') }} />
+      <Tab.Screen name="Satın Alma" component={PurchasesScreen} options={{ tabBarLabel: t('purchasing') }} />
+      <Tab.Screen name="Müşteriler" component={CustomerScreen} options={{ tabBarLabel: t('customers') }} />
     </Tab.Navigator>
   );
 }
@@ -139,8 +143,17 @@ function RootNavigator() {
 export default function App() {
   useEffect(() => {
     registerForPushNotificationsAsync();
+    resetBadgeCount();
 
+    const subscription = AppState.addEventListener('change', nextAppState => {
+      if (nextAppState === 'active') {
+        resetBadgeCount();
+      }
+    });
 
+    return () => {
+      subscription.remove();
+    };
   }, []);
 
   return (

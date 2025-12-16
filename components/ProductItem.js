@@ -1,6 +1,8 @@
 import React from "react";
 import { View, Text, TouchableOpacity, StyleSheet } from "react-native";
 import { Colors, IOSShadow, CardRadius } from "../Theme";
+import { useTranslation } from "react-i18next";
+
 
 /*
   ProductItem
@@ -13,10 +15,11 @@ import { Colors, IOSShadow, CardRadius } from "../Theme";
   StockScreen.js'deki Liste Başlıklarına Uyumlu Hale Getirildi (flex: 4, 2, 3, 2, 1)
 */
 export default function ProductItem({ item, onSell, onEdit, onDelete }) {
+  const { t } = useTranslation();
   // Veri alanlarını, StockScreen'deki başlık yapısına uygun olarak bölüyoruz.
   const priceDisplay = Number(item.price || 0).toFixed(2) + ' ₺';
   const currentQuantity = item.quantity || 0;
-  
+
   // KRİTİK STOK KONTROLÜ (Örn: 5'in altı)
   const isCriticalStock = currentQuantity <= 5 && currentQuantity > 0;
   const isOutOfStock = currentQuantity === 0;
@@ -27,34 +30,34 @@ export default function ProductItem({ item, onSell, onEdit, onDelete }) {
 
   return (
     <View style={[styles.item, IOSShadow]}>
-      
+
       {/* 1. Ürün Adı / Kategori (flex: 4) */}
       <View style={styles.col4}>
         <Text style={styles.title}>{item.name}</Text>
-        <Text style={styles.muted}>{item.category || "Kategori Yok"}</Text>
+        <Text style={styles.muted}>{item.category || t("no_category")}</Text>
       </View>
 
       {/* 2. Stok (flex: 2) */}
       <View style={styles.col2Center}>
-        <Text 
-            style={[
-                styles.dataText, 
-                isCriticalStock && styles.criticalText, 
-                isOutOfStock && styles.outOfStockText
-            ]}
+        <Text
+          style={[
+            styles.dataText,
+            isCriticalStock && styles.criticalText,
+            isOutOfStock && styles.outOfStockText
+          ]}
         >
-            {currentQuantity}
+          {currentQuantity}
         </Text>
         {isCriticalStock && (
-            <Text style={styles.criticalWarning}>Az Kaldı!</Text>
+          <Text style={styles.criticalWarning}>{t("stock_low")}</Text>
         )}
       </View>
-      
+
       {/* 3. Seri No / Ürün Kodu (flex: 3) */}
       <View style={styles.col3Center}>
         <Text style={styles.dataText}>{identifierDisplay}</Text>
         <Text style={styles.mutedSmall}>
-            {item.code ? "Ürün Kodu" : (item.serialNumber ? "Seri No" : "")}
+          {item.code ? t("product_code_label") : (item.serialNumber ? t("serial_number") : "")}
         </Text>
       </View>
 
@@ -70,9 +73,9 @@ export default function ProductItem({ item, onSell, onEdit, onDelete }) {
           style={[styles.btn, styles.sellBtn]}
           activeOpacity={0.8}
           accessibilityRole="button"
-          accessibilityLabel={`Sat ${item.name}`}
+          accessibilityLabel={`${t("sell_action")} ${item.name}`}
         >
-          <Text style={[styles.btnText, { color: "#fff" }]}>Sat</Text>
+          <Text style={[styles.btnText, { color: "#fff" }]}>{t("sell_action")}</Text>
         </TouchableOpacity>
 
         <TouchableOpacity
@@ -80,20 +83,20 @@ export default function ProductItem({ item, onSell, onEdit, onDelete }) {
           style={[styles.btn, styles.editBtn]}
           activeOpacity={0.8}
           accessibilityRole="button"
-          accessibilityLabel={`Düzenle ${item.name}`}
+          accessibilityLabel={`${t("edit")} ${item.name}`}
         >
-          <Text style={[styles.btnText, { color: "#fff" }]}>Düzenle</Text>
+          <Text style={[styles.btnText, { color: "#fff" }]}>{t("edit")}</Text>
         </TouchableOpacity>
 
         {/* StockScreen.js'teki confirmDelete fonksiyonu artık item.id ve item.name kullanıyor */}
         <TouchableOpacity
-          onPress={() => onDelete && onDelete(item.id, item.name)} 
+          onPress={() => onDelete && onDelete(item.id, item.name)}
           style={[styles.btn, styles.deleteBtn]}
           activeOpacity={0.8}
           accessibilityRole="button"
-          accessibilityLabel={`Sil ${item.name}`}
+          accessibilityLabel={`${t("delete")} ${item.name}`}
         >
-          <Text style={[styles.btnText, { color: Colors.critical }]}>Sil</Text>
+          <Text style={[styles.btnText, { color: Colors.critical }]}>{t("delete")}</Text>
         </TouchableOpacity>
       </View>
     </View>
@@ -122,9 +125,9 @@ const styles = StyleSheet.create({
   title: { fontWeight: "800", fontSize: 14, color: '#333' },
   muted: { color: Colors.secondary, fontSize: 12, marginTop: 2 },
   mutedSmall: { color: Colors.secondary, fontSize: 10, marginTop: 2 },
-  
+
   dataText: { fontWeight: "600", fontSize: 14, color: '#000' },
-  
+
   // Yeni Kritik Stok Stilleri
   criticalText: {
     color: Colors.critical, // Kırmızı

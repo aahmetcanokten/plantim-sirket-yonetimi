@@ -3,6 +3,7 @@ import { View, Text, StyleSheet, TouchableOpacity, SafeAreaView } from 'react-na
 import { Ionicons } from '@expo/vector-icons';
 import { Colors } from '../Theme';
 import * as Updates from 'expo-updates';
+import i18n from '../i18n'; // i18n instance
 
 export default class ErrorBoundary extends Component {
     constructor(props) {
@@ -36,19 +37,19 @@ export default class ErrorBoundary extends Component {
                         <View style={styles.iconContainer}>
                             <Ionicons name="alert-circle-outline" size={64} color={Colors.critical} />
                         </View>
-                        <Text style={styles.title}>Beklenmedik Bir Hata Oluştu</Text>
+                        <Text style={styles.title}>{i18n.t('unexpected_error_title')}</Text>
                         <Text style={styles.message}>
-                            Uygulama düzgün çalışmasını engelleyen bir sorunla karşılaştı. Teknik ekibimiz durumdan haberdar edildi.
+                            {i18n.t('unexpected_error_message')}
                         </Text>
 
                         <TouchableOpacity style={styles.button} onPress={this.handleRestart}>
-                            <Text style={styles.buttonText}>Uygulamayı Yeniden Başlat</Text>
+                            <Text style={styles.buttonText}>{i18n.t('restart_app')}</Text>
                         </TouchableOpacity>
 
                         {/* Geliştirici Modu: Hatayı Göster */}
                         {__DEV__ && (
                             <View style={styles.debugContainer}>
-                                <Text style={styles.debugTitle}>Hata Detayı:</Text>
+                                <Text style={styles.debugTitle}>{i18n.t('error_detail')}</Text>
                                 <Text style={styles.debugText}>{this.state.error?.toString()}</Text>
                             </View>
                         )}

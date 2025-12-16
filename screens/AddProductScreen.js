@@ -10,6 +10,7 @@ import {
   ScrollView,
   Platform
 } from "react-native";
+import { useTranslation } from "react-i18next";
 import ImmersiveLayout from "../components/ImmersiveLayout";
 import { AppContext } from "../AppContext";
 import { Ionicons } from "@expo/vector-icons";
@@ -21,6 +22,7 @@ import BarcodeScannerModal from "../components/BarcodeScannerModal";
 export default function AddProductScreen({ navigation }) {
   const { addProduct, products, isPremium } = useContext(AppContext);
   const toast = useToast();
+  const { t } = useTranslation();
 
   const [name, setName] = useState("");
   const [category, setCategory] = useState("");
@@ -47,7 +49,7 @@ export default function AddProductScreen({ navigation }) {
     Keyboard.dismiss();
 
     if (!name.trim()) {
-      Alert.alert("Hata", "Ürün adı boş olamaz.");
+      Alert.alert(t('error'), t('product_name_required'));
       return;
     }
 
@@ -65,11 +67,11 @@ export default function AddProductScreen({ navigation }) {
     // --- LİMİT KONTROLÜ ---
     if (!isPremium && products.length >= 5) {
       Alert.alert(
-        "Limit Aşıldı",
-        "Ücretsiz planda limitiniz doldu. Sınırsız ürün eklemek için Premium'a geçin.",
+        t('limit_exceeded'),
+        t('limit_exceeded_add_product'),
         [
-          { text: "Vazgeç", style: "cancel" },
-          { text: "Premium Al", onPress: () => navigation.navigate("Paywall") }
+          { text: t('cancel'), style: "cancel" },
+          { text: t('get_premium'), onPress: () => navigation.navigate("Paywall") }
         ]
       );
       return;
@@ -79,7 +81,7 @@ export default function AddProductScreen({ navigation }) {
 
     if (success) {
       resetForm();
-      toast.showToast && toast.showToast(`${newProduct.name} stoğa eklendi`);
+      toast.showToast && toast.showToast(`${newProduct.name} ${t('added_to_stock')}`);
       navigation.goBack();
     }
   };
@@ -87,13 +89,13 @@ export default function AddProductScreen({ navigation }) {
   const handleScan = (data) => {
     setCode(data);
     setScannerVisible(false);
-    toast.showToast && toast.showToast("Barkod okundu: " + data);
+    toast.showToast && toast.showToast(`${t('barcode_scanned')}: ${data}`);
   };
 
   return (
     <ImmersiveLayout
-      title="Yeni Ürün Ekle"
-      subtitle="Stok envanterine yeni bir ürün kaydet"
+      title={t('add_new_product')}
+      subtitle={t('new_product_subtitle')}
       showBackButton={true}
       navigation={navigation}
     >
@@ -101,27 +103,27 @@ export default function AddProductScreen({ navigation }) {
         <ScrollView contentContainerStyle={styles.container}>
 
           {/* Ürün Adı */}
-          <Text style={styles.inputLabel}>Ürün Adı *</Text>
+          <Text style={styles.inputLabel}>{t('product_name')} *</Text>
           <TextInput
             style={styles.input}
             value={name}
             onChangeText={setName}
-            placeholder="Örn: Siyah T-Shirt"
+            placeholder={t('product_name')}
             placeholderTextColor={Colors.secondary}
           />
 
           {/* Kategori */}
-          <Text style={styles.inputLabel}>Kategori</Text>
+          <Text style={styles.inputLabel}>{t('category')}</Text>
           <TextInput
             style={styles.input}
             value={category}
             onChangeText={setCategory}
-            placeholder="Örn: Giyim, Elektronik, Yedek Parça"
+            placeholder={t('category')}
             placeholderTextColor={Colors.secondary}
           />
 
           {/* Stok Miktarı */}
-          <Text style={styles.inputLabel}>Mevcut Stok Miktarı</Text>
+          <Text style={styles.inputLabel}>{t('current_stock_quantity')}</Text>
           <TextInput
             style={styles.input}
             value={quantity}
@@ -132,7 +134,7 @@ export default function AddProductScreen({ navigation }) {
           />
 
           {/* Kritik Stok Seviyesi */}
-          <Text style={styles.inputLabel}>Kritik Stok Seviyesi</Text>
+          <Text style={styles.inputLabel}>{t('critical_stock_level')}</Text>
           <TextInput
             style={styles.input}
             value={criticalStockLimit}
@@ -145,7 +147,7 @@ export default function AddProductScreen({ navigation }) {
           <View style={styles.priceRow}>
             {/* Alış Fiyatı (Maliyet) */}
             <View style={styles.priceColumn}>
-              <Text style={styles.inputLabel}>Alış Fiyatı (₺)</Text>
+              <Text style={styles.inputLabel}>{t('purchase_price')} (₺)</Text>
               <TextInput
                 style={styles.input}
                 value={cost}
@@ -158,7 +160,7 @@ export default function AddProductScreen({ navigation }) {
 
             {/* Satış Fiyatı */}
             <View style={styles.priceColumn}>
-              <Text style={styles.inputLabel}>Satış Fiyatı (₺)</Text>
+              <Text style={styles.inputLabel}>{t('sale_price')} (₺)</Text>
               <TextInput
                 style={styles.input}
                 value={price}
@@ -171,23 +173,23 @@ export default function AddProductScreen({ navigation }) {
           </View>
 
           {/* Seri Numarası */}
-          <Text style={styles.inputLabel}>Seri Numarası</Text>
+          <Text style={styles.inputLabel}>{t('serial_number')}</Text>
           <TextInput
             style={styles.input}
             value={serialNumber}
             onChangeText={setSerialNumber}
-            placeholder="Ürünün seri numarası"
+            placeholder={t('serial_number')}
             placeholderTextColor={Colors.secondary}
           />
 
           {/* Ürün Kodu */}
-          <Text style={styles.inputLabel}>Ürün Kodu/Barkod</Text>
+          <Text style={styles.inputLabel}>{t('product_code_barcode')}</Text>
           <View style={styles.inputContainer}>
             <TextInput
               style={styles.inputWithIcon}
               value={code}
               onChangeText={setCode}
-              placeholder="Barkod veya özel ürün kodu"
+              placeholder={t('product_code_barcode')}
               placeholderTextColor={Colors.secondary}
             />
             <TouchableOpacity onPress={() => setScannerVisible(true)} style={styles.iconContainer}>
@@ -201,7 +203,7 @@ export default function AddProductScreen({ navigation }) {
             onPress={handleAdd}
           >
             <Ionicons name="save-outline" size={20} color="#fff" style={{ marginRight: 10 }} />
-            <Text style={styles.saveButtonText}>Ürünü Stoğa Ekle</Text>
+            <Text style={styles.saveButtonText}>{t('add_to_stock')}</Text>
           </TouchableOpacity>
 
         </ScrollView>

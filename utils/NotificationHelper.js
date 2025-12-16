@@ -1,5 +1,6 @@
 import * as Notifications from 'expo-notifications';
 import { Platform, Alert } from 'react-native';
+import i18n from '../i18n';
 
 // Bildirimlerin nasıl görüneceğini yapılandır (Uygulama açıkken bile)
 Notifications.setNotificationHandler({
@@ -53,8 +54,8 @@ export async function scheduleShipmentNotification(productName, shipmentDateISO)
         if (shipmentDate > now) {
             await Notifications.scheduleNotificationAsync({
                 content: {
-                    title: "Sevkiyat Günü Geldi! 🚛",
-                    body: `${productName} için bugün sevkiyat günü.`,
+                    title: i18n.t('shipment_day_title'),
+                    body: i18n.t('shipment_day_body', { productName }),
                     sound: true,
                     data: { productName, shipmentDate: shipmentDateISO },
                 },
@@ -71,8 +72,8 @@ export async function scheduleShipmentNotification(productName, shipmentDateISO)
         if (twoDaysBefore > now) {
             await Notifications.scheduleNotificationAsync({
                 content: {
-                    title: "Sevkiyat Yaklaşıyor ⏳",
-                    body: `${productName} ürününün sevkiyatına 2 gün kaldı.`,
+                    title: i18n.t('shipment_approaching_title'),
+                    body: i18n.t('shipment_approaching_body', { productName }),
                     sound: true,
                     data: { productName, shipmentDate: shipmentDateISO },
                 },
@@ -108,15 +109,15 @@ export async function checkAndTriggerLowStockNotification(products) {
         let body = "";
 
         if (count === 1) {
-            body = `${firstProduct.name} stok seviyesi kritik (${firstProduct.quantity} adet kaldı).`;
+            body = i18n.t('stock_warning_single', { productName: firstProduct.name, quantity: firstProduct.quantity });
         } else {
-            body = `${firstProduct.name} ve ${count - 1} diğer ürünün stoku kritik seviyede!`;
+            body = i18n.t('stock_warning_multiple', { productName: firstProduct.name, count: count - 1 });
         }
 
         // Bildirim gönder (Hemen)
         await Notifications.scheduleNotificationAsync({
             content: {
-                title: "Stok Uyarısı ⚠️",
+                title: i18n.t('stock_warning_title'),
                 body: body,
                 sound: true,
                 badge: 1,
@@ -124,7 +125,20 @@ export async function checkAndTriggerLowStockNotification(products) {
             trigger: null, // Hemen gönder
         });
 
+
     } catch (error) {
         console.log("Stok bildirimi hatası:", error);
+    }
+}
+
+/**
+ * Uygulama ikonundaki bildirim sayısını sıfırlar.
+ */
+export async function resetBadgeCount() {
+    try {
+        await Notifications.setBadgeCountAsync(0);
+        console.log("Bildirim sayısı sıfırlandı.");
+    } catch (error) {
+        console.log("Bildirim sayısı sıfırlanamadı:", error);
     }
 }

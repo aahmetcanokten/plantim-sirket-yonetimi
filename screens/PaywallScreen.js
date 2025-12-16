@@ -13,9 +13,12 @@ import {
 import { Colors } from '../Theme';
 import { Ionicons } from '@expo/vector-icons';
 import { AppContext } from '../AppContext';
+import { useTranslation } from 'react-i18next';
+
 
 export default function PaywallScreen({ navigation }) {
     const { setPremiumStatus, purchasePremium, restorePurchases, getPackages } = useContext(AppContext);
+    const { t } = useTranslation();
     const [packages, setPackages] = useState([]);
     const [loading, setLoading] = useState(true);
     const [selectedPackage, setSelectedPackage] = useState(null);
@@ -28,7 +31,7 @@ export default function PaywallScreen({ navigation }) {
                     setPackages(offerings.availablePackages);
                 }
             } catch (error) {
-                Alert.alert("Hata", "Paketler yüklenemedi: " + error.message);
+                Alert.alert(t("error"), t("packages_load_error") + error.message);
             } finally {
                 setLoading(false);
             }
@@ -43,11 +46,11 @@ export default function PaywallScreen({ navigation }) {
         try {
             const success = await purchasePremium(pkg);
             if (success) {
-                Alert.alert('Satın Alma Başarılı', 'PLANTİM Premium özellikleriniz aktifleştirildi!');
+                Alert.alert(t("purchase_successful"), t("premium_activated_message"));
                 navigation.goBack();
             }
         } catch (error) {
-            Alert.alert('Hata', error.message);
+            Alert.alert(t("error"), error.message);
         } finally {
             setSelectedPackage(null);
         }
@@ -71,23 +74,22 @@ export default function PaywallScreen({ navigation }) {
 
     return (
         <SafeAreaView style={styles.container}>
+
+
             <ScrollView contentContainerStyle={styles.scrollContainer}>
-                <TouchableOpacity style={styles.closeButton} onPress={() => navigation.goBack()}>
-                    <Ionicons name="close-circle" size={32} color={Colors.secondary} />
-                </TouchableOpacity>
 
                 <View style={styles.header}>
                     <Ionicons name="leaf-outline" size={60} color={Colors.iosBlue} />
                     <Text style={styles.title}>PLANTİM Premium</Text>
-                    <Text style={styles.subtitle}>Sınırları kaldırın.</Text>
+                    <Text style={styles.subtitle}>{t("remove_limits")}</Text>
                 </View>
 
                 <View style={styles.featuresList}>
-                    <FeatureItem text="Sınırsız Stok Kartı Ekleme" />
-                    <FeatureItem text="Sınırsız Envanter Ekleme" />
-                    <FeatureItem text="Sınırsız Proje ve Görev Takibi" />
-                    <FeatureItem text="Detaylı Raporlama ve Analizler" />
-                    <FeatureItem text="Verilerinizi Dışa Aktarma" />
+                    <FeatureItem text={t("unlimited_stock_cards")} />
+                    <FeatureItem text={t("unlimited_inventory")} />
+                    <FeatureItem text={t("unlimited_projects_tasks")} />
+                    <FeatureItem text={t("detailed_reporting")} />
+                    <FeatureItem text={t("export_data")} />
                 </View>
 
                 {loading ? (
@@ -95,7 +97,7 @@ export default function PaywallScreen({ navigation }) {
                 ) : (
                     <View style={styles.productsContainer}>
                         {packages.length === 0 ? (
-                            <Text style={styles.errorText}>Şu anda satışta paket bulunmamaktadır.</Text>
+                            <Text style={styles.errorText}>{t("no_packages_available")}</Text>
                         ) : (
                             packages.map((pkg) => (
                                 <TouchableOpacity
@@ -113,7 +115,7 @@ export default function PaywallScreen({ navigation }) {
                                             <Text style={styles.productDescription}>{pkg.product.description}</Text>
                                             {pkg.packageType === 'ANNUAL' && (
                                                 <View style={styles.badge}>
-                                                    <Text style={styles.badgeText}>AVANTAJLI</Text>
+                                                    <Text style={styles.badgeText}>{t("advantageous")}</Text>
                                                 </View>
                                             )}
                                         </>
@@ -125,24 +127,27 @@ export default function PaywallScreen({ navigation }) {
                 )}
 
                 <TouchableOpacity style={styles.restoreButton} onPress={handleRestore}>
-                    <Text style={styles.restoreButtonText}>Satın Almaları Geri Yükle</Text>
+                    <Text style={styles.restoreButtonText}>{t("restore_purchases_button")}</Text>
                 </TouchableOpacity>
 
                 <Text style={styles.legalText}>
-                    Ödemeler, satın alma onayıyla Apple/Google hesabınızdan tahsil edilecektir. Abonelikler, mevcut dönemin bitiminden 24 saat önce iptal edilmediği sürece otomatik olarak yenilenir.
+                    {t("subscription_terms")}
                 </Text>
 
                 <View style={styles.linksContainer}>
                     <TouchableOpacity onPress={() => Linking.openURL('https://fearless-playground-057.notion.site/Privacy-Policy-2c685b6f3cbc80b6a9ded3063bc09948?source=copy_link')}>
-                        <Text style={styles.linkText}>Gizlilik Politikası</Text>
+                        <Text style={styles.linkText}>{t("privacy_policy")}</Text>
                     </TouchableOpacity>
                     <Text style={styles.linkSeparator}>•</Text>
                     <TouchableOpacity onPress={() => Linking.openURL('https://www.apple.com/legal/internet-services/itunes/dev/stdeula/')}>
-                        <Text style={styles.linkText}>Kullanım Koşulları (EULA)</Text>
+                        <Text style={styles.linkText}>{t("terms_of_use")}</Text>
                     </TouchableOpacity>
                 </View>
 
             </ScrollView>
+            <TouchableOpacity style={styles.closeButton} onPress={() => navigation.goBack()}>
+                <Ionicons name="close-circle" size={32} color={Colors.secondary} />
+            </TouchableOpacity>
         </SafeAreaView>
     );
 }
@@ -150,11 +155,11 @@ export default function PaywallScreen({ navigation }) {
 const styles = StyleSheet.create({
     container: {
         flex: 1,
-        backgroundColor: Colors.background,
+        backgroundColor: Colors.iosBackground,
     },
     scrollContainer: {
         padding: 24,
-        paddingBottom: 40,
+        paddingBottom: 120,
     },
     closeButton: {
         position: 'absolute',
@@ -165,13 +170,13 @@ const styles = StyleSheet.create({
     header: {
         alignItems: 'center',
         marginTop: 40,
-        marginBottom: 30,
+        marginBottom: 20,
     },
     title: {
         fontSize: 28,
         fontWeight: 'bold',
-        color: Colors.text,
-        marginTop: 16,
+        color: Colors.textPrimary,
+        marginTop: 10,
     },
     subtitle: {
         fontSize: 17,
@@ -188,7 +193,7 @@ const styles = StyleSheet.create({
     },
     featureText: {
         fontSize: 16,
-        color: Colors.text,
+        color: Colors.textPrimary,
         marginLeft: 12,
         flexShrink: 1,
     },

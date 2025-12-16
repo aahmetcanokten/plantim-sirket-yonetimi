@@ -18,10 +18,12 @@ import { Ionicons } from "@expo/vector-icons";
 import ImmersiveLayout from "../components/ImmersiveLayout";
 import { Colors } from "../Theme";
 import { AppContext } from "../AppContext";
+import { useTranslation } from "react-i18next";
 
 
 export default function TaskListScreen({ navigation }) {
   const { personnel, updatePersonnel, isPremium } = useContext(AppContext);
+  const { t } = useTranslation();
   const [activeTab, setActiveTab] = useState("open");
   const [searchQuery, setSearchQuery] = useState("");
   const [sortOrder, setSortOrder] = useState("asc"); // 'asc' or 'desc'
@@ -148,8 +150,8 @@ export default function TaskListScreen({ navigation }) {
   };
 
   const handleSaveTask = () => {
-    if (!taskForm.assignedPersonId) { Alert.alert("Hata", "Personel seçimi zorunludur."); return; }
-    if (!taskForm.title.trim()) { Alert.alert("Hata", "Görev başlığı zorunludur."); return; }
+    if (!taskForm.assignedPersonId) { Alert.alert(t("error"), t("personnel_required")); return; }
+    if (!taskForm.title.trim()) { Alert.alert(t("error"), t("task_title_required")); return; }
 
     if (editingTask && editingTask.personId !== taskForm.assignedPersonId) {
       deleteTaskConfirm(editingTask, true);
@@ -189,9 +191,9 @@ export default function TaskListScreen({ navigation }) {
     if (skipAlert) {
       doDelete();
     } else {
-      Alert.alert("Görevi Sil", "Bu görev kalıcı olarak silinecek. Emin misiniz?", [
-        { text: "Vazgeç", style: "cancel" },
-        { text: "Sil", style: "destructive", onPress: doDelete }
+      Alert.alert(t("delete_task"), t("delete_task_confirmation"), [
+        { text: t("cancel"), style: "cancel" },
+        { text: t("delete"), style: "destructive", onPress: doDelete }
       ]);
     }
   };
@@ -199,15 +201,15 @@ export default function TaskListScreen({ navigation }) {
   const toggleTaskStatus = (task) => {
     if (task.isCompleted) {
       // Zaten tamamlanmışsa geri al
-      Alert.alert("Görevi Geri Al", "Bu görevi tekrar 'Yapılacaklar' listesine almak istiyor musunuz?", [
-        { text: "Hayır", style: "cancel" },
-        { text: "Evet", onPress: () => updateStatus(task, false) }
+      Alert.alert(t("undo_task"), t("undo_task_confirmation"), [
+        { text: t("no"), style: "cancel" },
+        { text: t("yes"), onPress: () => updateStatus(task, false) }
       ]);
     } else {
       // Tamamlanmamışsa onayla
-      Alert.alert("Görevi Tamamla", "Bu görevi tamamlandı olarak işaretlemek istiyor musunuz?", [
-        { text: "Vazgeç", style: "cancel" },
-        { text: "Evet, Tamamla", onPress: () => updateStatus(task, true) }
+      Alert.alert(t("complete_task"), t("complete_task_confirmation"), [
+        { text: t("cancel"), style: "cancel" },
+        { text: t("yes_complete"), onPress: () => updateStatus(task, true) }
       ]);
     }
   };
@@ -231,10 +233,10 @@ export default function TaskListScreen({ navigation }) {
     if (Platform.OS === 'ios') {
       ActionSheetIOS.showActionSheetWithOptions(
         {
-          options: ['Vazgeç', 'Düzenle', 'Sil'],
+          options: [t("cancel"), t("edit"), t("delete")],
           destructiveButtonIndex: 2,
           cancelButtonIndex: 0,
-          title: 'Görev Seçenekleri'
+          title: t("task_options")
         },
         (buttonIndex) => {
           if (buttonIndex === 1) openTaskModal(task);
@@ -242,10 +244,10 @@ export default function TaskListScreen({ navigation }) {
         }
       );
     } else {
-      Alert.alert('Görev Seçenekleri', null, [
-        { text: 'Düzenle', onPress: () => openTaskModal(task) },
-        { text: 'Sil', onPress: () => deleteTaskConfirm(task), style: 'destructive' },
-        { text: 'Vazgeç', style: 'cancel' }
+      Alert.alert(t("task_options"), null, [
+        { text: t("edit"), onPress: () => openTaskModal(task) },
+        { text: t("delete"), onPress: () => deleteTaskConfirm(task), style: 'destructive' },
+        { text: t("cancel"), style: 'cancel' }
       ], { cancelable: true });
     }
   };
@@ -258,7 +260,7 @@ export default function TaskListScreen({ navigation }) {
         <Ionicons name="search-outline" size={18} color={Colors.secondary} style={{ marginRight: 8 }} />
         <TextInput
           style={styles.searchInput}
-          placeholder="Personel veya görev ara..."
+          placeholder={t("search_task_placeholder")}
           value={searchQuery}
           onChangeText={setSearchQuery}
           placeholderTextColor={Colors.secondary}
@@ -275,7 +277,7 @@ export default function TaskListScreen({ navigation }) {
         onPress={() => setSortOrder(prev => prev === 'asc' ? 'desc' : 'asc')}
       >
         <Ionicons name={sortOrder === 'asc' ? "arrow-up" : "arrow-down"} size={16} color={Colors.textPrimary} />
-        <Text style={styles.sortButtonText}>Tarih</Text>
+        <Text style={styles.sortButtonText}>{t("date")}</Text>
       </TouchableOpacity>
     </View>
   );
@@ -291,7 +293,7 @@ export default function TaskListScreen({ navigation }) {
             onPress={() => setDateFilter(filter)}
           >
             <Text style={[styles.dateFilterText, dateFilter === filter && styles.dateFilterTextActive]}>
-              {filter === 'ALL' ? 'Tümü' : filter === 'TODAY' ? 'Bugün' : filter === 'WEEK' ? 'Bu Hafta' : 'Bu Ay'}
+              {filter === 'ALL' ? t("all") : filter === 'TODAY' ? t("today") : filter === 'WEEK' ? t("this_week") : t("this_month")}
             </Text>
           </TouchableOpacity>
         ))}
@@ -343,13 +345,13 @@ export default function TaskListScreen({ navigation }) {
             <View style={styles.footerItem}>
               <Ionicons name="calendar-outline" size={14} color={overdue ? Colors.critical : "#9CA3AF"} style={{ marginRight: 4 }} />
               <Text style={[styles.footerText, overdue && { color: Colors.critical, fontWeight: '700' }]}>
-                {item.dueDate || "Tarih yok"}
+                {item.dueDate || t("no_date")}
               </Text>
             </View>
 
             {overdue && (
               <View style={styles.overdueBadge}>
-                <Text style={styles.overdueText}>GECİKTİ</Text>
+                <Text style={styles.overdueText}>{t("overdue")}</Text>
               </View>
             )}
           </View>
@@ -359,7 +361,7 @@ export default function TaskListScreen({ navigation }) {
   };
 
   return (
-    <ImmersiveLayout title="Görev Yönetimi" subtitle="Ekip performansı ve takibi" onGoBack={() => navigation.goBack()}>
+    <ImmersiveLayout title={t("task_management")} subtitle={t("task_subtitle")} onGoBack={() => navigation.goBack()}>
       <View style={styles.container}>
         {renderSearchAndSort()}
 
@@ -370,7 +372,7 @@ export default function TaskListScreen({ navigation }) {
             </View>
             <View>
               <Text style={styles.statValue}>{stats.open}</Text>
-              <Text style={styles.statLabel}>Açık</Text>
+              <Text style={styles.statLabel}>{t("open")}</Text>
             </View>
           </View>
 
@@ -382,18 +384,18 @@ export default function TaskListScreen({ navigation }) {
             </View>
             <View>
               <Text style={[styles.statValue, { color: Colors.critical }]}>{stats.overdue}</Text>
-              <Text style={styles.statLabel}>Geciken</Text>
+              <Text style={styles.statLabel}>{t("overdue_stat")}</Text>
             </View>
           </View>
         </View>
 
         <View style={styles.tabContainer}>
           <TouchableOpacity style={[styles.tabButton, activeTab === "open" && styles.activeTab]} onPress={() => setActiveTab("open")}>
-            <Text style={[styles.tabText, activeTab === "open" && styles.activeTabText]}>Yapılacaklar</Text>
+            <Text style={[styles.tabText, activeTab === "open" && styles.activeTabText]}>{t("todo")}</Text>
             {stats.open > 0 && <View style={styles.badge}><Text style={styles.badgeText}>{stats.open}</Text></View>}
           </TouchableOpacity>
           <TouchableOpacity style={[styles.tabButton, activeTab === "completed" && styles.activeTab]} onPress={() => setActiveTab("completed")}>
-            <Text style={[styles.tabText, activeTab === "completed" && styles.activeTabText]}>Tamamlanan</Text>
+            <Text style={[styles.tabText, activeTab === "completed" && styles.activeTabText]}>{t("completed")}</Text>
           </TouchableOpacity>
         </View>
 
@@ -409,11 +411,11 @@ export default function TaskListScreen({ navigation }) {
               <View style={styles.emptyIconBg}>
                 <Ionicons name="clipboard-outline" size={48} color="#9CA3AF" />
               </View>
-              <Text style={styles.emptyTitle}>Görev Bulunamadı</Text>
+              <Text style={styles.emptyTitle}>{t("no_tasks_found")}</Text>
               <Text style={styles.emptyText}>
                 {activeTab === "completed"
-                  ? "Henüz tamamlanan bir görev yok."
-                  : "Harika! Yapılacak iş kalmadı."}
+                  ? t("no_completed_tasks")
+                  : t("no_pending_tasks_message")}
               </Text>
             </View>
           }
@@ -427,13 +429,13 @@ export default function TaskListScreen({ navigation }) {
           <KeyboardAvoidingView behavior={Platform.OS === "ios" ? "padding" : "height"} style={styles.modalContainer}>
             <View style={styles.modalContent}>
               <View style={styles.modalHeader}>
-                <Text style={styles.modalTitle}>{editingTask ? "Görevi Düzenle" : "Yeni Görev"}</Text>
+                <Text style={styles.modalTitle}>{editingTask ? t("edit_task") : t("new_task")}</Text>
                 <TouchableOpacity onPress={() => setTaskModalVisible(false)} style={styles.closeModalButton}>
                   <Ionicons name="close" size={24} color="#6B7280" />
                 </TouchableOpacity>
               </View>
               <ScrollView showsVerticalScrollIndicator={false}>
-                <Text style={styles.inputLabel}>Personel Seçimi</Text>
+                <Text style={styles.inputLabel}>{t("select_personnel")}</Text>
                 <ScrollView horizontal showsHorizontalScrollIndicator={false} style={{ marginBottom: 20 }}>
                   {personnel.map((p) => (
                     <TouchableOpacity key={p.id} style={[styles.personSelectChip, taskForm.assignedPersonId === p.id && styles.personSelectChipActive]}
@@ -446,7 +448,7 @@ export default function TaskListScreen({ navigation }) {
                   ))}
                 </ScrollView>
 
-                <Text style={styles.inputLabel}>Görev Başlığı</Text>
+                <Text style={styles.inputLabel}>{t("task_title")}</Text>
                 <TextInput
                   style={styles.input}
                   value={taskForm.title}
@@ -455,17 +457,17 @@ export default function TaskListScreen({ navigation }) {
                   placeholderTextColor="#9CA3AF"
                 />
 
-                <Text style={styles.inputLabel}>Açıklama (İsteğe Bağlı)</Text>
+                <Text style={styles.inputLabel}>{t("description_optional")}</Text>
                 <TextInput
                   style={[styles.input, { height: 100, textAlignVertical: 'top' }]}
                   value={taskForm.description}
                   onChangeText={(t) => setTaskForm({ ...taskForm, description: t })}
                   multiline
-                  placeholder="Detayları buraya ekleyin..."
+                  placeholder={t("enter_details")}
                   placeholderTextColor="#9CA3AF"
                 />
 
-                <Text style={styles.inputLabel}>Son Tarih (GG.AA.YYYY)</Text>
+                <Text style={styles.inputLabel}>{t("due_date_format")}</Text>
                 <TextInput
                   style={styles.input}
                   value={taskForm.dueDate}
@@ -476,7 +478,7 @@ export default function TaskListScreen({ navigation }) {
                 />
 
                 <TouchableOpacity style={styles.saveButton} onPress={handleSaveTask}>
-                  <Text style={styles.saveButtonText}>{editingTask ? "Değişiklikleri Kaydet" : "Görevi Oluştur"}</Text>
+                  <Text style={styles.saveButtonText}>{editingTask ? t("save_changes") : t("create_task")}</Text>
                 </TouchableOpacity>
               </ScrollView>
             </View>

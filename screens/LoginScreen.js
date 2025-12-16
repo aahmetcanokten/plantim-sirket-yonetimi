@@ -3,32 +3,36 @@ import { View, Text, TextInput, StyleSheet, Alert, TouchableOpacity, ScrollView,
 import { useAuth } from '../AuthContext'; // useAuth hook'unu import et
 import { Colors } from '../Theme';
 import { Ionicons } from '@expo/vector-icons'; // İkon kütüphanesi
+import { useTranslation } from 'react-i18next';
+
 
 export default function LoginScreen() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
-  
+
   // YENİ: Ekranın "giriş" mi yoksa "kayıt" modunda mı olduğunu tutan state
   const [isLoginView, setIsLoginView] = useState(true);
 
   const [loading, setLoading] = useState(false);
-  
+
+
   const { signIn, signUp, resetPassword } = useAuth();
+  const { t } = useTranslation();
 
   const handleLogin = async () => {
     if (!email || !password) {
-      Alert.alert("Eksik Bilgi", "Lütfen email ve şifrenizi giriniz.");
+      Alert.alert(t("missing_info_title"), t("login_email_password_required"));
       return;
     }
     setLoading(true);
     try {
       const { error } = await signIn(email, password);
       if (error) {
-        Alert.alert("Giriş Başarısız", error.message);
-      } 
+        Alert.alert(t("login_failed"), error.message);
+      }
     } catch (error) {
-      Alert.alert("Hata", "Giriş işlemi sırasında bir hata oluştu: " + error.message);
+      Alert.alert(t("error"), t("login_error_prefix") + error.message);
     } finally {
       setLoading(false);
     }
@@ -36,37 +40,37 @@ export default function LoginScreen() {
 
   const handleSignUp = async () => {
     if (!email || !password || !confirmPassword) {
-      Alert.alert("Eksik Bilgi", "Lütfen email, şifre ve şifre tekrarı alanlarını doldurunuz.");
+      Alert.alert(t("missing_info_title"), t("signup_fields_required"));
       return;
     }
-    
+
     if (password !== confirmPassword) {
-        Alert.alert("Şifreler Eşleşmiyor", "Girdiğiniz şifreler aynı değil. Lütfen kontrol edin.");
-        return;
+      Alert.alert(t("passwords_do_not_match"), t("passwords_mismatch_message"));
+      return;
     }
 
     if (password.length < 6) {
-        Alert.alert("Zayıf Şifre", "Şifreniz en az 6 karakter olmalıdır.");
-        return;
+      Alert.alert(t("weak_password"), t("password_length_warning"));
+      return;
     }
 
     setLoading(true);
     try {
-      const { data, error } = await signUp(email, password);
-      
+      const { user, session, error } = await signUp(email, password);
+
       if (error) {
-        Alert.alert("Kayıt Başarısız", error.message);
+        Alert.alert(t("signup_failed"), error.message);
       } else {
-        if (data.user && !data.session) {
-           Alert.alert(
-            "Kayıt Başarılı", 
-            "Lütfen e-posta adresinize gönderilen onay linkine tıklayın ve ardından giriş yapın."
-           );
+        if (user && !session) {
+          Alert.alert(
+            t("signup_success"),
+            t("signup_success_verify_email")
+          );
         } else {
-           Alert.alert(
-            "Kayıt Başarılı", 
-            "Hesabınız oluşturuldu. Şimdi giriş yapabilirsiniz."
-           );
+          Alert.alert(
+            t("signup_success"),
+            t("signup_success_login_now")
+          );
         }
         // Kayıt sonrası alanları temizle ve giriş ekranına dön
         setEmail('');
@@ -75,7 +79,7 @@ export default function LoginScreen() {
         setIsLoginView(true); // Giriş moduna geçir
       }
     } catch (error) {
-      Alert.alert("Hata", "Kayıt işlemi sırasında bir hata oluştu: " + error.message);
+      Alert.alert(t("error"), t("signup_error_prefix") + error.message);
     } finally {
       setLoading(false);
     }
@@ -83,29 +87,29 @@ export default function LoginScreen() {
 
   const handlePasswordReset = () => {
     if (!email) {
-        Alert.alert("Email Gerekli", "Şifrenizi sıfırlamak için lütfen e-posta adresinizi girin.");
-        return;
+      Alert.alert(t("email_required"), t("reset_password_email_required_message"));
+      return;
     }
     Alert.alert(
-        "Şifre Sıfırlama",
-        `${email} adresine bir sıfırlama linki göndermek istediğinize emin misiniz?`,
-        [
-            { text: "İptal", style: "cancel" },
-            { 
-                text: "Gönder", 
-                style: "default", 
-                onPress: async () => {
-                    setLoading(true);
-                    const { error } = await resetPassword(email);
-                    setLoading(false);
-                    if (error) {
-                        Alert.alert("Hata", error.message);
-                    } else {
-                        Alert.alert("Başarılı", "E-posta adresinizi kontrol edin. Şifre sıfırlama linki gönderildi.");
-                    }
-                }
+      t("password_reset"),
+      t("reset_link_confirmation", { email }),
+      [
+        { text: t("cancel"), style: "cancel" },
+        {
+          text: t("send"),
+          style: "default",
+          onPress: async () => {
+            setLoading(true);
+            const { error } = await resetPassword(email);
+            setLoading(false);
+            if (error) {
+              Alert.alert(t("error"), error.message);
+            } else {
+              Alert.alert(t("successful"), t("reset_link_sent_success"));
             }
-        ]
+          }
+        }
+      ]
     );
   };
 
@@ -119,15 +123,15 @@ export default function LoginScreen() {
 
 
   return (
-    <KeyboardAvoidingView 
-        behavior={Platform.OS === "ios" ? "padding" : "height"}
-        style={styles.container}
+    <KeyboardAvoidingView
+      behavior={Platform.OS === "ios" ? "padding" : "height"}
+      style={styles.container}
     >
       <ScrollView contentContainerStyle={styles.scrollContainer}>
         <View style={styles.header}>
           <Ionicons name="leaf-outline" size={80} color={Colors.iosBlue} />
           <Text style={styles.title}>PLANTİM</Text>
-          <Text style={styles.subtitle}>şirketiniz, cebinizde ve güvende.</Text>
+          <Text style={styles.subtitle}>{t("login_slogan")}</Text>
         </View>
 
         <TextInput
@@ -141,18 +145,18 @@ export default function LoginScreen() {
         />
         <TextInput
           style={styles.input}
-          placeholder="Şifre"
+          placeholder={t("password")}
           placeholderTextColor={Colors.secondary}
           value={password}
           onChangeText={setPassword}
           secureTextEntry
         />
-        
+
         {/* YENİ: Sadece Kayıt Ol modunda göster */}
         {!isLoginView && (
           <TextInput
             style={styles.input}
-            placeholder="Şifre Tekrar"
+            placeholder={t("password_confirm")}
             placeholderTextColor={Colors.secondary}
             value={confirmPassword}
             onChangeText={setConfirmPassword}
@@ -170,16 +174,16 @@ export default function LoginScreen() {
               disabled={loading}
             >
               <Text style={styles.buttonSolidText}>
-                {loading ? 'Giriş Yapılıyor...' : 'Giriş Yap'}
+                {loading ? t("logging_in") : t("login")}
               </Text>
             </TouchableOpacity>
-            
-            <TouchableOpacity 
-              style={styles.forgotPassword} 
-              onPress={handlePasswordReset} 
+
+            <TouchableOpacity
+              style={styles.forgotPassword}
+              onPress={handlePasswordReset}
               disabled={loading}
             >
-              <Text style={styles.forgotPasswordText}>Şifremi Unuttum</Text>
+              <Text style={styles.forgotPasswordText}>{t("forgot_password")}</Text>
             </TouchableOpacity>
           </>
         ) : (
@@ -191,29 +195,29 @@ export default function LoginScreen() {
               disabled={loading}
             >
               <Text style={styles.buttonSolidText}>
-                {loading ? 'Kayıt Olunuyor...' : 'Kayıt Ol'}
+                {loading ? t("signing_up") : t("register")}
               </Text>
             </TouchableOpacity>
           </>
         )}
 
         {/* --- GÖRÜNÜM DEĞİŞTİRME BUTONU --- */}
-        <TouchableOpacity 
-          style={styles.toggleButton} 
-          onPress={toggleView} 
+        <TouchableOpacity
+          style={styles.toggleButton}
+          onPress={toggleView}
           disabled={loading}
         >
           <Text style={styles.toggleButtonText}>
-            {isLoginView 
-              ? "Hesabınız yok mu? " 
-              : "Zaten hesabınız var mı? "
+            {isLoginView
+              ? t("no_account")
+              : t("has_account")
             }
             <Text style={styles.toggleButtonTextBold}>
-              {isLoginView ? "Kayıt Ol" : "Giriş Yap"}
+              {isLoginView ? t("register") : t("login")}
             </Text>
           </Text>
         </TouchableOpacity>
-        
+
       </ScrollView>
     </KeyboardAvoidingView>
   );
@@ -222,59 +226,59 @@ export default function LoginScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: Colors.background, 
+    backgroundColor: Colors.background,
   },
   scrollContainer: {
     flexGrow: 1,
     justifyContent: 'center',
-    padding: 24, 
+    padding: 24,
   },
   header: {
     alignItems: 'center',
-    marginBottom: 48, 
+    marginBottom: 48,
   },
   title: {
-    fontSize: 40, 
-    fontWeight: 'bold', 
-    color: Colors.text, 
-    marginTop: 16, 
+    fontSize: 40,
+    fontWeight: 'bold',
+    color: Colors.text,
+    marginTop: 16,
   },
   subtitle: {
     fontSize: 16,
-    color: Colors.secondary, 
-    marginTop: 8, 
+    color: Colors.secondary,
+    marginTop: 8,
   },
   input: {
     backgroundColor: '#fff',
-    borderRadius: 12, 
+    borderRadius: 12,
     paddingVertical: 16,
     paddingHorizontal: 16,
     fontSize: 16,
     marginBottom: 16,
     borderWidth: 1,
-    borderColor: '#E0E0E0', 
+    borderColor: '#E0E0E0',
     color: Colors.text,
-    shadowColor: "#000", 
+    shadowColor: "#000",
     shadowOffset: {
-        width: 0,
-        height: 1,
+      width: 0,
+      height: 1,
     },
     shadowOpacity: 0.05,
     shadowRadius: 2.22,
     elevation: 2,
   },
   button: {
-    borderRadius: 12, 
+    borderRadius: 12,
     padding: 16,
     alignItems: 'center',
     marginTop: 8,
   },
   buttonSolid: {
-     backgroundColor: Colors.iosBlue,
-     shadowColor: Colors.iosBlue, 
-     shadowOffset: {
-        width: 0,
-        height: 2,
+    backgroundColor: Colors.iosBlue,
+    shadowColor: Colors.iosBlue,
+    shadowOffset: {
+      width: 0,
+      height: 2,
     },
     shadowOpacity: 0.3,
     shadowRadius: 3.84,
@@ -287,16 +291,16 @@ const styles = StyleSheet.create({
   buttonSolidText: {
     color: '#fff',
     fontSize: 17,
-    fontWeight: '600', 
+    fontWeight: '600',
   },
 
   forgotPassword: {
-    marginTop: 24, 
+    marginTop: 24,
     alignSelf: 'center',
   },
   forgotPasswordText: {
     color: Colors.iosBlue,
-    fontSize: 15, 
+    fontSize: 15,
     fontWeight: '500',
   },
   // YENİ: Görünüm değiştirme butonu stilleri

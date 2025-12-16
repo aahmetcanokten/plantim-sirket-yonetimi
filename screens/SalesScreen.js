@@ -10,6 +10,7 @@ import {
   StyleSheet,
   ActivityIndicator,
 } from "react-native";
+import { useTranslation } from "react-i18next";
 import ImmersiveLayout from "../components/ImmersiveLayout";
 import { Colors } from "../Theme";
 import { AppContext } from "../AppContext";
@@ -29,6 +30,7 @@ export default function SalesScreen() {
   // AppContext'ten gerekli işlevleri ve verileri al
   // products eklendi
   const { sales, removeSale, recreateProductFromSale, updateSale, isPremium, products, appDataLoading } = useContext(AppContext);
+  const { t } = useTranslation();
   const [productFilterInput, setProductFilterInput] = useState("");
   const [customerFilterInput, setCustomerFilterInput] = useState("");
   const [productFilter, setProductFilter] = useState("");
@@ -103,12 +105,12 @@ export default function SalesScreen() {
   const confirmCancel = (sale) => {
     triggerHaptic(HapticType.WARNING); // Uyarı titreşimi
     Alert.alert(
-      "Satışı İptal Et",
-      `${sale.productName} x${sale.quantity} (${sale.customerName}) satışını iptal etmek istediğinizden emin misiniz?\n\nBu işlem, ürünü stoklara geri ekleyecektir.`,
+      t('cancel_sale'),
+      `${sale.productName} x${sale.quantity} (${sale.customerName}) ${t('cancel_sale_confirmation')}\n\n${t('cancel_sale_disclaimer')}`,
       [
-        { text: "Hayır", style: "cancel" },
+        { text: t('no'), style: "cancel" },
         {
-          text: "Evet, İptal Et",
+          text: t('yes_cancel'),
           style: "destructive",
           onPress: () => {
             recreateProductFromSale(sale); // Ürünü stoğa geri ekler
@@ -129,11 +131,11 @@ export default function SalesScreen() {
     // Limit kontrolü (Kompozit satış için)
     if (!isPremium && sales.length >= 20) {
       Alert.alert(
-        "Limit Aşıldı",
-        "Ücretsiz planda maksimum 20 satış yapabilirsiniz. Sınırsız satış için Premium'a geçin.",
+        t('limit_exceeded'),
+        t('sales_limit_message'),
         [
-          { text: "Vazgeç", style: "cancel" },
-          { text: "Premium Al", onPress: () => navigation.navigate("Paywall") }
+          { text: t('cancel'), style: "cancel" },
+          { text: t('get_premium'), onPress: () => navigation.navigate("Paywall") }
         ]
       );
       return;
@@ -146,12 +148,12 @@ export default function SalesScreen() {
   const markAsShipped = (sale) => {
     triggerHaptic(HapticType.IMPACT_LIGHT);
     Alert.alert(
-      "Sevk Onayı",
-      `${sale.productName} x${sale.quantity} ürününün sevk edildiğini onaylıyor musunuz?`,
+      t('shipment_confirmation'),
+      `${sale.productName} x${sale.quantity} ${t('shipment_confirmation_message')}`,
       [
-        { text: "Hayır", style: "cancel" },
+        { text: t('no'), style: "cancel" },
         {
-          text: "Evet, Sevk Edildi",
+          text: t('yes_shipped'),
           style: "default",
           onPress: () => {
             // isShipped değerini true olarak güncelle
@@ -195,15 +197,15 @@ export default function SalesScreen() {
 
   // Sevk Tarihini biçimlendirme
   const formatShipmentDate = (dateISO) => {
-    if (!dateISO) return "Tarih Belirtilmedi";
+    if (!dateISO) return t('date_not_specified');
     const date = new Date(dateISO);
     return date.toLocaleDateString("tr-TR", { day: '2-digit', month: 'short' });
   }
 
   return (
     <ImmersiveLayout
-      title="Satışlar"
-      subtitle={activeTab === 'active' ? `Sevk Bekleyen (${filtered.length})` : `Tamamlanan (${filtered.length})`}
+      title={t('sales')}
+      subtitle={activeTab === 'active' ? `${t('waiting_shipment')} (${filtered.length})` : `${t('completed')} (${filtered.length})`}
       right={rightButton}
       noScrollView={false}
     >
@@ -218,7 +220,7 @@ export default function SalesScreen() {
           <View style={styles.newSaleIconWrapper}>
             <Ionicons name="add" size={24} color="#fff" />
           </View>
-          <Text style={styles.newSaleButtonText}>Yeni Satış Oluştur</Text>
+          <Text style={styles.newSaleButtonText}>{t('create_new_sale')}</Text>
         </TouchableOpacity>
 
         <TouchableOpacity
@@ -229,7 +231,7 @@ export default function SalesScreen() {
             <View style={styles.analyzeIconWrapper}>
               <Ionicons name="stats-chart" size={16} color="#fff" />
             </View>
-            <Text style={styles.analyzeButtonText}>Satış Raporlarını İncele</Text>
+            <Text style={styles.analyzeButtonText}>{t('view_sales_reports')}</Text>
           </View>
           <Ionicons name="chevron-forward" size={16} color={Colors.iosBlue} />
         </TouchableOpacity>
@@ -240,7 +242,7 @@ export default function SalesScreen() {
             onPress={() => setActiveTab('active')}
           >
             <Text style={[styles.tabButtonText, activeTab === 'active' && styles.tabButtonTextActive]}>
-              Aktif Satışlar
+              {t('active_sales')}
             </Text>
           </TouchableOpacity>
           <TouchableOpacity
@@ -248,7 +250,7 @@ export default function SalesScreen() {
             onPress={() => setActiveTab('completed')}
           >
             <Text style={[styles.tabButtonText, activeTab === 'completed' && styles.tabButtonTextActive]}>
-              Geçmiş
+              {t('history')}
             </Text>
           </TouchableOpacity>
         </View>
@@ -260,7 +262,7 @@ export default function SalesScreen() {
           <Ionicons name="search-outline" size={18} color={Colors.secondary} style={styles.searchIcon} />
           <TextInput
             style={styles.searchInput}
-            placeholder="Ürün veya model ara..."
+            placeholder={t('search_product_model')}
             placeholderTextColor={Colors.muted}
             value={productFilterInput}
             onChangeText={setProductFilterInput}
@@ -270,7 +272,7 @@ export default function SalesScreen() {
           <Ionicons name="person-outline" size={18} color={Colors.secondary} style={styles.searchIcon} />
           <TextInput
             style={styles.searchInput}
-            placeholder="Müşteri ara..."
+            placeholder={t('search_customer')}
             placeholderTextColor={Colors.muted}
             value={customerFilterInput}
             onChangeText={setCustomerFilterInput}
@@ -298,7 +300,7 @@ export default function SalesScreen() {
                 <Ionicons name={activeTab === 'active' ? "cube-outline" : "checkmark-done-circle-outline"} size={48} color={Colors.muted} />
               </View>
               <Text style={styles.emptyListText}>
-                {activeTab === 'active' ? "Şu anda sevk bekleyen satış yok." : "Henüz tamamlanmış bir satış bulunmuyor."}
+                {activeTab === 'active' ? t('no_waiting_shipment') : t('no_completed_sales')}
               </Text>
             </View>
           }
@@ -342,13 +344,13 @@ export default function SalesScreen() {
                     <View style={styles.detailRow}>
                       <Ionicons name="receipt" size={14} color={Colors.iosBlue} style={styles.detailIcon} />
                       <Text style={[styles.detailText, { color: Colors.iosBlue, fontWeight: '600' }]}>
-                        Fat: {item.invoiceNumber}
+                        {t('inv_abbr')}: {item.invoiceNumber}
                       </Text>
                     </View>
                   ) : (
                     <View style={styles.detailRow}>
                       <Ionicons name="receipt-outline" size={14} color={Colors.muted} style={styles.detailIcon} />
-                      <Text style={[styles.detailText, { color: Colors.muted }]}>Faturasız</Text>
+                      <Text style={[styles.detailText, { color: Colors.muted }]}>{t('no_invoice')}</Text>
                     </View>
                   )}
 
@@ -356,7 +358,7 @@ export default function SalesScreen() {
                     <View style={[styles.shipmentBadge, isCriticalShipment ? styles.shipmentBadgeCritical : styles.shipmentBadgeNormal]}>
                       <Ionicons name="time" size={12} color={isCriticalShipment ? '#fff' : Colors.iosBlue} style={{ marginRight: 4 }} />
                       <Text style={[styles.shipmentText, isCriticalShipment && { color: '#fff' }]}>
-                        Sevk: {formatShipmentDate(item.shipmentDate)}
+                        {t('shipped_abbr')}: {formatShipmentDate(item.shipmentDate)}
                       </Text>
                     </View>
                   )}
@@ -368,7 +370,7 @@ export default function SalesScreen() {
                 {/* Kart Altı: Kar ve Aksiyonlar */}
                 <View style={styles.cardFooter}>
                   <View style={styles.profitContainer}>
-                    <Text style={styles.profitLabel}>Kar/Zarar</Text>
+                    <Text style={styles.profitLabel}>{t('profit_loss')}</Text>
                     <Text style={[styles.profitValue, { color: profit >= 0 ? Colors.iosGreen : Colors.critical }]}>
                       {profit >= 0 ? '+' : ''}{profit.toFixed(2)} ₺
                     </Text>
@@ -406,12 +408,12 @@ export default function SalesScreen() {
             if (hasMore) {
               return (
                 <TouchableOpacity onPress={loadMoreItems} style={{ padding: 15, alignItems: 'center', backgroundColor: '#F0F9FF', borderRadius: 10, marginTop: 10 }}>
-                  <Text style={{ color: Colors.iosBlue, fontWeight: '700' }}>Daha Fazla Göster</Text>
+                  <Text style={{ color: Colors.iosBlue, fontWeight: '700' }}>{t('show_more')}</Text>
                 </TouchableOpacity>
               );
             }
             if (visibleData.length > 0 && !hasMore) {
-              return <Text style={styles.footerText}>Tüm kayıtlar yüklendi</Text>;
+              return <Text style={styles.footerText}>{t('all_records_loaded')}</Text>;
             }
             return <View style={{ height: 20 }} />;
           }}

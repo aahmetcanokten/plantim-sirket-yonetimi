@@ -14,14 +14,16 @@ import {
   Platform,
   Linking
 } from "react-native";
+import { useTranslation } from "react-i18next";
 import { Ionicons } from "@expo/vector-icons";
 import ImmersiveLayout from "../components/ImmersiveLayout";
 import { Colors } from "../Theme";
 import { AppContext } from "../AppContext";
 import { useAuth } from "../AuthContext";
-import { exportToPDF, exportToExcel } from "../utils/ExportHelper";
+import { exportToPDF } from "../utils/ExportHelper";
 
 export default function SettingsScreen({ navigation }) {
+  const { t, i18n } = useTranslation(); // Translations
   // AppContext'ten verileri al
   const {
     vehicles,
@@ -59,7 +61,12 @@ export default function SettingsScreen({ navigation }) {
   // Export Modalı
   const [exportModal, setExportModal] = useState(false);
   const [exportType, setExportType] = useState("sales"); // sales, stock, customers, personnel
-  const [exportFormat, setExportFormat] = useState("pdf"); // pdf, excel
+  const [languageModal, setLanguageModal] = useState(false);
+
+  const changeLanguage = (lang) => {
+    i18n.changeLanguage(lang);
+    setLanguageModal(false);
+  };
 
 
   useEffect(() => {
@@ -71,24 +78,24 @@ export default function SettingsScreen({ navigation }) {
   // Şifre Değiştirme Fonksiyonu
   const handleChangePassword = async () => {
     if (!newPassword || !confirmPassword) {
-      Alert.alert("Eksik Bilgi", "Lütfen tüm alanları doldurun.");
+      Alert.alert(t('missing_info_alert_title'), t('fill_all_fields_alert'));
       return;
     }
     if (newPassword.length < 6) {
-      Alert.alert("Zayıf Şifre", "Yeni şifreniz en az 6 karakter olmalıdır.");
+      Alert.alert(t('weak_password'), t('weak_password_alert'));
       return;
     }
     if (newPassword !== confirmPassword) {
-      Alert.alert("Hata", "Şifreler eşleşmiyor.");
+      Alert.alert(t('error'), t('password_mismatch_alert'));
       return;
     }
 
     const { error } = await updatePassword(newPassword);
 
     if (error) {
-      Alert.alert("Hata", "Şifre güncellenemedi: " + error.message);
+      Alert.alert(t('error'), "Şifre güncellenemedi: " + error.message);
     } else {
-      Alert.alert("Başarılı", "Şifreniz başarıyla güncellendi.");
+      Alert.alert(t('successful'), t('password_update_success'));
       setNewPassword("");
       setConfirmPassword("");
       setPasswordModal(false);
@@ -98,19 +105,19 @@ export default function SettingsScreen({ navigation }) {
   // Hesabı Sil Fonksiyonu
   const handleDeleteAccount = async () => {
     Alert.alert(
-      "Hesabı Sil",
-      "Hesabınızı ve tüm verilerinizi (müşteriler, stoklar, satışlar vb.) kalıcı olarak silmek istediğinize emin misiniz? Bu işlem geri alınamaz.",
+      t('delete_account_confirm_title'),
+      t('delete_account_confirm_message'),
       [
-        { text: "Vazgeç", style: "cancel" },
+        { text: t('give_up'), style: "cancel" },
         {
-          text: "Hesabımı ve Verilerimi Sil",
+          text: t('delete_data_and_account_button'),
           style: "destructive",
           onPress: async () => {
             try {
               // 1. Verileri Sil
               const success = await deleteUserAccount();
               if (!success) {
-                Alert.alert("Hata", "Veriler silinirken bir sorun oluştu, ancak çıkış yapılacak.");
+                Alert.alert(t('error'), "Veriler silinirken bir sorun oluştu, ancak çıkış yapılacak.");
               }
 
               // 2. Oturumu Kapat
@@ -130,17 +137,17 @@ export default function SettingsScreen({ navigation }) {
   // Çıkış Yap Fonksiyonu
   const handleLogout = async () => {
     Alert.alert(
-      "Çıkış Yap",
-      "Oturumu kapatmak istediğinize emin misiniz?",
+      t('logout'),
+      t('logout_subtitle'),
       [
-        { text: "İptal", style: "cancel" },
+        { text: t('cancel'), style: "cancel" },
         {
-          text: "Çıkış Yap",
+          text: t('logout'),
           style: "destructive",
           onPress: async () => {
             const { error } = await signOut();
             if (error) {
-              Alert.alert("Hata", "Çıkış yapılamadı: " + error.message);
+              Alert.alert(t('error'), "Çıkış yapılamadı: " + error.message);
             }
           }
         },
@@ -149,7 +156,7 @@ export default function SettingsScreen({ navigation }) {
   };
 
   const saveCompany = () => {
-    if (!cName.trim()) { Alert.alert("Hata", "Şirket adı zorunlu."); return; }
+    if (!cName.trim()) { Alert.alert(t('error'), t('company_name') + " " + t('required')); return; }
     updateCompanyInfo({ name: cName.trim(), address: cAddress.trim(), taxId: cTax.trim() });
     setCompanyModal(false);
   };
@@ -198,9 +205,9 @@ export default function SettingsScreen({ navigation }) {
   };
 
   const confirmDeleteVehicle = (item) => {
-    Alert.alert("Araç Sil", `${item.model} silinsin mi?`, [
-      { text: "İptal", style: "cancel" },
-      { text: "Sil", style: "destructive", onPress: () => deleteVehicle(item.id) },
+    Alert.alert(t('delete_vehicle_title'), t('delete_vehicle_confirm', { model: item.model }), [
+      { text: t('cancel'), style: "cancel" },
+      { text: t('delete'), style: "destructive", onPress: () => deleteVehicle(item.id) },
     ]);
   };
 
@@ -208,11 +215,11 @@ export default function SettingsScreen({ navigation }) {
   const handleOpenExport = () => {
     if (!isPremium) {
       Alert.alert(
-        "Premium Özellik",
-        "Verileri dışa aktırma özelliği sadece Premium üyeler içindir. Hemen Premium'a geçin!",
+        t('premium_feature'),
+        t('premium_export_feature_message'),
         [
-          { text: "Vazgeç", style: "cancel" },
-          { text: "Premium'a Geç", onPress: () => navigation.navigate("Paywall") }
+          { text: t('give_up'), style: "cancel" },
+          { text: t('premium_upgrade'), onPress: () => navigation.navigate("Paywall") }
         ]
       );
       return;
@@ -235,36 +242,65 @@ export default function SettingsScreen({ navigation }) {
           const cust = customers.find(c => c.id === s.customerId);
           return {
             ...s,
-            productName: prod ? prod.name : "Silinmiş Ürün",
-            customerName: cust ? cust.name : "Genel Müşteri",
-            dateFormatted: new Date(s.sale_date).toLocaleDateString('tr-TR')
+            productName: prod ? prod.name : (s.productName || "Silinmiş Ürün"),
+            customerName: cust ? (cust.companyName || cust.name) : (s.customerName || "Genel Müşteri"),
+            dateFormatted: s.sale_date ? new Date(s.sale_date).toLocaleDateString('tr-TR') : (s.dateISO ? new Date(s.dateISO).toLocaleDateString('tr-TR') : "-"),
+            invoiceNumber: s.invoiceNumber || "-",
+            serialNumber: s.serialNumber || "-",
+            category: s.category || "-",
+            cost: s.cost || 0,
+            shipmentDate: s.shipmentDate ? new Date(s.shipmentDate).toLocaleDateString('tr-TR') : "-"
           };
         });
         columns = [
           { header: "Tarih", key: "dateFormatted" },
+          { header: "Fatura No", key: "invoiceNumber" },
           { header: "Ürün", key: "productName" },
+          { header: "Kategori", key: "category" },
+          { header: "Seri No", key: "serialNumber" },
           { header: "Müşteri", key: "customerName" },
           { header: "Adet", key: "quantity" },
-          { header: "Tutar", key: "totalPrice" },
+          { header: "Birim Fiyat", key: "price" },
+          { header: "Maliyet", key: "cost" },
+          { header: "Toplam", key: "totalPrice" },
+          { header: "Sevkiyat", key: "shipmentDate" },
         ];
         break;
       case "stock":
         title = "Stok Listesi";
         fileName = "Stok_Listesi";
-        dataToExport = products;
+        dataToExport = products.map(p => ({
+          ...p,
+          code: p.code || "-",
+          serialNumber: p.serialNumber || "-",
+          category: p.category || "-",
+          cost: p.cost || 0,
+          criticalStockLimit: p.criticalStockLimit || 0
+        }));
         columns = [
           { header: "Ürün Adı", key: "name" },
-          { header: "Stok Adedi", key: "quantity" },
-          { header: "Alış Fiyatı", key: "purchasePrice" },
-          { header: "Satış Fiyatı", key: "salePrice" },
+          { header: "Kategori", key: "category" },
+          { header: "Kod", key: "code" },
+          { header: "Seri No", key: "serialNumber" },
+          { header: "Mevcut Stok", key: "quantity" },
+          { header: "Kritik Limit", key: "criticalStockLimit" },
+          { header: "Maliyet", key: "cost" },
+          { header: "Satış Fiyatı", key: "price" },
         ];
         break;
       case "customers":
         title = "Müşteri Listesi";
         fileName = "Musteri_Listesi";
-        dataToExport = customers;
+        dataToExport = customers.map(c => ({
+          ...c,
+          companyName: c.companyName || c.name,
+          contactName: c.contactName || "-",
+          cariCode: c.cariCode || "-"
+        }));
         columns = [
-          { header: "Ad Soyad", key: "name" },
+          { header: "Firma / Ad Soyad", key: "companyName" },
+          { header: "Yetkili", key: "contactName" },
+          { header: "Cari Kod", key: "cariCode" },
           { header: "Telefon", key: "phone" },
           { header: "E-posta", key: "email" },
           { header: "Adres", key: "address" },
@@ -273,30 +309,34 @@ export default function SettingsScreen({ navigation }) {
       case "personnel":
         title = "Personel Listesi";
         fileName = "Personel_Listesi";
-        dataToExport = personnel;
+        dataToExport = personnel.map(p => ({
+          ...p,
+          hireDate: p.hireDate || "-",
+          annualLeaveEntitlement: p.annualLeaveEntitlement || "0"
+        }));
         columns = [
           { header: "Ad Soyad", key: "name" },
           { header: "Rol", key: "role" },
           { header: "Telefon", key: "phone" },
+          { header: "İşe Giriş", key: "hireDate" },
+          { header: "Yıllık İzin (Gün)", key: "annualLeaveEntitlement" },
           { header: "Maaş", key: "salary" },
         ];
         break;
     }
 
     if (dataToExport.length === 0) {
-      Alert.alert("Uyarı", "Seçilen kategoride dışa aktarılacak veri bulunamadı.");
+      Alert.alert(t('stock_warning_title'), t('warning_no_data_export'));
       return;
     }
 
     try {
-      if (exportFormat === "pdf") {
-        await exportToPDF(title, dataToExport, columns);
-      } else {
-        await exportToExcel(fileName, dataToExport, columns);
-      }
+      // Sadece PDF export
+      await exportToPDF(title, dataToExport, columns);
+      setExportModal(false);
       setExportModal(false);
     } catch (e) {
-      Alert.alert("Hata", "Dışa aktarma sırasında bir sorun oluştu: " + e.message);
+      Alert.alert(t('error'), "Dışa aktarma sırasında bir sorun oluştu: " + e.message);
     }
   };
 
@@ -315,14 +355,23 @@ export default function SettingsScreen({ navigation }) {
   );
 
   return (
-    <ImmersiveLayout title="Ayarlar" subtitle="Şirket ve Hesap Yönetimi">
+    <ImmersiveLayout title={t('settings')} subtitle={t('company_management_subtitle')}>
       <ScrollView contentContainerStyle={{ paddingBottom: 40 }}>
 
-        <Text style={styles.sectionHeader}>Yönetim</Text>
+        <Text style={styles.sectionHeader}>{t('general')}</Text>
+        <MenuLinkCard
+          title={t('language')}
+          subtitle={i18n.language === 'tr' ? t('turkish') : t('english')}
+          icon="language"
+          color="#5856D6"
+          onPress={() => setLanguageModal(true)}
+        />
+
+        <Text style={styles.sectionHeader}>{t('management')}</Text>
 
         <MenuLinkCard
-          title="Personel Yönetimi"
-          subtitle="Çalışanlar, izinler ve görev atamaları"
+          title={t('personnel_management')}
+          subtitle={t('personnel_management_subtitle')}
           icon="people"
           color={Colors.primary ?? "#007AFF"}
           onPress={() => {
@@ -331,24 +380,24 @@ export default function SettingsScreen({ navigation }) {
         />
 
         <MenuLinkCard
-          title="Zimmet Yönetimi"
-          subtitle="Envanter ve zimmet takibi"
+          title={t('asset_management')}
+          subtitle={t('asset_management_subtitle')}
           icon="briefcase"
           color="#8B5CF6"
           onPress={() => navigation.navigate("AssetManagementScreen")}
         />
 
         <MenuLinkCard
-          title="Tüm Görevler"
-          subtitle="Atanan işler, gecikenler ve tamamlananlar"
+          title={t('all_tasks')}
+          subtitle={t('all_tasks_subtitle')}
           icon="checkbox"
           color={Colors.success ?? "#34C759"}
           onPress={() => navigation.navigate("TaskListScreen")}
         />
 
         <MenuLinkCard
-          title="Verileri Dışa Aktar"
-          subtitle="Excel veya PDF olarak rapor al"
+          title={t('export_data')}
+          subtitle={t('export_data_subtitle')}
           icon="document-text"
           color="#FF9500"
           onPress={handleOpenExport}
@@ -359,17 +408,17 @@ export default function SettingsScreen({ navigation }) {
           <View style={styles.cardHeader}>
             <View style={{ flexDirection: 'row', alignItems: 'center' }}>
               <Ionicons name="business" size={20} color={Colors.primary ?? "#007AFF"} style={{ marginRight: 8 }} />
-              <Text style={styles.cardTitle}>Şirket Bilgileri</Text>
+              <Text style={styles.cardTitle}>{t('company_info')}</Text>
             </View>
             <TouchableOpacity style={styles.editButton} onPress={() => setCompanyModal(true)}>
-              <Text style={styles.editButtonText}>Düzenle</Text>
+              <Text style={styles.editButtonText}>{t('edit')}</Text>
             </TouchableOpacity>
           </View>
           <View style={{ paddingLeft: 28 }}>
             <Text style={{ marginTop: 8, fontWeight: "700", fontSize: 16 }}>{company?.name}</Text>
-            <Text style={styles.cardSubtitle}>{company?.address || "Adres girilmemiş"}</Text>
+            <Text style={styles.cardSubtitle}>{company?.address || t('address_not_entered')}</Text>
             <Text style={styles.cardSubtitle}>
-              {company?.taxId ? `Vergi No: ${company.taxId}` : "Vergi numarası yok"}
+              {company?.taxId ? `${t('tax_no_prefix')} ${company.taxId}` : t('no_tax_number')}
             </Text>
           </View>
         </View>
@@ -379,14 +428,14 @@ export default function SettingsScreen({ navigation }) {
           <View style={styles.cardHeader}>
             <View style={{ flexDirection: 'row', alignItems: 'center' }}>
               <Ionicons name="car-sport" size={20} color={Colors.primary ?? "#007AFF"} style={{ marginRight: 8 }} />
-              <Text style={styles.cardTitle}>Araçlar</Text>
+              <Text style={styles.cardTitle}>{t('vehicles')}</Text>
             </View>
             <TouchableOpacity style={styles.editButton} onPress={openAddVehicle}>
-              <Text style={styles.editButtonText}>Yeni Ekle</Text>
+              <Text style={styles.editButtonText}>{t('add_new')}</Text>
             </TouchableOpacity>
           </View>
           {vehicles.length === 0 ? (
-            <Text style={styles.emptyText}>Henüz araç eklenmedi.</Text>
+            <Text style={styles.emptyText}>{t('no_vehicles_added')}</Text>
           ) : (
             <FlatList
               data={vehicles}
@@ -398,16 +447,16 @@ export default function SettingsScreen({ navigation }) {
                     <Text style={{ fontWeight: "700" }}>{item.model}</Text>
                     <Text style={styles.cardSubtitle}>{item.plate ?? "-"}</Text>
                     <Text style={styles.cardSubtitle}>
-                      Son servis: {item.lastServiceDate ? new Date(item.lastServiceDate).toLocaleDateString('tr-TR') : "-"}
+                      {t('last_service')} {item.lastServiceDate ? new Date(item.lastServiceDate).toLocaleDateString(i18n.language === 'tr' ? 'tr-TR' : 'en-US') : "-"}
                     </Text>
                   </View>
                   <View style={{ alignItems: "flex-end" }}>
                     {item.photoUri ? <Image source={{ uri: item.photoUri }} style={styles.vehicleImage} /> : null}
                     <TouchableOpacity onPress={() => openEditVehicle(item)}>
-                      <Text style={styles.actionTextBlue}>Düzenle</Text>
+                      <Text style={styles.actionTextBlue}>{t('edit')}</Text>
                     </TouchableOpacity>
                     <TouchableOpacity onPress={() => confirmDeleteVehicle(item)} style={{ marginTop: 4 }}>
-                      <Text style={styles.actionTextRed}>Sil</Text>
+                      <Text style={styles.actionTextRed}>{t('delete')}</Text>
                     </TouchableOpacity>
                   </View>
                 </View>
@@ -417,13 +466,13 @@ export default function SettingsScreen({ navigation }) {
         </View>
 
         {/* HESAP BÖLÜMÜ */}
-        <Text style={styles.sectionHeader}>Hesap</Text>
+        <Text style={styles.sectionHeader}>{t('account')}</Text>
 
         {/* PREMIUM BUTONU - YENİ */}
         {!isPremium && (
           <MenuLinkCard
-            title="Premium'a Geç"
-            subtitle="Reklamsız kullanım ve sınırsız stok"
+            title={t('premium_upgrade')}
+            subtitle={t('premium_subtitle')}
             icon="star"
             color="#FFD700" // Altın Rengi
             onPress={() => navigation.navigate("Paywall")}
@@ -434,7 +483,7 @@ export default function SettingsScreen({ navigation }) {
           <View style={[styles.cardHeader, { marginBottom: 0 }]}>
             <View style={{ flexDirection: 'row', alignItems: 'center' }}>
               <Ionicons name="person-circle" size={20} color={Colors.primary ?? "#007AFF"} style={{ marginRight: 8 }} />
-              <Text style={styles.cardTitle}>Hesap Bilgileri</Text>
+              <Text style={styles.cardTitle}>{t('account_info_title')}</Text>
             </View>
             <TouchableOpacity
               style={styles.editButton}
@@ -444,11 +493,11 @@ export default function SettingsScreen({ navigation }) {
                 setPasswordModal(true);
               }}
             >
-              <Text style={styles.editButtonText}>Şifre Değiştir</Text>
+              <Text style={styles.editButtonText}>{t('change_password')}</Text>
             </TouchableOpacity>
           </View>
           <View style={{ paddingLeft: 28, paddingTop: 4 }}>
-            <Text style={styles.cardSubtitle}>Giriş yapılan e-posta:</Text>
+            <Text style={styles.cardSubtitle}>{t('logged_in_email')}</Text>
             <Text style={{ marginTop: 2, fontWeight: "700", fontSize: 15, color: '#333' }}>
               {session?.user?.email ?? 'Yükleniyor...'}
             </Text>
@@ -456,31 +505,31 @@ export default function SettingsScreen({ navigation }) {
         </View>
 
         <MenuLinkCard
-          title="Hesabımı Sil"
-          subtitle="Tüm verileri ve hesabı kalıcı olarak sil"
+          title={t('delete_account')}
+          subtitle={t('delete_account_subtitle')}
           icon="trash-outline"
           color={Colors.critical ?? "#FF3B30"}
           onPress={handleDeleteAccount}
         />
 
         <MenuLinkCard
-          title="Çıkış Yap"
-          subtitle="Güvenli bir şekilde oturumu kapat"
+          title={t('logout')}
+          subtitle={t('logout_subtitle')}
           icon="log-out"
           color={Colors.secondary ?? "#8E8E93"}
           onPress={handleLogout}
         />
 
         {/* HAKKINDA BÖLÜMÜ */}
-        <Text style={styles.sectionHeader}>Hakkında</Text>
+        <Text style={styles.sectionHeader}>{t('about')}</Text>
 
         <View style={styles.footerLinksContainer}>
           <TouchableOpacity onPress={() => Linking.openURL("https://fearless-playground-057.notion.site/Privacy-Policy-2c685b6f3cbc80b6a9ded3063bc09948?source=copy_link")}>
-            <Text style={styles.footerLinkText}>Gizlilik Politikası</Text>
+            <Text style={styles.footerLinkText}>{t('privacy_policy')}</Text>
           </TouchableOpacity>
           <Text style={styles.footerLinkDivider}>•</Text>
           <TouchableOpacity onPress={() => Linking.openURL("https://www.apple.com/legal/internet-services/itunes/dev/stdeula/")}>
-            <Text style={styles.footerLinkText}>Kullanım Koşulları (EULA)</Text>
+            <Text style={styles.footerLinkText}>{t('terms_of_use')}</Text>
           </TouchableOpacity>
         </View>
 
@@ -491,21 +540,21 @@ export default function SettingsScreen({ navigation }) {
         <KeyboardAvoidingView behavior={Platform.OS === "ios" ? "padding" : "height"} style={styles.modalContainer}>
           <View style={styles.modalContent}>
             <View style={styles.modalHeader}>
-              <Text style={styles.modalTitle}>Şirket Bilgileri</Text>
+              <Text style={styles.modalTitle}>{t('company_info')}</Text>
               <TouchableOpacity onPress={() => setCompanyModal(false)}>
                 <Ionicons name="close-circle" size={28} color="#ccc" />
               </TouchableOpacity>
             </View>
             <ScrollView>
-              <Text style={styles.inputLabel}>Şirket Adı</Text>
-              <TextInput style={styles.input} value={cName} onChangeText={setCName} placeholder="Şirket Adı" />
-              <Text style={styles.inputLabel}>Adres</Text>
-              <TextInput style={[styles.input, { height: 80, textAlignVertical: 'top' }]} value={cAddress} onChangeText={setCAddress} placeholder="Açık adres..." multiline />
-              <Text style={styles.inputLabel}>Vergi Numarası</Text>
-              <TextInput style={styles.input} value={cTax} onChangeText={setCTax} placeholder="Vergi no..." keyboardType="numeric" />
+              <Text style={styles.inputLabel}>{t('company_name')}</Text>
+              <TextInput style={styles.input} value={cName} onChangeText={setCName} placeholder={t('company_name')} />
+              <Text style={styles.inputLabel}>{t('address')}</Text>
+              <TextInput style={[styles.input, { height: 80, textAlignVertical: 'top' }]} value={cAddress} onChangeText={setCAddress} placeholder={t('company_address_placeholder')} multiline />
+              <Text style={styles.inputLabel}>{t('tax_no_prefix')}</Text>
+              <TextInput style={styles.input} value={cTax} onChangeText={setCTax} placeholder={t('tax_no_placeholder')} keyboardType="numeric" />
               <View style={styles.modalButtons}>
                 <TouchableOpacity style={[styles.modalBtn, styles.saveBtn]} onPress={saveCompany}>
-                  <Text style={styles.saveBtnText}>Kaydet</Text>
+                  <Text style={styles.saveBtnText}>{t('save')}</Text>
                 </TouchableOpacity>
               </View>
             </ScrollView>
@@ -518,21 +567,21 @@ export default function SettingsScreen({ navigation }) {
         <KeyboardAvoidingView behavior={Platform.OS === "ios" ? "padding" : "height"} style={styles.modalContainer}>
           <View style={styles.modalContent}>
             <View style={styles.modalHeader}>
-              <Text style={styles.modalTitle}>{editVehicle ? "Araç Düzenle" : "Yeni Araç Ekle"}</Text>
+              <Text style={styles.modalTitle}>{editVehicle ? t('vehicle_edit_title') : t('vehicle_add_title')}</Text>
               <TouchableOpacity onPress={() => setVehicleModal(false)}>
                 <Ionicons name="close-circle" size={28} color="#ccc" />
               </TouchableOpacity>
             </View>
             <ScrollView>
-              <Text style={styles.inputLabel}>Araç Modeli</Text>
+              <Text style={styles.inputLabel}>{t('vehicle_model')}</Text>
               <TextInput style={styles.input} value={vehicleForm.model} onChangeText={(t) => setVehicleForm({ ...vehicleForm, model: t })} placeholder="Örn: Ford Transit 2023" />
-              <Text style={styles.inputLabel}>Plaka</Text>
+              <Text style={styles.inputLabel}>{t('plate')}</Text>
               <TextInput style={styles.input} value={vehicleForm.plate} onChangeText={(t) => setVehicleForm({ ...vehicleForm, plate: t })} placeholder="34 ABC 123" autoCapitalize="characters" />
-              <Text style={styles.inputLabel}>Son Servis Tarihi (GG.AA.YYYY)</Text>
+              <Text style={styles.inputLabel}>{t('last_service_date_format')}</Text>
               <TextInput style={styles.input} value={vehicleForm.lastServiceDate} onChangeText={(t) => setVehicleForm({ ...vehicleForm, lastServiceDate: t })} placeholder="Örn: 01.01.2024" />
               <View style={styles.modalButtons}>
                 <TouchableOpacity style={[styles.modalBtn, styles.saveBtn]} onPress={saveVehicle}>
-                  <Text style={styles.saveBtnText}>Kaydet</Text>
+                  <Text style={styles.saveBtnText}>{t('save')}</Text>
                 </TouchableOpacity>
               </View>
             </ScrollView>
@@ -545,33 +594,33 @@ export default function SettingsScreen({ navigation }) {
         <KeyboardAvoidingView behavior={Platform.OS === "ios" ? "padding" : "height"} style={styles.modalContainer}>
           <View style={styles.modalContent}>
             <View style={styles.modalHeader}>
-              <Text style={styles.modalTitle}>Şifre Değiştir</Text>
+              <Text style={styles.modalTitle}>{t('change_password')}</Text>
               <TouchableOpacity onPress={() => setPasswordModal(false)}>
                 <Ionicons name="close-circle" size={28} color="#ccc" />
               </TouchableOpacity>
             </View>
             <ScrollView>
-              <Text style={styles.inputLabel}>Yeni Şifre</Text>
+              <Text style={styles.inputLabel}>{t('new_password')}</Text>
               <TextInput
                 style={styles.input}
                 value={newPassword}
                 onChangeText={setNewPassword}
-                placeholder="En az 6 karakter"
+                placeholder={t('new_password')}
                 secureTextEntry
                 autoCapitalize="none"
               />
-              <Text style={styles.inputLabel}>Yeni Şifre (Tekrar)</Text>
+              <Text style={styles.inputLabel}>{t('new_password_confirm')}</Text>
               <TextInput
                 style={styles.input}
                 value={confirmPassword}
                 onChangeText={setConfirmPassword}
-                placeholder="Yeni şifreyi onaylayın"
+                placeholder={t('new_password_confirm')}
                 secureTextEntry
                 autoCapitalize="none"
               />
               <View style={styles.modalButtons}>
                 <TouchableOpacity style={[styles.modalBtn, styles.saveBtn]} onPress={handleChangePassword}>
-                  <Text style={styles.saveBtnText}>Kaydet</Text>
+                  <Text style={styles.saveBtnText}>{t('save')}</Text>
                 </TouchableOpacity>
               </View>
             </ScrollView>
@@ -584,14 +633,14 @@ export default function SettingsScreen({ navigation }) {
         <View style={styles.modalContainer}>
           <View style={[styles.modalContent, { padding: 0 }]}>
             <View style={{ padding: 20, borderBottomWidth: 1, borderBottomColor: '#eee', flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
-              <Text style={styles.modalTitle}>Rapor Oluştur</Text>
+              <Text style={styles.modalTitle}>{t('create_report')}</Text>
               <TouchableOpacity onPress={() => setExportModal(false)}>
                 <Ionicons name="close" size={24} color="#999" />
               </TouchableOpacity>
             </View>
 
             <View style={{ padding: 20 }}>
-              <Text style={styles.inputLabel}>Veri Türü</Text>
+              <Text style={styles.inputLabel}>{t('data_type')}</Text>
               <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 10, marginBottom: 20 }}>
                 {['sales', 'stock', 'customers', 'personnel'].map((type) => (
                   <TouchableOpacity
@@ -606,48 +655,47 @@ export default function SettingsScreen({ navigation }) {
                       styles.optionBtnText,
                       exportType === type && styles.optionBtnTextSelected
                     ]}>
-                      {type === 'sales' ? 'Satışlar' : type === 'stock' ? 'Stoklar' : type === 'customers' ? 'Müşteriler' : 'Personel'}
+                      {type === 'sales' ? t('sales') : type === 'stock' ? t('stock') : type === 'customers' ? t('customers') : t('personnel')}
                     </Text>
                   </TouchableOpacity>
                 ))}
               </View>
 
-              <Text style={styles.inputLabel}>Dosya Formatı</Text>
-              <View style={{ flexDirection: 'row', gap: 10, marginBottom: 20 }}>
-                {['pdf', 'excel'].map((fmt) => (
-                  <TouchableOpacity
-                    key={fmt}
-                    style={[
-                      styles.optionBtn,
-                      exportFormat === fmt && styles.optionBtnSelected,
-                      { flex: 1 }
-                    ]}
-                    onPress={() => setExportFormat(fmt)}
-                  >
-                    <Ionicons
-                      name={fmt === 'pdf' ? 'document-text' : 'grid'}
-                      size={20}
-                      color={exportFormat === fmt ? '#fff' : '#666'}
-                      style={{ marginRight: 8 }}
-                    />
-                    <Text style={[
-                      styles.optionBtnText,
-                      exportFormat === fmt && styles.optionBtnTextSelected
-                    ]}>
-                      {fmt === 'pdf' ? 'PDF Dosyası' : 'Excel Tablosu'}
-                    </Text>
-                  </TouchableOpacity>
-                ))}
-              </View>
+              <View style={{ marginBottom: 20 }} />
 
               <TouchableOpacity style={[styles.modalBtn, styles.saveBtn]} onPress={performExport}>
-                <Text style={styles.saveBtnText}>İndir / Paylaş</Text>
+                <Text style={[styles.saveBtnText, { color: 'white' }]}>{t('download_share')}</Text>
               </TouchableOpacity>
             </View>
           </View>
         </View>
       </Modal>
-    </ImmersiveLayout>
+
+      {/* LANGUAGE MODAL */}
+      <Modal visible={languageModal} animationType="fade" transparent={true} onRequestClose={() => setLanguageModal(false)}>
+        <View style={styles.modalContainer}>
+          <View style={[styles.modalContent, { padding: 0 }]}>
+            <View style={{ padding: 20, borderBottomWidth: 1, borderBottomColor: '#eee', flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
+              <Text style={styles.modalTitle}>{t('select_language')}</Text>
+              <TouchableOpacity onPress={() => setLanguageModal(false)}>
+                <Ionicons name="close" size={24} color="#999" />
+              </TouchableOpacity>
+            </View>
+
+            <View style={{ padding: 20 }}>
+              <TouchableOpacity style={styles.listItem} onPress={() => changeLanguage('tr')}>
+                <Text style={{ fontSize: 16, fontWeight: "600", color: "#333" }}>{t('turkish')}</Text>
+                {i18n.language === 'tr' && <Ionicons name="checkmark-circle" size={24} color={Colors.primary} />}
+              </TouchableOpacity>
+              <TouchableOpacity style={styles.listItem} onPress={() => changeLanguage('en')}>
+                <Text style={{ fontSize: 16, fontWeight: "600", color: "#333" }}>{t('english')}</Text>
+                {i18n.language === 'en' && <Ionicons name="checkmark-circle" size={24} color={Colors.primary} />}
+              </TouchableOpacity>
+            </View>
+          </View>
+        </View>
+      </Modal>
+    </ImmersiveLayout >
   );
 }
 

@@ -17,9 +17,11 @@ import { Colors, IOSShadow } from "../Theme";
 import { AppContext } from "../AppContext";
 import KeyboardSafeView from "../components/KeyboardSafeView";
 import BarcodeScannerModal from "../components/BarcodeScannerModal";
+import { useTranslation } from "react-i18next";
 
 export default function AssetManagementScreen({ navigation }) {
     const { assets, addAsset, updateAsset, deleteAsset, assignAsset, unassignAsset, personnel, isPremium } = useContext(AppContext);
+    const { t } = useTranslation();
     const [activeTab, setActiveTab] = useState("all"); // all, available, assigned
     const [modalVisible, setModalVisible] = useState(false);
     const [assignModalVisible, setAssignModalVisible] = useState(false);
@@ -34,7 +36,7 @@ export default function AssetManagementScreen({ navigation }) {
 
     const getPersonName = (id) => {
         const person = personnel.find(p => p.id === id);
-        return person ? person.name : "Bilinmiyor";
+        return person ? person.name : t("unspecified");
     };
 
     const filteredAssets = useMemo(() => {
@@ -69,11 +71,11 @@ export default function AssetManagementScreen({ navigation }) {
     const handleOpenAddModal = () => {
         if (!isPremium && assets.length >= 3) {
             Alert.alert(
-                "Premium Özellik",
-                "Ücretsiz planda en fazla 3 demirbaş ekleyebilirsiniz. Sınırsız ekleme için Premium'a geçin.",
+                t("premium_feature"),
+                t("asset_limit_message"),
                 [
-                    { text: "Vazgeç", style: "cancel" },
-                    { text: "Premium Al", onPress: () => navigation.navigate("Paywall") }
+                    { text: t("cancel"), style: "cancel" },
+                    { text: t("get_premium"), onPress: () => navigation.navigate("Paywall") }
                 ]
             );
             return;
@@ -98,7 +100,7 @@ export default function AssetManagementScreen({ navigation }) {
         const trimmedName = name.trim();
 
         if (!trimmedName) {
-            Alert.alert("Hata", "Lütfen ürün adını girin.");
+            Alert.alert(t("error"), t("asset_name_required"));
             return;
         }
 
@@ -119,11 +121,11 @@ export default function AssetManagementScreen({ navigation }) {
 
     const handleDeleteAsset = (id) => {
         Alert.alert(
-            "Sil",
-            "Bu demirbaşı silmek istediğinize emin misiniz?",
+            t("delete"),
+            t("asset_delete_confirmation"),
             [
-                { text: "Vazgeç", style: "cancel" },
-                { text: "Sil", style: "destructive", onPress: () => deleteAsset(id) }
+                { text: t("cancel"), style: "cancel" },
+                { text: t("delete"), style: "destructive", onPress: () => deleteAsset(id) }
             ]
         );
     };
@@ -143,11 +145,11 @@ export default function AssetManagementScreen({ navigation }) {
 
     const handleReturn = (asset) => {
         Alert.alert(
-            "İade Al",
-            "Bu ürünü iade almak istediğinize emin misiniz?",
+            t("asset_return"),
+            t("asset_return_confirmation"),
             [
-                { text: "Vazgeç", style: "cancel" },
-                { text: "İade Al", onPress: () => unassignAsset(asset.id) }
+                { text: t("cancel"), style: "cancel" },
+                { text: t("asset_return"), onPress: () => unassignAsset(asset.id) }
             ]
         );
     };
@@ -164,7 +166,7 @@ export default function AssetManagementScreen({ navigation }) {
                     </View>
                     <View style={[styles.statusBadge, { backgroundColor: item.status === 'ASSIGNED' ? '#DCFCE7' : '#F3F4F6' }]}>
                         <Text style={[styles.statusText, { color: item.status === 'ASSIGNED' ? '#166534' : Colors.secondary }]}>
-                            {item.status === 'ASSIGNED' ? 'ZİMMETLİ' : 'BOŞTA'}
+                            {item.status === 'ASSIGNED' ? t("asset_assigned") : t("asset_available")}
                         </Text>
                     </View>
                 </View>
@@ -174,7 +176,7 @@ export default function AssetManagementScreen({ navigation }) {
                 <View style={styles.cardBody}>
                     <View style={styles.infoRow}>
                         <Ionicons name="barcode-outline" size={16} color={Colors.secondary} />
-                        <Text style={styles.infoText}>{item.serial_number || 'Seri No Yok'}</Text>
+                        <Text style={styles.infoText}>{item.serial_number || t("no_serial_number")}</Text>
                     </View>
 
                     {item.status === 'ASSIGNED' && assignedPerson && (
@@ -186,7 +188,7 @@ export default function AssetManagementScreen({ navigation }) {
                                 </Text>
                             </View>
                             <Text style={{ fontSize: 11, color: Colors.secondary, marginLeft: 24 }}>
-                                {new Date(item.assigned_date).toLocaleDateString()} tarihinde verildi
+                                {new Date(item.assigned_date).toLocaleDateString()} {t("asset_assigned_date")}
                             </Text>
                         </View>
                     )}
@@ -196,12 +198,12 @@ export default function AssetManagementScreen({ navigation }) {
                     {item.status === 'AVAILABLE' ? (
                         <TouchableOpacity style={[styles.actionBtn, styles.assignBtn]} onPress={() => openAssignModal(item)}>
                             <Ionicons name="person-add-outline" size={16} color="#fff" />
-                            <Text style={styles.assignBtnText}>Zimmetle</Text>
+                            <Text style={styles.assignBtnText}>{t("asset_assign")}</Text>
                         </TouchableOpacity>
                     ) : (
                         <TouchableOpacity style={[styles.actionBtn, styles.returnBtn]} onPress={() => handleReturn(item)}>
                             <Ionicons name="arrow-undo-outline" size={16} color="#000" />
-                            <Text style={styles.returnBtnText}>İade Al</Text>
+                            <Text style={styles.returnBtnText}>{t("asset_return")}</Text>
                         </TouchableOpacity>
                     )}
 
@@ -218,14 +220,14 @@ export default function AssetManagementScreen({ navigation }) {
     };
 
     return (
-        <ImmersiveLayout title="Zimmet Yönetimi" subtitle={`${filteredAssets.length} kayıt`} onGoBack={() => navigation.goBack()}>
+        <ImmersiveLayout title={t("asset_management")} subtitle={`${filteredAssets.length} ${t("quantity_short")}`} onGoBack={() => navigation.goBack()}>
 
             {/* ARAMA ÇUBUĞU */}
             <View style={styles.searchContainer}>
                 <Ionicons name="search" size={20} color={Colors.secondary} style={styles.searchIcon} />
                 <TextInput
                     style={styles.searchInput}
-                    placeholder="Ara (Ürün, Model, Personel, Seri No)..."
+                    placeholder={t("asset_search_placeholder")}
                     value={searchQuery}
                     onChangeText={setSearchQuery}
                     placeholderTextColor={Colors.secondary}
@@ -241,13 +243,13 @@ export default function AssetManagementScreen({ navigation }) {
             {/* Tabs */}
             <View style={styles.tabContainer}>
                 <TouchableOpacity style={[styles.tab, activeTab === 'all' && styles.activeTab]} onPress={() => setActiveTab('all')}>
-                    <Text style={[styles.tabText, activeTab === 'all' && styles.activeTabText]}>Tümü</Text>
+                    <Text style={[styles.tabText, activeTab === 'all' && styles.activeTabText]}>{t("all")}</Text>
                 </TouchableOpacity>
                 <TouchableOpacity style={[styles.tab, activeTab === 'available' && styles.activeTab]} onPress={() => setActiveTab('available')}>
-                    <Text style={[styles.tabText, activeTab === 'available' && styles.activeTabText]}>Boşta</Text>
+                    <Text style={[styles.tabText, activeTab === 'available' && styles.activeTabText]}>{t("asset_available")}</Text>
                 </TouchableOpacity>
                 <TouchableOpacity style={[styles.tab, activeTab === 'assigned' && styles.activeTab]} onPress={() => setActiveTab('assigned')}>
-                    <Text style={[styles.tabText, activeTab === 'assigned' && styles.activeTabText]}>Zimmetli</Text>
+                    <Text style={[styles.tabText, activeTab === 'assigned' && styles.activeTabText]}>{t("asset_assigned")}</Text>
                 </TouchableOpacity>
             </View>
 
@@ -259,7 +261,7 @@ export default function AssetManagementScreen({ navigation }) {
                 ListEmptyComponent={
                     <View style={styles.emptyState}>
                         <Ionicons name="file-tray-outline" size={48} color={Colors.secondary} />
-                        <Text style={styles.emptyText}>Kayıt bulunamadı.</Text>
+                        <Text style={styles.emptyText}>{t("no_records_found")}</Text>
                     </View>
                 }
             />
@@ -273,19 +275,19 @@ export default function AssetManagementScreen({ navigation }) {
                 <KeyboardSafeView>
                     <View style={styles.modalContainer}>
                         <View style={styles.modalHeader}>
-                            <Text style={styles.modalTitle}>{selectedAsset ? "Ürün Düzenle" : "Yeni Ürün Ekle"}</Text>
+                            <Text style={styles.modalTitle}>{selectedAsset ? t("edit_product") : t("add_new_product")}</Text>
                             <TouchableOpacity onPress={() => setModalVisible(false)}>
                                 <Ionicons name="close" size={28} color={Colors.textPrimary} />
                             </TouchableOpacity>
                         </View>
                         <View style={styles.form}>
-                            <Text style={styles.label}>Ürün Adı</Text>
+                            <Text style={styles.label}>{t("product_name")}</Text>
                             <TextInput style={styles.input} value={name} onChangeText={setName} placeholder="Örn: MacBook Pro M1" />
 
-                            <Text style={styles.label}>Model</Text>
+                            <Text style={styles.label}>{t("model")}</Text>
                             <TextInput style={styles.input} value={model} onChangeText={setModel} placeholder="Örn: A2338" />
 
-                            <Text style={styles.label}>Seri Numarası</Text>
+                            <Text style={styles.label}>{t("serial_number")}</Text>
                             <View style={styles.serialInputContainer}>
                                 <TextInput
                                     style={[styles.input, { flex: 1, marginRight: 10 }]}
@@ -299,7 +301,7 @@ export default function AssetManagementScreen({ navigation }) {
                             </View>
 
                             <TouchableOpacity style={styles.saveBtn} onPress={handleSaveAsset}>
-                                <Text style={styles.saveBtnText}>Kaydet</Text>
+                                <Text style={styles.saveBtnText}>{t("save")}</Text>
                             </TouchableOpacity>
                         </View>
                     </View>
@@ -313,12 +315,12 @@ export default function AssetManagementScreen({ navigation }) {
                 <View style={styles.modalOverlay}>
                     <View style={styles.assignModalContent}>
                         <View style={styles.modalHeader}>
-                            <Text style={styles.modalTitle}>Personel Seç</Text>
+                            <Text style={styles.modalTitle}>{t("select_personnel")}</Text>
                             <TouchableOpacity onPress={() => setAssignModalVisible(false)}>
                                 <Ionicons name="close" size={24} color={Colors.textPrimary} />
                             </TouchableOpacity>
                         </View>
-                        <Text style={styles.assignSubtitle}>"{selectedAsset?.name}" ürününü kime zimmetlemek istiyorsunuz?</Text>
+                        <Text style={styles.assignSubtitle}>"{selectedAsset?.name}" {t("asset_assign_prompt")}</Text>
 
                         <ScrollView style={{ maxHeight: 300 }}>
                             {personnel.map(p => (
@@ -331,7 +333,7 @@ export default function AssetManagementScreen({ navigation }) {
                                 </TouchableOpacity>
                             ))}
                             {personnel.length === 0 && (
-                                <Text style={{ textAlign: 'center', color: Colors.secondary, marginTop: 20 }}>Kayıtlı personel bulunamadı.</Text>
+                                <Text style={{ textAlign: 'center', color: Colors.secondary, marginTop: 20 }}>{t("no_personnel_found")}</Text>
                             )}
                         </ScrollView>
                     </View>

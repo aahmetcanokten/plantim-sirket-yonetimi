@@ -1,8 +1,10 @@
-import React, { useState, useContext } from "react";
+import React, { useState } from "react";
 import { View, TextInput, Text, TouchableOpacity, StyleSheet, Alert } from "react-native";
-import { AppContext } from "../AppContext";
+// import { AppContext } from "../AppContext";
 import { Colors, CardRadius, ButtonRadius } from "../Theme";
 import { useToast } from "./ToastProvider";
+import { useTranslation } from "react-i18next";
+
 
 /*
   AddProductForm (Revize Edildi)
@@ -14,6 +16,7 @@ export default function AddProductForm({ onAdd }) {
   // REVİZYON: 'products' context'ine artık burada gerek yok.
   // const { products } = useContext(AppContext);
   const toast = useToast();
+  const { t } = useTranslation();
 
   const [name, setName] = useState("");
   const [serialNumber, setSerialNumber] = useState("");
@@ -26,11 +29,11 @@ export default function AddProductForm({ onAdd }) {
   const submit = () => {
     // Basic validation
     if (!name.trim()) {
-      toast.showToast && toast.showToast("Ürün adı zorunludur.");
+      toast.showToast && toast.showToast(t("product_name_required"));
       return;
     }
     if (!productCode.trim()) {
-      toast.showToast && toast.showToast("Ürün kodu zorunludur.");
+      toast.showToast && toast.showToast(t("product_code_required"));
       return;
     }
 
@@ -43,12 +46,12 @@ export default function AddProductForm({ onAdd }) {
 
     const q = parseInt(quantity, 10) || 0;
     if (q < 0) {
-      toast.showToast && toast.showToast("Adet negatif olamaz.");
+      toast.showToast && toast.showToast(t("quantity_cannot_be_negative"));
       return;
     }
     const p = parseFloat(price) || 0;
     if (p < 0) {
-      toast.showToast && toast.showToast("Fiyat negatif olamaz.");
+      toast.showToast && toast.showToast(t("price_cannot_be_negative"));
       return;
     }
     const crit = parseInt(criticalLevel || "0", 10) || 0;
@@ -78,51 +81,51 @@ export default function AddProductForm({ onAdd }) {
       setPrice("");
       setCriticalLevel("0");
       setProductCode("");
-      
+
       // Toast mesajı artık 'onAddProduct' içinde gösteriliyor,
       // burada tekrar göstermeye gerek yok.
-      // toast.showToast && toast.showToast("Ürün eklendi");
+      // toast.showToast && toast.showToast(t("product_added"));
     }
   };
 
   return (
     <View style={styles.card}>
-      <Text style={styles.label}>Ürün Kodu</Text>
+      <Text style={styles.label}>{t("product_code_label")}</Text>
       <TextInput
         style={styles.input}
         value={productCode}
         onChangeText={setProductCode}
-        placeholder="Örn: PROD-001"
+        placeholder={t("product_code_placeholder")}
         autoCapitalize="characters"
-        accessibilityLabel="Ürün Kodu"
+        accessibilityLabel={t("product_code_label")}
       />
 
-      <Text style={styles.label}>Ürün Adı</Text>
-      <TextInput style={styles.input} value={name} onChangeText={setName} placeholder="Örn: Kulaklık" accessibilityLabel="Ürün Adı" />
+      <Text style={styles.label}>{t("product_name")}</Text>
+      <TextInput style={styles.input} value={name} onChangeText={setName} placeholder={t("product_name_placeholder")} accessibilityLabel={t("product_name")} />
 
-      <Text style={styles.label}>Model / Kategori</Text>
-      <TextInput style={styles.input} value={category} onChangeText={setCategory} placeholder="Model / Kategori" accessibilityLabel="Model veya kategori" />
+      <Text style={styles.label}>{t("model_category")}</Text>
+      <TextInput style={styles.input} value={category} onChangeText={setCategory} placeholder={t("model_category_placeholder")} accessibilityLabel={t("model_category")} />
 
       <View style={{ flexDirection: "row" }}>
         <View style={{ flex: 1 }}>
-          <Text style={styles.label}>Adet</Text>
-          <TextInput style={styles.input} value={quantity} onChangeText={setQuantity} keyboardType="number-pad" accessibilityLabel="Adet" />
+          <Text style={styles.label}>{t("quantity_simple")}</Text>
+          <TextInput style={styles.input} value={quantity} onChangeText={setQuantity} keyboardType="number-pad" accessibilityLabel={t("quantity_simple")} />
         </View>
         <View style={{ width: 12 }} />
         <View style={{ flex: 1 }}>
-          <Text style={styles.label}>Fiyat (₺)</Text>
-          <TextInput style={styles.input} value={price} onChangeText={setPrice} keyboardType="decimal-pad" accessibilityLabel="Fiyat" />
+          <Text style={styles.label}>{t("price_currency_simple")}</Text>
+          <TextInput style={styles.input} value={price} onChangeText={setPrice} keyboardType="decimal-pad" accessibilityLabel={t("price_currency_simple")} />
         </View>
       </View>
 
-      <Text style={styles.label}>Seri No</Text>
-      <TextInput style={styles.input} value={serialNumber} onChangeText={setSerialNumber} placeholder="Seri No" accessibilityLabel="Seri numarası" />
+      <Text style={styles.label}>{t("serial_number")}</Text>
+      <TextInput style={styles.input} value={serialNumber} onChangeText={setSerialNumber} placeholder={t("serial_number")} accessibilityLabel={t("serial_number")} />
 
-      <Text style={styles.label}>Kritik Seviye</Text>
-      <TextInput style={styles.input} value={criticalLevel} onChangeText={setCriticalLevel} keyboardType="number-pad" accessibilityLabel="Kritik seviye" />
+      <Text style={styles.label}>{t("critical_level")}</Text>
+      <TextInput style={styles.input} value={criticalLevel} onChangeText={setCriticalLevel} keyboardType="number-pad" accessibilityLabel={t("critical_level")} />
 
-      <TouchableOpacity style={styles.addButton} onPress={submit} accessibilityRole="button" accessibilityLabel="Ürünü Ekle">
-        <Text style={styles.addButtonText}>Ürünü Ekle</Text>
+      <TouchableOpacity style={styles.addButton} onPress={submit} accessibilityRole="button" accessibilityLabel={t("add_product_button")}>
+        <Text style={styles.addButtonText}>{t("add_product_button")}</Text>
       </TouchableOpacity>
     </View>
   );

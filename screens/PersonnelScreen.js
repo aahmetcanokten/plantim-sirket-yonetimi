@@ -16,11 +16,13 @@ import { Ionicons } from "@expo/vector-icons";
 import ImmersiveLayout from "../components/ImmersiveLayout";
 import { Colors } from "../Theme";
 import { AppContext } from "../AppContext";
+import { useTranslation } from "react-i18next";
 
 
 export default function PersonnelScreen({ navigation }) {
   // AppContext'ten 'isAdmin' kaldırıldı, 'isPremium' eklendi
   const { personnel, addPersonnel, updatePersonnel, deletePersonnel, isPremium } = useContext(AppContext);
+  const { t } = useTranslation();
 
   const [selectedPerson, setSelectedPerson] = useState(null);
   const [personnelModalVisible, setPersonnelModalVisible] = useState(false);
@@ -59,11 +61,11 @@ export default function PersonnelScreen({ navigation }) {
   const openAddPerson = () => {
     if (!isPremium && personnel.length >= 2) {
       Alert.alert(
-        "Premium Özellik",
-        "Ücretsiz planda en fazla 2 personel ekleyebilirsiniz. Sınırsız ekleme için Premium'a geçin.",
+        t("premium_feature"),
+        t("personnel_limit_message"),
         [
-          { text: "Vazgeç", style: "cancel" },
-          { text: "Premium Al", onPress: () => navigation.navigate("Paywall") }
+          { text: t("cancel"), style: "cancel" },
+          { text: t("get_premium"), onPress: () => navigation.navigate("Paywall") }
         ]
       );
       return;
@@ -82,7 +84,7 @@ export default function PersonnelScreen({ navigation }) {
   const savePersonnel = () => {
     // Admin kontrolü kaldırıldı
 
-    if (!formPerson.name.trim()) { Alert.alert("Hata", "Personel adı zorunludur."); return; }
+    if (!formPerson.name.trim()) { Alert.alert(t("error"), t("personnel_name_required")); return; }
     if (formPerson.id) {
       updatePersonnel(formPerson);
       if (selectedPerson && selectedPerson.id === formPerson.id) setSelectedPerson(formPerson);
@@ -95,9 +97,9 @@ export default function PersonnelScreen({ navigation }) {
 
   const confirmDeletePerson = (person) => {
     // Admin kontrolü kaldırıldı
-    Alert.alert("Personel Sil", `${person.name} adlı personeli silmek istiyor musunuz?`, [
-      { text: "İptal", style: "cancel" },
-      { text: "Sil", style: "destructive", onPress: () => { deletePersonnel(person.id); setSelectedPerson(null); } },
+    Alert.alert(t("delete_personnel"), `${person.name} ${t("delete_personnel_confirmation")}`, [
+      { text: t("cancel"), style: "cancel" },
+      { text: t("delete"), style: "destructive", onPress: () => { deletePersonnel(person.id); setSelectedPerson(null); } },
     ]);
   };
 
@@ -110,7 +112,7 @@ export default function PersonnelScreen({ navigation }) {
   const saveTask = () => {
     // Admin kontrolü kaldırıldı
 
-    if (!formTask.title.trim()) { Alert.alert("Hata", "Görev başlığı zorunludur."); return; }
+    if (!formTask.title.trim()) { Alert.alert(t("error"), t("task_title_required")); return; }
     const updatedTasks = [...(selectedPerson.tasks || [])];
     if (formTask.id) {
       const index = updatedTasks.findIndex((t) => t.id === formTask.id);
@@ -147,7 +149,7 @@ export default function PersonnelScreen({ navigation }) {
         <View style={styles.searchBar}>
           <Ionicons name="search" size={20} color="#999" style={{ marginRight: 8 }} />
           <TextInput
-            placeholder="Personel ara..."
+            placeholder={t("search_personnel")}
             value={searchQuery}
             onChangeText={setSearchQuery}
             style={{ flex: 1 }}
@@ -161,7 +163,7 @@ export default function PersonnelScreen({ navigation }) {
       {/* Admin kontrolü kaldırıldı */}
       <TouchableOpacity style={styles.addButtonBlock} onPress={openAddPerson}>
         <Ionicons name="person-add-outline" size={20} color="#fff" />
-        <Text style={styles.addButtonText}>Yeni Personel Ekle</Text>
+        <Text style={styles.addButtonText}>{t("add_new_personnel")}</Text>
       </TouchableOpacity>
 
       <FlatList
@@ -173,19 +175,19 @@ export default function PersonnelScreen({ navigation }) {
             <View style={styles.personAvatar}><Text style={styles.avatarText}>{item.name.charAt(0).toUpperCase()}</Text></View>
             <View style={{ flex: 1, paddingHorizontal: 12 }}>
               <Text style={styles.personName}>{item.name}</Text>
-              <Text style={styles.personRole}>{item.role || "Ünvan yok"}</Text>
+              <Text style={styles.personRole}>{item.role || t("no_title")}</Text>
               {/* Yıllık İzin Gösterimi */}
               {item.annualLeaveEntitlement ? (
                 <View style={styles.leaveContainer}>
                   <Ionicons name="calendar-outline" size={12} color={(Colors.primary ?? "#007AFF")} style={{ marginRight: 4 }} />
-                  <Text style={styles.leaveText}>İzin Hakkı: {item.annualLeaveEntitlement} Gün</Text>
+                  <Text style={styles.leaveText}>{t("leave_entitlement")}: {item.annualLeaveEntitlement} {t("days")}</Text>
                 </View>
               ) : null}
             </View>
             <Ionicons name="chevron-forward" size={20} color="#ccc" />
           </TouchableOpacity>
         )}
-        ListEmptyComponent={<Text style={styles.emptyText}>{searchQuery ? "Aranan kriterde personel bulunamadı." : "Henüz personel kaydı yok."}</Text>}
+        ListEmptyComponent={<Text style={styles.emptyText}>{searchQuery ? t("no_personnel_match") : t("no_personnel_record")}</Text>}
       />
     </View>
   );
@@ -194,38 +196,38 @@ export default function PersonnelScreen({ navigation }) {
     <ScrollView contentContainerStyle={{ paddingBottom: 80 }}>
       <View style={styles.detailCard}>
         <View style={styles.detailHeader}>
-          <TouchableOpacity onPress={() => setSelectedPerson(null)} style={styles.backButton}><Ionicons name="arrow-back" size={24} color={Colors.primary ?? "#007AFF"} /><Text style={styles.backButtonText}>Listeye Dön</Text></TouchableOpacity>
+          <TouchableOpacity onPress={() => setSelectedPerson(null)} style={styles.backButton}><Ionicons name="arrow-back" size={24} color={Colors.primary ?? "#007AFF"} /><Text style={styles.backButtonText}>{t("return_to_list")}</Text></TouchableOpacity>
           <View style={{ flexDirection: "row" }}>
             {/* Admin kontrolü kaldırıldı */}
-            <TouchableOpacity onPress={() => openEditPerson(selectedPerson)} style={{ marginRight: 16 }}><Text style={styles.actionTextBlue}>Düzenle</Text></TouchableOpacity>
-            <TouchableOpacity onPress={() => confirmDeletePerson(selectedPerson)}><Text style={styles.actionTextRed}>Sil</Text></TouchableOpacity>
+            <TouchableOpacity onPress={() => openEditPerson(selectedPerson)} style={{ marginRight: 16 }}><Text style={styles.actionTextBlue}>{t("edit")}</Text></TouchableOpacity>
+            <TouchableOpacity onPress={() => confirmDeletePerson(selectedPerson)}><Text style={styles.actionTextRed}>{t("delete")}</Text></TouchableOpacity>
           </View>
         </View>
         <View style={{ alignItems: "center", marginBottom: 20 }}>
           <View style={[styles.personAvatar, { width: 80, height: 80, borderRadius: 40 }]}><Text style={[styles.avatarText, { fontSize: 32 }]}>{selectedPerson.name.charAt(0).toUpperCase()}</Text></View>
           <Text style={styles.detailName}>{selectedPerson.name}</Text><Text style={styles.detailRole}>{selectedPerson.role}</Text><Text style={styles.detailPhone}>{selectedPerson.phone}</Text>
         </View>
-        <View style={styles.infoRow}><Text style={styles.infoLabel}>İşe Giriş Tarihi:</Text><Text style={styles.infoValue}>{selectedPerson.hireDate || "-"}</Text></View>
-        <View style={styles.infoRow}><Text style={styles.infoLabel}>Yıllık İzin Hakkı:</Text><Text style={styles.infoValue}>{selectedPerson.annualLeaveEntitlement ? `${selectedPerson.annualLeaveEntitlement} Gün` : "-"}</Text></View>
+        <View style={styles.infoRow}><Text style={styles.infoLabel}>{t("hire_date")}:</Text><Text style={styles.infoValue}>{selectedPerson.hireDate || "-"}</Text></View>
+        <View style={styles.infoRow}><Text style={styles.infoLabel}>{t("annual_leave_entitlement")}:</Text><Text style={styles.infoValue}>{selectedPerson.annualLeaveEntitlement ? `${selectedPerson.annualLeaveEntitlement} ${t("days")}` : "-"}</Text></View>
       </View>
 
       <View style={styles.sectionHeader}>
-        <Text style={styles.sectionTitle}>Atanan Görevler</Text>
+        <Text style={styles.sectionTitle}>{t("assigned_tasks")}</Text>
         {/* Admin kontrolü kaldırıldı */}
         <TouchableOpacity onPress={openAddTask} style={styles.smallAddButton}>
           <Ionicons name="add" size={16} color="#fff" />
-          <Text style={styles.smallAddButtonText}>Görev Ekle</Text>
+          <Text style={styles.smallAddButtonText}>{t("add_task")}</Text>
         </TouchableOpacity>
       </View>
 
-      {!selectedPerson.tasks || selectedPerson.tasks.length === 0 ? <Text style={styles.emptyText}>Bu personele henüz görev atanmamış.</Text> : (
+      {!selectedPerson.tasks || selectedPerson.tasks.length === 0 ? <Text style={styles.emptyText}>{t("no_tasks_assigned")}</Text> : (
         selectedPerson.tasks.map((task) => (
           <View key={task.id} style={[styles.taskCard, task.isCompleted && styles.taskCardCompleted]}>
             <TouchableOpacity onPress={() => toggleTaskCompletion(task)} style={{ marginRight: 12 }}><Ionicons name={task.isCompleted ? "checkmark-circle" : "ellipse-outline"} size={28} color={task.isCompleted ? (Colors.success ?? "#34C759") : "#ccc"} /></TouchableOpacity>
             <View style={{ flex: 1 }}>
               <Text style={[styles.taskTitle, task.isCompleted && styles.completedText]}>{task.title}</Text>
               {task.description ? <Text style={styles.taskDesc}>{task.description}</Text> : null}
-              {task.dueDate ? <Text style={styles.taskDate}><Ionicons name="calendar-outline" size={12} /> Son Tarih: {task.dueDate}</Text> : null}
+              {task.dueDate ? <Text style={styles.taskDate}><Ionicons name="calendar-outline" size={12} /> {t("due_date")}: {task.dueDate}</Text> : null}
             </View>
             {/* Admin kontrolü kaldırıldı */}
             <TouchableOpacity onPress={() => deleteTask(task.id)} style={{ padding: 8 }}><Ionicons name="trash-outline" size={20} color={Colors.critical ?? "#FF3B30"} /></TouchableOpacity>
@@ -236,7 +238,7 @@ export default function PersonnelScreen({ navigation }) {
   );
 
   return (
-    <ImmersiveLayout title="Personel Yönetimi" subtitle={selectedPerson ? "Personel Detayları & Görevler" : `${filteredPersonnel.length} Personel`} onGoBack={() => navigation.goBack()}>
+    <ImmersiveLayout title={t("personnel_management")} subtitle={selectedPerson ? t("personnel_details_tasks") : `${filteredPersonnel.length} ${t("personnel")}`} onGoBack={() => navigation.goBack()}>
       <View style={{ flex: 1, padding: 16 }}>{selectedPerson ? renderPersonnelDetail() : renderPersonnelList()}</View>
 
       {/* Personel Ekleme/Düzenleme Modalı */}
@@ -246,17 +248,17 @@ export default function PersonnelScreen({ navigation }) {
           style={styles.modalContainer}
         >
           <View style={styles.modalContent}>
-            <Text style={styles.modalTitle}>{formPerson.id ? "Personeli Düzenle" : "Yeni Personel"}</Text>
+            <Text style={styles.modalTitle}>{formPerson.id ? t("edit_personnel") : t("new_personnel")}</Text>
             <ScrollView showsVerticalScrollIndicator={false}>
-              <Text style={styles.inputLabel}>Ad Soyad</Text><TextInput style={styles.input} value={formPerson.name} onChangeText={(t) => setFormPerson({ ...formPerson, name: t })} placeholder="Örn: Ahmet Yılmaz" />
-              <Text style={styles.inputLabel}>Ünvan / Pozisyon</Text><TextInput style={styles.input} value={formPerson.role} onChangeText={(t) => setFormPerson({ ...formPerson, role: t })} placeholder="Örn: Satış Sorumlusu" />
-              <Text style={styles.inputLabel}>Telefon</Text><TextInput style={styles.input} value={formPerson.phone} onChangeText={(t) => setFormPerson({ ...formPerson, phone: t })} keyboardType="phone-pad" placeholder="0555..." />
-              <Text style={styles.inputLabel}>İşe Giriş Tarihi (GG.AA.YYYY)</Text><TextInput style={styles.input} value={formPerson.hireDate} onChangeText={(t) => setFormPerson({ ...formPerson, hireDate: t })} placeholder="Örn: 01.01.2023" />
-              <Text style={styles.inputLabel}>Yıllık İzin Hakkı (Gün)</Text><TextInput style={styles.input} value={formPerson.annualLeaveEntitlement} onChangeText={(t) => setFormPerson({ ...formPerson, annualLeaveEntitlement: t })} keyboardType="numeric" placeholder="14" />
+              <Text style={styles.inputLabel}>{t("full_name")}</Text><TextInput style={styles.input} value={formPerson.name} onChangeText={(t) => setFormPerson({ ...formPerson, name: t })} placeholder="Örn: Ahmet Yılmaz" />
+              <Text style={styles.inputLabel}>{t("title_position")}</Text><TextInput style={styles.input} value={formPerson.role} onChangeText={(t) => setFormPerson({ ...formPerson, role: t })} placeholder="Örn: Satış Sorumlusu" />
+              <Text style={styles.inputLabel}>{t("phone")}</Text><TextInput style={styles.input} value={formPerson.phone} onChangeText={(t) => setFormPerson({ ...formPerson, phone: t })} keyboardType="phone-pad" placeholder="0555..." />
+              <Text style={styles.inputLabel}>{t("hire_date_format")}</Text><TextInput style={styles.input} value={formPerson.hireDate} onChangeText={(t) => setFormPerson({ ...formPerson, hireDate: t })} placeholder="Örn: 01.01.2023" />
+              <Text style={styles.inputLabel}>{t("leave_entitlement_days")}</Text><TextInput style={styles.input} value={formPerson.annualLeaveEntitlement} onChangeText={(t) => setFormPerson({ ...formPerson, annualLeaveEntitlement: t })} keyboardType="numeric" placeholder="14" />
             </ScrollView>
             <View style={styles.modalButtons}>
-              <TouchableOpacity style={[styles.modalBtn, styles.cancelBtn]} onPress={() => setPersonnelModalVisible(false)}><Text style={styles.cancelBtnText}>İptal</Text></TouchableOpacity>
-              <TouchableOpacity style={[styles.modalBtn, styles.saveBtn]} onPress={savePersonnel}><Text style={styles.saveBtnText}>Kaydet</Text></TouchableOpacity>
+              <TouchableOpacity style={[styles.modalBtn, styles.cancelBtn]} onPress={() => setPersonnelModalVisible(false)}><Text style={styles.cancelBtnText}>{t("cancel")}</Text></TouchableOpacity>
+              <TouchableOpacity style={[styles.modalBtn, styles.saveBtn]} onPress={savePersonnel}><Text style={styles.saveBtnText}>{t("save")}</Text></TouchableOpacity>
             </View>
           </View>
         </KeyboardAvoidingView>
@@ -269,15 +271,15 @@ export default function PersonnelScreen({ navigation }) {
           style={styles.modalContainer}
         >
           <View style={styles.modalContent}>
-            <Text style={styles.modalTitle}>Yeni Görev Ata</Text>
+            <Text style={styles.modalTitle}>{t("assign_new_task")}</Text>
             <ScrollView showsVerticalScrollIndicator={false}>
-              <Text style={styles.inputLabel}>Görev Başlığı</Text><TextInput style={styles.input} value={formTask.title} onChangeText={(t) => setFormTask({ ...formTask, title: t })} placeholder="Örn: Aylık Rapor Hazırlığı" />
-              <Text style={styles.inputLabel}>Açıklama</Text><TextInput style={[styles.input, { height: 80, textAlignVertical: 'top' }]} value={formTask.description} onChangeText={(t) => setFormTask({ ...formTask, description: t })} multiline placeholder="Görev detayları..." />
-              <Text style={styles.inputLabel}>Son Tarih (GG.AA.YYYY)</Text><TextInput style={styles.input} value={formTask.dueDate} onChangeText={(t) => setFormTask({ ...formTask, dueDate: t })} placeholder="Örn: 15.11.2025" />
+              <Text style={styles.inputLabel}>{t("task_title")}</Text><TextInput style={styles.input} value={formTask.title} onChangeText={(t) => setFormTask({ ...formTask, title: t })} placeholder="Örn: Aylık Rapor Hazırlığı" />
+              <Text style={styles.inputLabel}>{t("description_optional")}</Text><TextInput style={[styles.input, { height: 80, textAlignVertical: 'top' }]} value={formTask.description} onChangeText={(t) => setFormTask({ ...formTask, description: t })} multiline placeholder="Görev detayları..." />
+              <Text style={styles.inputLabel}>{t("due_date_format")}</Text><TextInput style={styles.input} value={formTask.dueDate} onChangeText={(t) => setFormTask({ ...formTask, dueDate: t })} placeholder="Örn: 15.11.2025" />
             </ScrollView>
             <View style={styles.modalButtons}>
-              <TouchableOpacity style={[styles.modalBtn, styles.cancelBtn]} onPress={() => setTaskModalVisible(false)}><Text style={styles.cancelBtnText}>İptal</Text></TouchableOpacity>
-              <TouchableOpacity style={[styles.modalBtn, styles.saveBtn]} onPress={saveTask}><Text style={styles.saveBtnText}>Görevi Ata</Text></TouchableOpacity>
+              <TouchableOpacity style={[styles.modalBtn, styles.cancelBtn]} onPress={() => setTaskModalVisible(false)}><Text style={styles.cancelBtnText}>{t("cancel")}</Text></TouchableOpacity>
+              <TouchableOpacity style={[styles.modalBtn, styles.saveBtn]} onPress={saveTask}><Text style={styles.saveBtnText}>{t("assign_task")}</Text></TouchableOpacity>
             </View>
           </View>
         </KeyboardAvoidingView>
