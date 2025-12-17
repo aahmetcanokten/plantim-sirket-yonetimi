@@ -483,6 +483,8 @@ export function AppProvider({ children }) {
     if (!session || !supabase) return false;
     const userId = session.user.id;
     try {
+      // 1. Önce verileri sil (Foreign Key constraint hatalarını önlemek için manuel temizlik)
+      // Eğer veritabanında "ON DELETE CASCADE" varsa bu adım şart değil ama önlem olarak kalabilir.
       await Promise.all([
         supabase.from('customers').delete().eq('user_id', userId),
         supabase.from('products').delete().eq('user_id', userId),
@@ -491,9 +493,27 @@ export function AppProvider({ children }) {
         supabase.from('vehicles').delete().eq('user_id', userId),
         supabase.from('purchases').delete().eq('user_id', userId),
         supabase.from('assets').delete().eq('user_id', userId),
-        supabase.from('companies').delete().eq('user_id', userId), // Şirket bilgisi de silinmeli
+        supabase.from('companies').delete().eq('user_id', userId),
         supabase.from('user_profiles').delete().eq('user_id', userId)
       ]);
+
+      // 2. Ardından Auth kullanıcısını silmek için RPC çağır
+      // SQL: 
+      // create or replace function delete_user_account()
+      // returns void as $$
+      // begin
+      //   delete from auth.users where id = auth.uid();
+      // end;
+      // $$ language plpgsql security definer;
+
+      const { error: rpcError } = await supabase.rpc('delete_user_account');
+
+      if (rpcError) {
+        console.log("RPC 'delete_user_account' çağrısı başarısız oldu (Fonksiyon oluşturulmamış olabilir). Kullanıcı sadece verileri silmiş oldu.", rpcError.message);
+      } else {
+        console.log("Kullanıcı hesabı ve Auth kaydı başarıyla silindi.");
+      }
+
       return true;
     } catch (e) {
       console.error("Hesap silme hatası:", e);

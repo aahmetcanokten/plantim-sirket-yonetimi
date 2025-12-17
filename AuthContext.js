@@ -20,7 +20,7 @@ const supabase = createClient(supabaseUrl, supabaseAnonKey, {
         storage: AsyncStorage,
         autoRefreshToken: true,
         persistSession: true,
-        detectSessionInUrl: false,
+        detectSessionInUrl: true,
     },
 });
 
@@ -147,7 +147,7 @@ export function AuthProvider({ children }) {
         // bir deep link (örn: 'sizinuygulamaniz://sifre-sifirla') 
         // ile değiştirmeniz gerekebilir.
         const { data, error } = await supabase.auth.resetPasswordForEmail(email, {
-            redirectTo: '', // Gerekliyse burayı doldurun
+            redirectTo: 'plantim://reset-password', // Deep link eklendi
         });
         setLoading(false);
         return { data, error };

@@ -145,6 +145,20 @@ export default function App() {
     registerForPushNotificationsAsync();
     resetBadgeCount();
 
+    // Check for saved language preference
+    const loadLanguage = async () => {
+      try {
+        const savedLanguage = await AsyncStorage.getItem('user-language');
+        if (savedLanguage) {
+          const i18nInstance = require('./i18n').default;
+          i18nInstance.changeLanguage(savedLanguage);
+        }
+      } catch (e) {
+        console.error("Failed to load language", e);
+      }
+    };
+    loadLanguage();
+
     const subscription = AppState.addEventListener('change', nextAppState => {
       if (nextAppState === 'active') {
         resetBadgeCount();

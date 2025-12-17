@@ -21,6 +21,7 @@ import { Colors } from "../Theme";
 import { AppContext } from "../AppContext";
 import { useAuth } from "../AuthContext";
 import { exportToPDF } from "../utils/ExportHelper";
+import AsyncStorage from '@react-native-async-storage/async-storage';
 
 export default function SettingsScreen({ navigation }) {
   const { t, i18n } = useTranslation(); // Translations
@@ -63,9 +64,14 @@ export default function SettingsScreen({ navigation }) {
   const [exportType, setExportType] = useState("sales"); // sales, stock, customers, personnel
   const [languageModal, setLanguageModal] = useState(false);
 
-  const changeLanguage = (lang) => {
+  const changeLanguage = async (lang) => {
     i18n.changeLanguage(lang);
     setLanguageModal(false);
+    try {
+      await AsyncStorage.setItem('user-language', lang);
+    } catch (e) {
+      console.error("Failed to save language", e);
+    }
   };
 
 
@@ -358,14 +364,7 @@ export default function SettingsScreen({ navigation }) {
     <ImmersiveLayout title={t('settings')} subtitle={t('company_management_subtitle')}>
       <ScrollView contentContainerStyle={{ paddingBottom: 40 }}>
 
-        <Text style={styles.sectionHeader}>{t('general')}</Text>
-        <MenuLinkCard
-          title={t('language')}
-          subtitle={i18n.language === 'tr' ? t('turkish') : t('english')}
-          icon="language"
-          color="#5856D6"
-          onPress={() => setLanguageModal(true)}
-        />
+
 
         <Text style={styles.sectionHeader}>{t('management')}</Text>
 
@@ -520,6 +519,14 @@ export default function SettingsScreen({ navigation }) {
           onPress={handleLogout}
         />
 
+        <MenuLinkCard
+          title={t('language')}
+          subtitle={i18n.language === 'tr' ? t('turkish') : t('english')}
+          icon="language"
+          color="#5856D6"
+          onPress={() => setLanguageModal(true)}
+        />
+
         {/* HAKKINDA BÖLÜMÜ */}
         <Text style={styles.sectionHeader}>{t('about')}</Text>
 
@@ -663,8 +670,8 @@ export default function SettingsScreen({ navigation }) {
 
               <View style={{ marginBottom: 20 }} />
 
-              <TouchableOpacity style={[styles.modalBtn, styles.saveBtn]} onPress={performExport}>
-                <Text style={[styles.saveBtnText, { color: 'white' }]}>{t('download_share')}</Text>
+              <TouchableOpacity style={[styles.modalBtn, styles.saveBtn, { flex: 0, width: '100%' }]} onPress={performExport}>
+                <Text style={styles.saveBtnText}>{t('download_share')}</Text>
               </TouchableOpacity>
             </View>
           </View>

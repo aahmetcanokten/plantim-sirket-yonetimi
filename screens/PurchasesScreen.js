@@ -86,6 +86,8 @@ export default function PurchasesScreen() {
 
     // --- Filtreleme Mantığı ---
     const filteredPurchases = useMemo(() => {
+        if (!Array.isArray(purchases)) return [];
+
         let result = [];
         switch (filterStatus) {
             case "Teslim":
@@ -99,8 +101,8 @@ export default function PurchasesScreen() {
                 result = purchases.filter((p) => !p.delivered);
                 break;
         }
-        // Yeniden eskiye sırala (varsayım: id timestamp bazlı veya createdDateISO var)
-        return result.sort((a, b) => {
+        // Yeniden eskiye sırala (Mutasyon yapmamak için kopyala: [...result])
+        return [...result].sort((a, b) => {
             const dateA = a.createdDateISO ? new Date(a.createdDateISO) : new Date(0);
             const dateB = b.createdDateISO ? new Date(b.createdDateISO) : new Date(0);
             return dateB - dateA;
@@ -109,6 +111,8 @@ export default function PurchasesScreen() {
 
     // --- İstatistikler ---
     const stats = useMemo(() => {
+        if (!Array.isArray(purchases)) return { open: 0, delivered: 0, total: 0, pendingCost: 0 };
+
         const openPurchases = purchases.filter(p => !p.delivered);
         const deliveredPurchases = purchases.filter(p => p.delivered);
 
@@ -122,8 +126,8 @@ export default function PurchasesScreen() {
     }, [purchases]);
 
     const right = <SettingsButton />;
-    // subtitle i18n
-    const subtitle = t('open_delivered_count', { open: stats.open, delivered: stats.delivered }).replace('{{open}}', stats.open).replace('{{delivered}}', stats.delivered);
+    // subtitle i18n - t fonksiyonu zaten parametreleri işler ({ open, delivered })
+    const subtitle = t('open_delivered_count', { open: stats.open, delivered: stats.delivered });
 
     return (
         <ImmersiveLayout title={t('purchasing')} subtitle={subtitle} right={right}>
