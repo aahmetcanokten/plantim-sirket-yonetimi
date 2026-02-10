@@ -57,7 +57,7 @@ export default function AddProductForm({ onAdd }) {
     const crit = parseInt(criticalLevel || "0", 10) || 0;
 
     const newProduct = {
-      id: Date.now().toString(),
+      // id: Date.now().toString(), // REMOVED: Managed by backend
       name: name.trim(),
       serialNumber: serialNumber.trim(),
       category: category.trim(),

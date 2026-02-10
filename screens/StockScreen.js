@@ -175,9 +175,9 @@ export default function StockScreen({ navigation }) {
   const sortedProducts = useMemo(() => {
     let list = [...products];
     switch (sortOption) {
-      case "nameAZ": return list.sort((a, b) => a.name.localeCompare(b.name));
-      case "stockAsc": return list.sort((a, b) => a.quantity - b.quantity);
-      case "stockDesc": return list.sort((a, b) => b.quantity - a.quantity);
+      case "nameAZ": return list.sort((a, b) => (a.name || "").localeCompare(b.name || ""));
+      case "stockAsc": return list.sort((a, b) => (a.quantity || 0) - (b.quantity || 0));
+      case "stockDesc": return list.sort((a, b) => (b.quantity || 0) - (a.quantity || 0));
       default: return list;
     }
   }, [products, sortOption]);
@@ -186,7 +186,7 @@ export default function StockScreen({ navigation }) {
     if (!searchQuery) return sortedProducts;
     const lowerCaseQuery = searchQuery.toLowerCase();
     return sortedProducts.filter(
-      (p) => p.name.toLowerCase().includes(lowerCaseQuery) || (p.category && p.category.toLowerCase().includes(lowerCaseQuery)) || (p.serialNumber && p.serialNumber.toLowerCase().includes(lowerCaseQuery)) || (p.code && p.code.toLowerCase().includes(lowerCaseQuery))
+      (p) => (p.name || "").toLowerCase().includes(lowerCaseQuery) || ((p.category || "").toLowerCase().includes(lowerCaseQuery)) || ((p.serialNumber || "").toLowerCase().includes(lowerCaseQuery)) || ((p.code || "").toLowerCase().includes(lowerCaseQuery))
     );
   }, [sortedProducts, searchQuery]);
 
@@ -213,45 +213,80 @@ export default function StockScreen({ navigation }) {
   };
 
   const renderHeader = () => (
-    <View>
-      <TouchableOpacity style={styles.addButton} onPress={navigateToAddProduct} activeOpacity={0.8}>
-        <Ionicons name={"add-circle-outline"} size={24} color="#fff" />
-        <Text style={styles.addButtonText}>{t('add_new_product')}</Text>
-      </TouchableOpacity>
+    <View style={styles.headerContainer}>
+      {/* Ana Aksiyon Butonları */}
+      <View style={styles.topActionsRow}>
+        <TouchableOpacity
+          style={[styles.headerActionBtn, { backgroundColor: Colors.iosGreen }]}
+          onPress={navigateToAddProduct}
+          activeOpacity={0.8}
+        >
+          <Ionicons name="add-circle" size={20} color="#fff" />
+          <Text style={styles.headerActionText}>{t('add_new_product')}</Text>
+        </TouchableOpacity>
 
-
-      <TouchableOpacity style={[styles.addButton, { backgroundColor: Colors.warning }]} onPress={handleAssemblyPress} activeOpacity={0.8}>
-        <Ionicons name="construct-outline" size={24} color="#000" />
-        <Text style={[styles.addButtonText, { color: '#000' }]}>{t('assembly_production')}</Text>
-      </TouchableOpacity>
-
-      <TouchableOpacity style={styles.detailButton} onPress={navigateToDetailedStock} activeOpacity={0.8}>
-        <Ionicons name="stats-chart-outline" size={20} color="#fff" />
-        <Text style={styles.detailButtonText}>{t('detailed_stock_analysis')}</Text>
-      </TouchableOpacity>
-
-      <View style={styles.searchContainer}>
-        <TextInput
-          placeholder={t('search_placeholder_stock')}
-          value={searchQuery}
-          onChangeText={setSearchQuery}
-          style={styles.searchInput}
-          returnKeyType="search"
-          placeholderTextColor={Colors.secondary}
-        />
-        <TouchableOpacity onPress={() => setScannerVisible(true)} style={styles.searchIconContainer}>
-          <Ionicons name="barcode-outline" size={24} color={Colors.primary || Colors.iosBlue} />
+        <TouchableOpacity
+          style={[styles.headerActionBtn, { backgroundColor: Colors.warning, marginLeft: 10 }]}
+          onPress={handleAssemblyPress}
+          activeOpacity={0.8}
+        >
+          <Ionicons name="construct" size={20} color="#000" />
+          <Text style={[styles.headerActionText, { color: '#000' }]}>{t('assembly_production')}</Text>
         </TouchableOpacity>
       </View>
 
-      <View style={styles.sortButtonContainer}>
-        <SortButton title={t('sort_az')} currentSort={sortOption} targetSort="nameAZ" onPress={setSortOption} />
-        <SortButton title={t('sort_stock_asc')} currentSort={sortOption} targetSort="stockAsc" onPress={setSortOption} />
-        <SortButton title={t('sort_stock_desc')} currentSort={sortOption} targetSort="stockDesc" onPress={setSortOption} />
+      <TouchableOpacity
+        style={styles.analysisButton}
+        onPress={navigateToDetailedStock}
+        activeOpacity={0.8}
+      >
+        <Ionicons name="analytics-outline" size={18} color={Colors.iosBlue} />
+        <Text style={styles.analysisButtonText}>{t('detailed_stock_analysis')}</Text>
+      </TouchableOpacity>
+
+      {/* Arama ve Barkod */}
+      <View style={styles.searchRow}>
+        <View style={styles.searchInputWrapper}>
+          <Ionicons name="search-outline" size={18} color={Colors.secondary} style={styles.searchIcon} />
+          <TextInput
+            placeholder={t('search_placeholder_stock')}
+            value={searchQuery}
+            onChangeText={setSearchQuery}
+            style={styles.searchInputField}
+            returnKeyType="search"
+            placeholderTextColor={Colors.secondary}
+          />
+          {searchQuery !== "" && (
+            <TouchableOpacity onPress={() => setSearchQuery("")} style={styles.clearSearchBtn}>
+              <Ionicons name="close-circle" size={18} color={Colors.muted} />
+            </TouchableOpacity>
+          )}
+        </View>
+        <TouchableOpacity onPress={() => setScannerVisible(true)} style={styles.barcodeBtn}>
+          <Ionicons name="barcode-outline" size={24} color="#fff" />
+        </TouchableOpacity>
       </View>
 
-      <Text style={styles.listTitle}>{t('stock_list')} ({filteredAndSortedProducts.length})</Text>
-    </View >
+      {/* Sıralama Seçenekleri */}
+      <View style={styles.sortContainer}>
+        <View style={styles.sortLabelContainer}>
+          <Ionicons name="filter-outline" size={14} color={Colors.secondary} />
+          <Text style={styles.sortLabel}>{t('sort_az').split(' ')[0]} </Text>
+        </View>
+        <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.sortScrollContent}>
+          <SortButton title={t('sort_az')} currentSort={sortOption} targetSort="nameAZ" onPress={setSortOption} />
+          <SortButton title={t('sort_stock_asc')} currentSort={sortOption} targetSort="stockAsc" onPress={setSortOption} />
+          <SortButton title={t('sort_stock_desc')} currentSort={sortOption} targetSort="stockDesc" onPress={setSortOption} />
+        </ScrollView>
+      </View>
+
+      <View style={styles.listHeaderRow}>
+        <Text style={styles.listTitle}>{t('stock_list')}</Text>
+        <View style={styles.countBadge}>
+          <Text style={styles.countText}>{filteredAndSortedProducts.length}</Text>
+        </View>
+      </View>
+    </View>
   );
 
   return (
@@ -399,66 +434,86 @@ const StockListItem = ({ item, onSell, onEdit, onDelete }) => {
 
   // Durum Renkleri ve Metinleri
   const statusColor = isZero ? Colors.critical : (isCritical ? Colors.warning : Colors.profit);
-  const statusBg = isZero ? '#FFF5F5' : (isCritical ? '#FFFAF0' : '#F0FFF4');
+  const statusBg = isZero ? '#FFF5F5' : (isCritical ? '#FFFBEB' : '#F0FDF4');
   const { t } = useTranslation();
   const statusText = isZero ? t('out_of_stock') : (isCritical ? t('critical') : t('in_stock'));
-  const statusBorder = isZero ? '#FED7D7' : (isCritical ? '#FEEBC8' : '#C6F6D5');
+  const statusBorder = isZero ? '#FEE2E2' : (isCritical ? '#FEF3C7' : '#DCFCE7');
 
   return (
     <View style={styles.card}>
-      {/* Üst Kısım: Başlık ve Durum */}
+      {/* Üst Kısım: Başlık ve SKU/Kod */}
       <View style={styles.cardHeader}>
         <View style={styles.headerLeft}>
-          <Text style={styles.cardTitle} numberOfLines={1}>{item.name}</Text>
-          <Text style={styles.categoryText}>{item.category || 'Genel'}</Text>
+          <View style={styles.titleRow}>
+            <Text style={styles.cardTitle} numberOfLines={1}>{item.name}</Text>
+          </View>
+          <View style={styles.subTitleRow}>
+            <View style={styles.categoryBadge}>
+              <Text style={styles.categoryText}>{item.category || 'Genel'}</Text>
+            </View>
+            {item.code && (
+              <View style={styles.codeBadge}>
+                <Ionicons name="barcode-outline" size={10} color={Colors.secondary} style={{ marginRight: 3 }} />
+                <Text style={styles.codeText}>{item.code}</Text>
+              </View>
+            )}
+          </View>
         </View>
         <View style={[styles.statusBadge, { backgroundColor: statusBg, borderColor: statusBorder }]}>
+          <View style={[styles.statusDot, { backgroundColor: statusColor }]} />
           <Text style={[styles.statusText, { color: statusColor }]}>{statusText}</Text>
         </View>
       </View>
 
       <View style={styles.divider} />
 
-      {/* Orta Kısım: Detaylar */}
+      {/* Orta Kısım: Temel Metrikler (Grid) */}
       <View style={styles.cardBody}>
-        <View style={styles.infoRow}>
-          <View style={styles.infoItem}>
-            <Text style={styles.infoLabel}>{t('stock_label')}</Text>
-            <View style={{ flexDirection: 'row', alignItems: 'center' }}>
-              <Ionicons name="cube-outline" size={12} color={statusColor} style={{ marginRight: 3 }} />
-              <Text style={[styles.infoValue, { color: statusColor }]}>{currentQuantity}</Text>
+        <View style={styles.metricsRow}>
+          <View style={styles.metricItem}>
+            <View style={styles.metricHeader}>
+              <Ionicons name="cube-outline" size={12} color={Colors.secondary} />
+              <Text style={styles.metricLabel}>{t('stock_label')}</Text>
+            </View>
+            <Text style={[styles.metricValue, { color: statusColor }]}>{currentQuantity}</Text>
+          </View>
+
+          <View style={styles.metricDivider} />
+
+          <View style={styles.metricItem}>
+            <View style={styles.metricHeader}>
+              <Ionicons name="pricetag-outline" size={12} color={Colors.secondary} />
+              <Text style={styles.metricLabel}>{t('sale_label')}</Text>
+            </View>
+            <Text style={styles.metricValue}>{Number(item.price ?? 0).toLocaleString('tr-TR', { minimumFractionDigits: 2 })} ₺</Text>
+          </View>
+
+          <View style={styles.metricDivider} />
+
+          <View style={styles.metricItem}>
+            <View style={styles.metricHeader}>
+              <Ionicons name="calculator-outline" size={12} color={Colors.secondary} />
+              <Text style={styles.metricLabel}>{t('cost_label')}</Text>
+            </View>
+            <Text style={styles.metricValueSmall}>{Number(item.cost ?? 0).toLocaleString('tr-TR', { minimumFractionDigits: 2 })} ₺</Text>
+          </View>
+        </View>
+
+        {/* İkincil Bilgiler */}
+        {(item.serialNumber || item.code) && (
+          <View style={styles.secondaryInfoRow}>
+            <View style={styles.secondaryInfoItem}>
+              <Text style={styles.secondaryInfoLabel}>{t('serial_no_label')}: </Text>
+              <Text style={styles.secondaryInfoValue} numberOfLines={1}>{item.serialNumber || '-'}</Text>
             </View>
           </View>
-          <View style={styles.infoItem}>
-            <Text style={styles.infoLabel}>{t('sale_label')}</Text>
-            <Text style={styles.infoValue}>{Number(item.price ?? 0).toFixed(2)} ₺</Text>
-          </View>
-          <View style={styles.infoItem}>
-            <Text style={styles.infoLabel}>{t('cost_label')}</Text>
-            <Text style={styles.infoValueSmall}>{Number(item.cost ?? 0).toFixed(2)} ₺</Text>
-          </View>
-        </View>
-
-        <View style={[styles.infoRow, { marginBottom: 0, marginTop: 8 }]}>
-          <View style={[styles.infoItem, { flex: 2 }]}>
-            <Text style={styles.infoLabel}>{t('code_barcode_label')}</Text>
-            <Text style={styles.infoValueSmall} numberOfLines={1}>
-              {item.code || '-'}
-            </Text>
-          </View>
-          <View style={[styles.infoItem, { flex: 2 }]}>
-            <Text style={styles.infoLabel}>{t('serial_no_label')}</Text>
-            <Text style={styles.infoValueSmall} numberOfLines={1}>
-              {item.serialNumber || '-'}
-            </Text>
-          </View>
-        </View>
+        )}
       </View>
 
-      {/* Alt Kısım: Aksiyon Butonları */}
+      {/* Alt Kısım: Aksiyonlar */}
       <View style={styles.cardActions}>
         <TouchableOpacity style={[styles.actionBtn, styles.editBtn]} onPress={() => onEdit(item)}>
-          <Ionicons name="create-outline" size={14} color={Colors.iosBlue} />
+          <Ionicons name="create-outline" size={16} color={Colors.iosBlue} />
           <Text style={styles.editBtnText}>{t('edit')}</Text>
         </TouchableOpacity>
 
@@ -467,12 +522,12 @@ const StockListItem = ({ item, onSell, onEdit, onDelete }) => {
           onPress={() => onSell(item)}
           disabled={isZero}
         >
-          <Ionicons name="cart-outline" size={14} color="#fff" />
-          <Text style={styles.sellBtnText}>{t('sell')}</Text>
+          <Ionicons name="cart-outline" size={16} color="#fff" />
+          <Text style={styles.sellBtnText}>{t('sell_action')}</Text>
         </TouchableOpacity>
 
         <TouchableOpacity style={styles.deleteIconBtn} onPress={() => onDelete(item.id, item.name)}>
-          <Ionicons name="trash-outline" size={16} color={Colors.critical} />
+          <Ionicons name="trash-outline" size={18} color={Colors.critical} />
         </TouchableOpacity>
       </View>
     </View>
@@ -480,113 +535,289 @@ const StockListItem = ({ item, onSell, onEdit, onDelete }) => {
 };
 
 const styles = StyleSheet.create({
-  // ... (Mevcut stiller korunuyor)
-  sectionContainer: { marginBottom: 12 },
-  addButton: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', backgroundColor: Colors.iosGreen, padding: 12, borderRadius: 10, marginBottom: 8, shadowColor: "#000", shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.2, shadowRadius: 3, elevation: 3 },
-  addButtonText: { color: '#fff', fontWeight: '700', fontSize: 16, marginLeft: 8 },
-  detailButton: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', backgroundColor: Colors.iosBlue, padding: 12, borderRadius: 10, marginBottom: 12, shadowColor: "#000", shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.2, shadowRadius: 3, elevation: 3 },
-  detailButtonText: { color: '#fff', fontWeight: '700', fontSize: 16, marginLeft: 8 },
+  // --- BAŞLIK STİLLERİ ---
+  headerContainer: {
+    paddingBottom: 4,
+  },
+  topActionsRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    marginBottom: 10,
+  },
+  headerActionBtn: {
+    flex: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: 12,
+    borderRadius: 12,
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+    elevation: 2,
+  },
+  headerActionText: {
+    color: '#fff',
+    fontWeight: '700',
+    fontSize: 14,
+    marginLeft: 6,
+  },
+  analysisButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: '#fff',
+    paddingVertical: 10,
+    borderRadius: 12,
+    marginBottom: 16,
+    borderWidth: 1,
+    borderColor: '#E2E8F0',
+  },
+  analysisButtonText: {
+    color: Colors.iosBlue,
+    fontWeight: '600',
+    fontSize: 14,
+    marginLeft: 8,
+  },
+  searchRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 16,
+  },
+  searchInputWrapper: {
+    flex: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#fff',
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: '#E2E8F0',
+    paddingHorizontal: 12,
+    height: 48,
+  },
+  searchIcon: {
+    marginRight: 8,
+  },
+  searchInputField: {
+    flex: 1,
+    fontSize: 14,
+    color: '#1E293B',
+    height: '100%',
+  },
+  clearSearchBtn: {
+    padding: 4,
+  },
+  barcodeBtn: {
+    width: 48,
+    height: 48,
+    backgroundColor: Colors.iosBlue,
+    borderRadius: 12,
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginLeft: 10,
+    shadowColor: Colors.iosBlue,
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.2,
+    shadowRadius: 4,
+    elevation: 3,
+  },
+  sortContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 18,
+  },
+  sortLabelContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginRight: 10,
+  },
+  sortLabel: {
+    fontSize: 12,
+    fontWeight: '700',
+    color: Colors.secondary,
+    marginLeft: 4,
+  },
+  sortScrollContent: {
+    paddingRight: 20,
+  },
+  listHeaderRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    marginBottom: 12,
+  },
+  countBadge: {
+    backgroundColor: '#E2E8F0',
+    paddingHorizontal: 8,
+    paddingVertical: 2,
+    borderRadius: 10,
+  },
+  countText: {
+    fontSize: 12,
+    fontWeight: '700',
+    color: '#475569',
+  },
 
-  searchContainer: { flexDirection: 'row', alignItems: 'center', backgroundColor: "#fff", borderRadius: 10, borderWidth: 1, borderColor: "#E6E9EE", marginBottom: 12 },
-  searchInput: { flex: 1, padding: 12, fontSize: 14, color: "#333" },
-  searchIconContainer: { padding: 10 },
-
-  sortButtonContainer: { flexDirection: "row", justifyContent: "space-between", marginVertical: 12, backgroundColor: "#fff", borderRadius: 10, padding: 8, shadowColor: "#000", shadowOffset: { width: 0, height: 1 }, shadowOpacity: 0.1, shadowRadius: 2, elevation: 2 },
-  sortButton: { flex: 1, alignItems: "center", paddingVertical: 4 },
-  sortButtonActive: { backgroundColor: '#F3F8FF', borderRadius: 8 },
-  sortButtonText: { fontWeight: "600", color: "#777", fontSize: 13 },
-  sortButtonActiveText: { color: Colors.iosBlue, fontWeight: "800" },
-  listTitle: { fontWeight: "700", marginBottom: 8, fontSize: 15, color: "#333" },
+  listTitle: { fontWeight: "700", fontSize: 16, color: "#1E293B" },
   flatListContent: { paddingBottom: 20 },
   emptyListText: { textAlign: "center", marginTop: 20, color: Colors.secondary, fontStyle: "italic" },
 
-  // --- KOMPAKT KART TASARIMI STİLLERİ ---
+  // --- KURUMSAL ERP KART TASARIMI ---
   card: {
     backgroundColor: '#fff',
-    borderRadius: 12, // Daha az yuvarlak
-    marginBottom: 12, // Daha az boşluk
+    borderRadius: 12,
+    marginBottom: 14,
     shadowColor: "#000",
-    shadowOffset: { width: 0, height: 2 },
+    shadowOffset: { width: 0, height: 1 },
     shadowOpacity: 0.05,
     shadowRadius: 4,
     elevation: 2,
     borderWidth: 1,
-    borderColor: '#F1F5F9',
+    borderColor: '#E2E8F0',
     overflow: 'hidden',
   },
   cardHeader: {
     flexDirection: 'row',
     justifyContent: 'space-between',
-    alignItems: 'center',
-    padding: 12, // Azaltıldı
-    paddingBottom: 8,
+    alignItems: 'flex-start',
+    padding: 16,
+    paddingBottom: 12,
   },
   headerLeft: {
     flex: 1,
     marginRight: 10,
   },
+  titleRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 4,
+  },
   cardTitle: {
-    fontSize: 15, // Küçültüldü (17 -> 15)
+    fontSize: 16,
     fontWeight: '700',
-    color: '#1E293B',
-    marginBottom: 1,
-    letterSpacing: 0.2,
+    color: '#0F172A',
+    letterSpacing: -0.2,
+  },
+  subTitleRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    flexWrap: 'wrap',
+  },
+  categoryBadge: {
+    backgroundColor: '#F1F5F9',
+    paddingHorizontal: 6,
+    paddingVertical: 2,
+    borderRadius: 4,
+    marginRight: 8,
   },
   categoryText: {
-    fontSize: 11, // Küçültüldü
+    fontSize: 11,
+    color: '#475569',
+    fontWeight: '600',
+  },
+  codeBadge: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  codeText: {
+    fontSize: 11,
     color: '#64748B',
     fontWeight: '500',
   },
   statusBadge: {
-    paddingHorizontal: 8,
-    paddingVertical: 4,
-    borderRadius: 12,
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: 10,
+    paddingVertical: 6,
+    borderRadius: 20,
     borderWidth: 1,
   },
+  statusDot: {
+    width: 6,
+    height: 6,
+    borderRadius: 3,
+    marginRight: 6,
+  },
   statusText: {
-    fontSize: 10, // Küçültüldü
+    fontSize: 11,
     fontWeight: '700',
-    textTransform: 'uppercase',
+    letterSpacing: 0.2,
   },
   divider: {
     height: 1,
     backgroundColor: '#F1F5F9',
-    marginHorizontal: 12,
+    marginHorizontal: 0,
   },
   cardBody: {
-    padding: 12, // Azaltıldı
-    paddingTop: 8,
+    padding: 16,
+    backgroundColor: '#FAFBFC', // Hafif farklı arka plan
   },
-  infoRow: {
+  metricsRow: {
     flexDirection: 'row',
+    alignItems: 'center',
     justifyContent: 'space-between',
-    marginBottom: 0, // Satır arası boşluk ayarlandı
+    marginBottom: 12,
   },
-  infoItem: {
+  metricItem: {
     flex: 1,
   },
-  infoLabel: {
-    fontSize: 9, // Küçültüldü
-    color: '#94A3B8',
-    marginBottom: 2,
-    fontWeight: '700',
-    letterSpacing: 0.5,
+  metricHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 4,
   },
-  infoValue: {
-    fontSize: 14, // Küçültüldü
+  metricLabel: {
+    fontSize: 10,
+    color: '#64748B',
     fontWeight: '700',
-    color: '#334155',
+    marginLeft: 4,
+    textTransform: 'uppercase',
   },
-  infoValueSmall: {
-    fontSize: 12, // Küçültüldü
+  metricValue: {
+    fontSize: 15,
+    fontWeight: '800',
+    color: '#1E293B',
+  },
+  metricValueSmall: {
+    fontSize: 14,
     fontWeight: '600',
     color: '#475569',
+  },
+  metricDivider: {
+    width: 1,
+    height: 24,
+    backgroundColor: '#E2E8F0',
+    marginHorizontal: 10,
+  },
+  secondaryInfoRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginTop: 4,
+    paddingTop: 8,
+    borderTopWidth: 1,
+    borderTopColor: '#F1F5F9',
+  },
+  secondaryInfoItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    flex: 1,
+  },
+  secondaryInfoLabel: {
+    fontSize: 11,
+    color: '#94A3B8',
+    fontWeight: '600',
+  },
+  secondaryInfoValue: {
+    fontSize: 11,
+    color: '#64748B',
+    fontWeight: '500',
   },
   cardActions: {
     flexDirection: 'row',
     alignItems: 'center',
-    padding: 8, // Azaltıldı
-    backgroundColor: '#F8FAFC',
+    padding: 12,
+    backgroundColor: '#fff',
     borderTopWidth: 1,
     borderTopColor: '#F1F5F9',
   },
@@ -594,10 +825,10 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    paddingVertical: 6, // Azaltıldı
-    paddingHorizontal: 10,
+    paddingVertical: 10,
+    paddingHorizontal: 14,
     borderRadius: 8,
-    marginRight: 8,
+    marginRight: 10,
   },
   editBtn: {
     backgroundColor: '#fff',
@@ -606,31 +837,25 @@ const styles = StyleSheet.create({
   },
   editBtnText: {
     color: Colors.iosBlue,
-    fontSize: 12, // Küçültüldü
+    fontSize: 13,
     fontWeight: '700',
-    marginLeft: 4,
+    marginLeft: 6,
   },
   sellBtn: {
     backgroundColor: Colors.iosBlue,
     flex: 1,
-    shadowColor: Colors.iosBlue,
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.2,
-    shadowRadius: 2,
-    elevation: 1,
   },
   sellBtnText: {
     color: '#fff',
-    fontSize: 12, // Küçültüldü
+    fontSize: 13,
     fontWeight: '700',
-    marginLeft: 4,
+    marginLeft: 6,
   },
   disabledBtn: {
     backgroundColor: '#CBD5E1',
-    shadowOpacity: 0,
   },
   deleteIconBtn: {
-    padding: 8, // Azaltıldı
+    padding: 10,
     backgroundColor: '#FEF2F2',
     borderRadius: 8,
     marginLeft: 'auto',
@@ -667,6 +892,17 @@ const styles = StyleSheet.create({
   customerItem: { paddingVertical: 14, paddingHorizontal: 12, borderBottomWidth: 1, borderBottomColor: "#F1F5F9", backgroundColor: '#fff' },
   customerName: { fontWeight: "700", fontSize: 15, color: "#333" },
   customerPhone: { color: Colors.secondary, fontSize: 13, marginTop: 2 },
+  sortButton: {
+    alignItems: "center",
+    paddingVertical: 8,
+    paddingHorizontal: 16,
+    borderRadius: 8,
+    marginRight: 8,
+    backgroundColor: '#F1F5F9',
+  },
+  sortButtonActive: { backgroundColor: '#EFF6FF', borderWidth: 1, borderColor: '#BFDBFE' },
+  sortButtonText: { fontWeight: "600", color: "#64748B", fontSize: 12 },
+  sortButtonActiveText: { color: Colors.iosBlue, fontWeight: "700" },
   saveButton: { backgroundColor: Colors.iosBlue, padding: 16, borderRadius: 14, alignItems: 'center', marginTop: 15 },
   saveButtonText: { color: '#fff', fontWeight: '800', fontSize: 16 },
   cancelButton: { alignSelf: "center", marginTop: 15, padding: 10, marginBottom: 10 },

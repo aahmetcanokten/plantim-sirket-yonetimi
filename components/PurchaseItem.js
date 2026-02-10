@@ -14,7 +14,8 @@ import { useTranslation } from "react-i18next";
 export default function PurchaseItem({ item, onDeliver, onEdit, onDelete }) {
     const { t } = useTranslation();
     const isDelivered = !!item.delivered;
-    const expectedDate = item.expectedDateISO ? new Date(item.expectedDateISO) : null;
+    const expectedDateVal = item.expectedDateISO || item.expected_date;
+    const expectedDate = expectedDateVal ? new Date(expectedDateVal) : null;
 
     // Gecikme kontrolü: Bugünün tarihinden önceyse ve teslim edilmediyse gecikmiştir.
     const now = new Date();
@@ -25,18 +26,21 @@ export default function PurchaseItem({ item, onDeliver, onEdit, onDelete }) {
     const isOverdue = !isDelivered && expDateOnly && expDateOnly < today;
 
     // Durum belirteci
+    // Durum belirteci
     let statusIconName = "time-outline";
     let statusColor = Colors.secondary;
+    let statusText = t("status_waiting") || "Bekliyor"; // Fallback eklendi
+
     if (isDelivered) {
         statusIconName = "checkmark-circle";
         statusColor = Colors.iosGreen;
-        statusText = t("status_delivered");
+        statusText = t("status_delivered") || "Teslim Edildi";
     } else if (isOverdue) {
         statusIconName = "alert-circle";
         statusColor = Colors.critical;
-        statusText = t("status_overdue");
+        statusText = t("status_overdue") || "Gecikmiş";
     } else {
-        statusText = t("status_waiting");
+        statusText = t("status_waiting") || "Bekliyor";
     }
 
     return (
@@ -50,21 +54,22 @@ export default function PurchaseItem({ item, onDeliver, onEdit, onDelete }) {
             {/* Orta Kısım: Bilgiler */}
             <View style={styles.infoColumn}>
                 <Text style={styles.title} numberOfLines={1}>
-                    {item.productName}
+                    {item.productName || item.product_name}
                 </Text>
                 {item.model ? <Text style={styles.modelText}>{item.model}</Text> : null}
 
-                <View style={styles.detailRow}>
+                <View style={[styles.detailRow, { justifyContent: 'space-between', paddingRight: 8 }]}>
                     <Text style={styles.detailText}>
-                        <Text style={{ fontWeight: '600' }}>{item.quantity} {t("pcs")}</Text> x {Number(item.unitCost || 0).toFixed(2)} ₺
+                        <Text style={{ fontWeight: '600' }}>{item.quantity} {t("pcs")}</Text> x {Number(item.unitCost || item.unit_cost || item.cost || 0).toFixed(2)} ₺
                     </Text>
+                    <Text style={{ fontSize: 11, fontWeight: '700', color: statusColor }}>{statusText}</Text>
                 </View>
 
                 <View style={styles.detailRow}>
                     <Ionicons name="calendar-outline" size={12} color={Colors.secondary} style={{ marginRight: 4 }} />
                     <Text style={[styles.dateText, isOverdue && styles.overdueText]}>
                         {isDelivered
-                            ? `${t("delivered_label")} ${new Date(item.deliveredDateISO).toLocaleDateString()}`
+                            ? `${t("delivered_label")} ${new Date(item.delivered_date || item.deliveredDateISO || Date.now()).toLocaleDateString()}`
                             : (expectedDate ? `${t("expected_label")} ${expectedDate.toLocaleDateString()}` : t("no_date"))
                         }
                     </Text>

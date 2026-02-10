@@ -26,6 +26,7 @@ import AddProductScreen from "./screens/AddProductScreen";
 import PersonnelScreen from "./screens/PersonnelScreen";
 import TaskListScreen from "./screens/TaskListScreen";
 import AssetManagementScreen from "./screens/AssetManagementScreen"; // YENİ
+import ResetPasswordScreen from "./screens/ResetPasswordScreen";
 import LoginScreen from "./screens/LoginScreen";
 import PaywallScreen from "./screens/PaywallScreen";
 import OnboardingScreen from "./screens/OnboardingScreen";
@@ -85,7 +86,7 @@ function MainTabs() {
 
 
 function RootNavigator() {
-  const { session, loading } = useAuth();
+  const { session, loading, isPasswordReset } = useAuth();
   const { isPremium, products } = useContext(AppContext);
   const [isFirstLaunch, setIsFirstLaunch] = useState(null);
 
@@ -117,17 +118,21 @@ function RootNavigator() {
   return (
     <Stack.Navigator screenOptions={{ headerShown: false }}>
       {session ? (
-        <>
-          <Stack.Screen name="MainTabs" component={MainTabs} />
-          <Stack.Screen name="Ayarlar" component={SettingsScreen} />
-          <Stack.Screen name="Analytics" component={AnalyticsScreen} />
-          <Stack.Screen name="DetailedStockScreen" component={DetailedStockScreen} />
-          <Stack.Screen name="AddProductScreen" component={AddProductScreen} />
-          <Stack.Screen name="PersonnelScreen" component={PersonnelScreen} />
-          <Stack.Screen name="TaskListScreen" component={TaskListScreen} />
-          <Stack.Screen name="AssetManagementScreen" component={AssetManagementScreen} />
-          <Stack.Screen name="Paywall" component={PaywallScreen} options={{ presentation: 'modal' }} />
-        </>
+        isPasswordReset ? (
+          <Stack.Screen name="ResetPassword" component={ResetPasswordScreen} />
+        ) : (
+          <>
+            <Stack.Screen name="MainTabs" component={MainTabs} />
+            <Stack.Screen name="Ayarlar" component={SettingsScreen} />
+            <Stack.Screen name="Analytics" component={AnalyticsScreen} />
+            <Stack.Screen name="DetailedStockScreen" component={DetailedStockScreen} />
+            <Stack.Screen name="AddProductScreen" component={AddProductScreen} />
+            <Stack.Screen name="PersonnelScreen" component={PersonnelScreen} />
+            <Stack.Screen name="TaskListScreen" component={TaskListScreen} />
+            <Stack.Screen name="AssetManagementScreen" component={AssetManagementScreen} />
+            <Stack.Screen name="Paywall" component={PaywallScreen} options={{ presentation: 'modal' }} />
+          </>
+        )
       ) : (
         <>
           {isFirstLaunch && (

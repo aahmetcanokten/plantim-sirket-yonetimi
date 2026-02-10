@@ -42,17 +42,18 @@ export function AppProvider({ children }) {
   // --- RevenueCat Başlatma ve Dinleme ---
   useEffect(() => {
     const initRevenueCat = async () => {
-      if (Platform.OS === 'ios') {
-        await Purchases.configure({ apiKey: REVENUECAT_API_KEY });
-      }
-
       try {
+        if (Platform.OS === 'ios') {
+          await Purchases.configure({ apiKey: REVENUECAT_API_KEY });
+        }
+
         const customerInfo = await Purchases.getCustomerInfo();
         if (customerInfo.entitlements.active['premium']) {
           setRcPremium(true);
         }
       } catch (e) {
-        // Hata yok sayılabilir
+        console.log("RevenueCat init error:", e);
+        // Hata yok sayılabilir veya raporlanabilir
       }
     };
 
@@ -187,24 +188,40 @@ export function AppProvider({ children }) {
   // --- CRUD Fonksiyonları ---
 
   // Müşteriler
+  // Müşteriler
   const addCustomer = async (c) => {
-    if (!session || !supabase) return;
+    if (!session || !supabase) return false;
     const toInsert = { ...c, user_id: session.user.id };
     const { data, error } = await supabase.from('customers').insert(toInsert).select();
-    if (error) Alert.alert("Hata", error.message);
-    else setCustomers((prev) => [data[0], ...prev]);
+    if (error) {
+      Alert.alert("Hata", error.message);
+      return false;
+    } else {
+      setCustomers((prev) => [data[0], ...prev]);
+      return true;
+    }
   };
   const updateCustomer = async (u) => {
-    if (!session || !supabase) return;
+    if (!session || !supabase) return false;
     const { data, error } = await supabase.from('customers').update(u).eq('id', u.id).select();
-    if (error) Alert.alert("Hata", error.message);
-    else setCustomers((prev) => prev.map(c => c.id === u.id ? data[0] : c));
+    if (error) {
+      Alert.alert("Hata", error.message);
+      return false;
+    } else {
+      setCustomers((prev) => prev.map(c => c.id === u.id ? data[0] : c));
+      return true;
+    }
   };
   const deleteCustomer = async (id) => {
-    if (!session || !supabase) return;
+    if (!session || !supabase) return false;
     const { error } = await supabase.from('customers').delete().eq('id', id);
-    if (error) Alert.alert("Hata", error.message);
-    else setCustomers((prev) => prev.filter(c => c.id !== id));
+    if (error) {
+      Alert.alert("Hata", error.message);
+      return false;
+    } else {
+      setCustomers((prev) => prev.filter(c => c.id !== id));
+      return true;
+    }
   };
 
   // Ürünler
@@ -217,7 +234,7 @@ export function AppProvider({ children }) {
       return false;
     } else {
       setProducts((prev) => [data[0], ...prev]);
-      return true;
+      return data[0];
     }
   };
   const updateProduct = async (u) => {

@@ -84,7 +84,7 @@ export default function PersonnelScreen({ navigation }) {
   const savePersonnel = () => {
     // Admin kontrolü kaldırıldı
 
-    if (!formPerson.name.trim()) { Alert.alert(t("error"), t("personnel_name_required")); return; }
+    if (!formPerson.name.trim() || !formPerson.role.trim()) { Alert.alert(t("error"), t("fill_required_fields")); return; }
     if (formPerson.id) {
       updatePersonnel(formPerson);
       if (selectedPerson && selectedPerson.id === formPerson.id) setSelectedPerson(formPerson);
@@ -140,6 +140,31 @@ export default function PersonnelScreen({ navigation }) {
     const updatedPerson = { ...selectedPerson, tasks: updatedTasks };
     updatePersonnel(updatedPerson);
     setSelectedPerson(updatedPerson);
+  };
+
+  const handleLeaveChange = (amount) => {
+    if (!selectedPerson) return;
+
+    const applyChange = () => {
+      const currentLeave = parseFloat(selectedPerson.annualLeaveEntitlement) || 0;
+      const newLeave = currentLeave + amount;
+      const updatedPerson = { ...selectedPerson, annualLeaveEntitlement: newLeave.toString() };
+      updatePersonnel(updatedPerson);
+      setSelectedPerson(updatedPerson);
+    };
+
+    if (amount < 0) {
+      Alert.alert(
+        t("annual_leave_usage"),
+        t("annual_leave_usage_confirmation"),
+        [
+          { text: t("cancel"), style: "cancel" },
+          { text: t("confirm"), onPress: applyChange }
+        ]
+      );
+    } else {
+      applyChange();
+    }
   };
 
   const renderPersonnelList = () => (
@@ -211,6 +236,21 @@ export default function PersonnelScreen({ navigation }) {
         <View style={styles.infoRow}><Text style={styles.infoLabel}>{t("annual_leave_entitlement")}:</Text><Text style={styles.infoValue}>{selectedPerson.annualLeaveEntitlement ? `${selectedPerson.annualLeaveEntitlement} ${t("days")}` : "-"}</Text></View>
       </View>
 
+      {/* YILLIK İZİN KULLANIMI ALANI */}
+      <View style={styles.leaveManagementCard}>
+        <Text style={styles.leaveManagementTitle}>{t("annual_leave_usage")}</Text>
+        <View style={styles.leaveControlRow}>
+          <Text style={styles.leaveBalanceText}>
+            {selectedPerson.annualLeaveEntitlement ? `${selectedPerson.annualLeaveEntitlement} ${t("days")}` : `0 ${t("days")}`}
+          </Text>
+          <View style={styles.counterControls}>
+            <TouchableOpacity onPress={() => handleLeaveChange(-1)} style={styles.counterBtn}>
+              <Ionicons name="remove" size={20} color="#555" />
+            </TouchableOpacity>
+          </View>
+        </View>
+      </View>
+
       <View style={styles.sectionHeader}>
         <Text style={styles.sectionTitle}>{t("assigned_tasks")}</Text>
         {/* Admin kontrolü kaldırıldı */}
@@ -250,8 +290,8 @@ export default function PersonnelScreen({ navigation }) {
           <View style={styles.modalContent}>
             <Text style={styles.modalTitle}>{formPerson.id ? t("edit_personnel") : t("new_personnel")}</Text>
             <ScrollView showsVerticalScrollIndicator={false}>
-              <Text style={styles.inputLabel}>{t("full_name")}</Text><TextInput style={styles.input} value={formPerson.name} onChangeText={(t) => setFormPerson({ ...formPerson, name: t })} placeholder="Örn: Ahmet Yılmaz" />
-              <Text style={styles.inputLabel}>{t("title_position")}</Text><TextInput style={styles.input} value={formPerson.role} onChangeText={(t) => setFormPerson({ ...formPerson, role: t })} placeholder="Örn: Satış Sorumlusu" />
+              <Text style={styles.inputLabel}>{t("full_name")} <Text style={{ color: 'red' }}>*</Text></Text><TextInput style={styles.input} value={formPerson.name} onChangeText={(t) => setFormPerson({ ...formPerson, name: t })} placeholder="Örn: Ahmet Yılmaz" />
+              <Text style={styles.inputLabel}>{t("title_position")} <Text style={{ color: 'red' }}>*</Text></Text><TextInput style={styles.input} value={formPerson.role} onChangeText={(t) => setFormPerson({ ...formPerson, role: t })} placeholder="Örn: Satış Sorumlusu" />
               <Text style={styles.inputLabel}>{t("phone")}</Text><TextInput style={styles.input} value={formPerson.phone} onChangeText={(t) => setFormPerson({ ...formPerson, phone: t })} keyboardType="phone-pad" placeholder="0555..." />
               <Text style={styles.inputLabel}>{t("hire_date_format")}</Text><TextInput style={styles.input} value={formPerson.hireDate} onChangeText={(t) => setFormPerson({ ...formPerson, hireDate: t })} placeholder="Örn: 01.01.2023" />
               <Text style={styles.inputLabel}>{t("leave_entitlement_days")}</Text><TextInput style={styles.input} value={formPerson.annualLeaveEntitlement} onChangeText={(t) => setFormPerson({ ...formPerson, annualLeaveEntitlement: t })} keyboardType="numeric" placeholder="14" />
@@ -340,4 +380,12 @@ const styles = StyleSheet.create({
   saveBtn: { backgroundColor: (Colors.primary ?? "#007AFF") },
   cancelBtnText: { color: "#666", fontWeight: "700", fontSize: 16 },
   saveBtnText: { color: "#fff", fontWeight: "700", fontSize: 16 },
+
+  // Yıllık İzin Yönetimi Stilleri
+  leaveManagementCard: { backgroundColor: '#fff', borderWidth: 1, borderColor: '#e0e0e0', borderRadius: 16, padding: 16, marginBottom: 24 },
+  leaveManagementTitle: { fontSize: 16, fontWeight: '700', color: '#333', marginBottom: 12 },
+  leaveControlRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
+  leaveBalanceText: { fontSize: 18, fontWeight: '700', color: (Colors.primary ?? "#007AFF") },
+  counterControls: { flexDirection: 'row', gap: 12 },
+  counterBtn: { width: 36, height: 36, borderRadius: 18, backgroundColor: '#f5f5f5', alignItems: 'center', justifyContent: 'center', borderWidth: 1, borderColor: '#ddd' },
 });

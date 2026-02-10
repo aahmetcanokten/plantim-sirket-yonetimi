@@ -35,6 +35,25 @@ export default function PurchasesScreen() {
     const [editing, setEditing] = useState(null);
     const [filterStatus, setFilterStatus] = useState("Açık"); // 'Açık', 'Teslim', 'Tümü'
 
+    // --- Yardımcı Fonksiyonlar (Güvenlik İçin) ---
+    const formatCurrency = (value) => {
+        try {
+            if (value === undefined || value === null) return "₺0,00";
+            return value.toLocaleString('tr-TR', { style: 'currency', currency: 'TRY' });
+        } catch (e) {
+            return `₺${Number(value).toFixed(2)}`;
+        }
+    };
+
+    const safeDate = (dateInput) => {
+        try {
+            if (!dateInput) return new Date(0);
+            return new Date(dateInput);
+        } catch (error) {
+            return new Date(0);
+        }
+    };
+
     // --- İşlem Fonksiyonları ---
     const handleAddPurchase = (purchase) => {
         addPurchase(purchase);
@@ -103,8 +122,8 @@ export default function PurchasesScreen() {
         }
         // Yeniden eskiye sırala (Mutasyon yapmamak için kopyala: [...result])
         return [...result].sort((a, b) => {
-            const dateA = a.createdDateISO ? new Date(a.createdDateISO) : new Date(0);
-            const dateB = b.createdDateISO ? new Date(b.createdDateISO) : new Date(0);
+            const dateA = safeDate(a.createdDateISO || a.created_at);
+            const dateB = safeDate(b.createdDateISO || b.created_at);
             return dateB - dateA;
         });
     }, [purchases, filterStatus]);
@@ -119,8 +138,8 @@ export default function PurchasesScreen() {
         const openCount = openPurchases.length;
         const deliveredCount = deliveredPurchases.length;
 
-        // DÜZELTME: Sadece açık (teslim edilmemiş) siparişlerin maliyetini topla
-        const pendingCost = openPurchases.reduce((sum, p) => sum + ((p.quantity || 0) * (p.unitCost || 0)), 0);
+        // DÜZELTME: Sadece açık (teslim edilmemiş) siparişlerin maliyetini topla. createDateISO veya expected_date kullanımı
+        const pendingCost = openPurchases.reduce((sum, p) => sum + ((p.quantity || 0) * (p.unitCost || p.unit_cost || p.cost || 0)), 0);
 
         return { open: openCount, delivered: deliveredCount, total: purchases.length, pendingCost };
     }, [purchases]);
@@ -141,7 +160,7 @@ export default function PurchasesScreen() {
                 <View style={[styles.summaryItem, styles.summaryBorder]}>
                     <Text style={styles.summaryLabel}>{t('pending_cost')}</Text>
                     {/* DÜZELTME: Artık sadece bekleyen maliyeti gösteriyoruz */}
-                    <Text style={styles.summaryValue}>{stats.pendingCost.toLocaleString('tr-TR', { style: 'currency', currency: 'TRY' })}</Text>
+                    <Text style={styles.summaryValue}>{formatCurrency(stats.pendingCost)}</Text>
                 </View>
             </View>
 

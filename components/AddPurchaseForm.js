@@ -117,14 +117,14 @@ export default function AddPurchaseForm({ onAdd, onCancel, initial = null }) {
     setQuickAddModalVisible(true);
   };
 
-  const handleQuickAddProduct = () => {
+  const handleQuickAddProduct = async () => {
     if (!qaName.trim()) {
       Alert.alert(t("error"), t("product_name_required"));
       return;
     }
     const initialCost = parseFloat(unitCost) || 0;
     const newProduct = {
-      id: Date.now().toString(),
+      // id: Date.now().toString(), // REMOVED: Supabase will generate UUID
       name: qaName.trim(),
       category: qaCategory.trim(),
       code: qaCode.trim(),
@@ -134,11 +134,11 @@ export default function AddPurchaseForm({ onAdd, onCancel, initial = null }) {
     };
 
     if (addProduct) {
-      const success = addProduct(newProduct);
-      if (success) {
-        setProductId(newProduct.id);
-        setProductName(newProduct.name);
-        setModel(newProduct.category);
+      const createdProduct = await addProduct(newProduct);
+      if (createdProduct) {
+        setProductId(createdProduct.id);
+        setProductName(createdProduct.name);
+        setModel(createdProduct.category);
         Alert.alert(t("successful"), t("new_product_added_stock"));
         setQuickAddModalVisible(false);
       }

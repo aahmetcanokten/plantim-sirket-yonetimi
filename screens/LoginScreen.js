@@ -61,22 +61,14 @@ export default function LoginScreen() {
       if (error) {
         Alert.alert(t("signup_failed"), error.message);
       } else {
-        if (user && !session) {
-          Alert.alert(
-            t("signup_success"),
-            t("signup_success_verify_email")
-          );
-        } else {
-          Alert.alert(
-            t("signup_success"),
-            t("signup_success_login_now")
-          );
-        }
-        // Kayıt sonrası alanları temizle ve giriş ekranına dön
+        // Kayıt başarılı, kullanıcıyı bilgilendir
+        Alert.alert(t("successful"), t("signup_success_verify_email_web"));
+
+        // Kayıt sonrası alanları temizle ve giriş moduna (varsayılan) dön
         setEmail('');
         setPassword('');
         setConfirmPassword('');
-        setIsLoginView(true); // Giriş moduna geçir
+        // Eğer session oluştuysa zaten App.js kullanıcıyı içeri alacaktır.
       }
     } catch (error) {
       Alert.alert(t("error"), t("signup_error_prefix") + error.message);

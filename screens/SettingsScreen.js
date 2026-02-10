@@ -468,7 +468,29 @@ export default function SettingsScreen({ navigation }) {
         <Text style={styles.sectionHeader}>{t('account')}</Text>
 
         {/* PREMIUM BUTONU - YENİ */}
-        {!isPremium && (
+        {isPremium ? (
+          <>
+            <MenuLinkCard
+              title={t('premium_active')}
+              subtitle={t('premium_active_subtitle')}
+              icon="shield-checkmark"
+              color={Colors.success ?? "#34C759"}
+              onPress={() => Alert.alert(t('premium_active'), t('premium_active_subtitle'))}
+            />
+            <MenuLinkCard
+              title={t('manage_subscription')}
+              subtitle={t('manage_subscription_subtitle')}
+              icon="open-outline"
+              color={Colors.iosBlue ?? "#007AFF"}
+              onPress={() => {
+                const url = Platform.OS === 'ios'
+                  ? 'https://apps.apple.com/account/subscriptions'
+                  : 'https://play.google.com/store/account/subscriptions';
+                Linking.openURL(url);
+              }}
+            />
+          </>
+        ) : (
           <MenuLinkCard
             title={t('premium_upgrade')}
             subtitle={t('premium_subtitle')}

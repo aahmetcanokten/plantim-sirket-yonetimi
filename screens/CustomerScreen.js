@@ -4,6 +4,7 @@ import { View, Text, TextInput, TouchableOpacity, FlatList, Modal, Alert, StyleS
 import ImmersiveLayout from "../components/ImmersiveLayout";
 import { Colors, CardRadius, ButtonRadius, IOSShadow } from "../Theme";
 import { AppContext } from "../AppContext";
+import { useToast } from "../components/ToastProvider";
 import KeyboardSafeView from "../components/KeyboardSafeView";
 import { Ionicons } from "@expo/vector-icons";
 import { SkeletonCustomerItem } from "../components/Skeleton";
@@ -150,6 +151,7 @@ const CustomerListItem = ({ item, onEdit, onDelete, orderCount }) => {
 export default function CustomerScreen() {
     const { customers, addCustomer, updateCustomer, deleteCustomer, sales, isPremium, appDataLoading } = useContext(AppContext);
     const { t } = useTranslation();
+    const { showToast } = useToast();
 
     const [searchQuery, setSearchQuery] = useState("");
     const [sortAsc, setSortAsc] = useState(true);
@@ -201,6 +203,7 @@ export default function CustomerScreen() {
         if (success) {
             setModalVisible(false);
             setEditingCustomer(null);
+            showToast(t('success'));
         }
     };
 

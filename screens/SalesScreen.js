@@ -24,12 +24,13 @@ import InvoiceModal from "../components/InvoiceModal";
 import { triggerHaptic, HapticType, requestStoreReview } from "../utils/FeedbackHelper";
 import { SkeletonProductItem } from "../components/Skeleton";
 import CompositeSaleModal from "../components/CompositeSaleModal";
+import { createAndPrintSalesForm } from "../utils/SalesPdfHelper";
 
 
 export default function SalesScreen() {
   // AppContext'ten gerekli işlevleri ve verileri al
   // products eklendi
-  const { sales, removeSale, recreateProductFromSale, updateSale, isPremium, products, appDataLoading } = useContext(AppContext);
+  const { sales, removeSale, recreateProductFromSale, updateSale, isPremium, products, customers, company, appDataLoading } = useContext(AppContext);
   const { t } = useTranslation();
   const [productFilterInput, setProductFilterInput] = useState("");
   const [customerFilterInput, setCustomerFilterInput] = useState("");
@@ -65,8 +66,8 @@ export default function SalesScreen() {
       if (activeTab === 'completed' && !isShipped) return false;
 
       // Diğer filtreler
-      if (productFilter && !s.productName.toLowerCase().includes(productFilter.toLowerCase())) return false;
-      if (customerFilter && !s.customerName.toLowerCase().includes(customerFilter.toLowerCase())) return false;
+      if (productFilter && !(s.productName || "").toLowerCase().includes(productFilter.toLowerCase())) return false;
+      if (customerFilter && !(s.customerName || "").toLowerCase().includes(customerFilter.toLowerCase())) return false;
       if (startDate && new Date(s.dateISO) < new Date(startDate)) return false;
       if (endDate) {
         const end = new Date(endDate);
@@ -168,6 +169,17 @@ export default function SalesScreen() {
 
   const [invoiceModalVisible, setInvoiceModalVisible] = useState(false);
   const [editingSale, setEditingSale] = useState(null);
+
+  const handlePrintForm = async (sale) => {
+    try {
+      const customer = customers.find(c => c.id === sale.customerId);
+      const product = products.find(p => p.id === sale.productId);
+      await createAndPrintSalesForm(sale, company, customer, product, t);
+    } catch (error) {
+      console.error("Print error:", error);
+      Alert.alert(t('error'), t('unexpected_error_message') + "\n" + error.message);
+    }
+  };
 
   // Fatura Düzenleyiciyi Açma
   const openInvoiceEditor = (sale) => {
@@ -388,6 +400,12 @@ export default function SalesScreen() {
                     <TouchableOpacity style={styles.iconButton} onPress={() => openInvoiceEditor(item)}>
                       <View style={[styles.iconButtonBg, { backgroundColor: '#E3F2FD' }]}>
                         <Ionicons name="document-text" size={18} color={Colors.iosBlue} />
+                      </View>
+                    </TouchableOpacity>
+
+                    <TouchableOpacity style={styles.iconButton} onPress={() => handlePrintForm(item)}>
+                      <View style={[styles.iconButtonBg, { backgroundColor: '#F3E5F5' }]}>
+                        <Ionicons name="print-outline" size={18} color="#9C27B0" />
                       </View>
                     </TouchableOpacity>
 

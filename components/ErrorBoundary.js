@@ -46,13 +46,10 @@ export default class ErrorBoundary extends Component {
                             <Text style={styles.buttonText}>{i18n.t('restart_app')}</Text>
                         </TouchableOpacity>
 
-                        {/* Geliştirici Modu: Hatayı Göster */}
-                        {__DEV__ && (
-                            <View style={styles.debugContainer}>
-                                <Text style={styles.debugTitle}>{i18n.t('error_detail')}</Text>
-                                <Text style={styles.debugText}>{this.state.error?.toString()}</Text>
-                            </View>
-                        )}
+                        <View style={styles.debugContainer}>
+                            <Text style={styles.debugTitle}>{i18n.t('error_detail')}</Text>
+                            <Text style={styles.debugText}>{this.state.error?.toString()}</Text>
+                        </View>
                     </View>
                 </SafeAreaView>
             );

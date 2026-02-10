@@ -18,6 +18,8 @@ import { AppContext } from "../AppContext";
 import KeyboardSafeView from "../components/KeyboardSafeView";
 import BarcodeScannerModal from "../components/BarcodeScannerModal";
 import { useTranslation } from "react-i18next";
+import { printToFileAsync } from 'expo-print';
+import { shareAsync } from 'expo-sharing';
 
 export default function AssetManagementScreen({ navigation }) {
     const { assets, addAsset, updateAsset, deleteAsset, assignAsset, unassignAsset, personnel, isPremium } = useContext(AppContext);
@@ -154,6 +156,134 @@ export default function AssetManagementScreen({ navigation }) {
         );
     };
 
+    const handlePrintZimmetForm = async (asset) => {
+        if (!asset.assigned_person_id) return;
+
+        const person = personnel.find(p => p.id === asset.assigned_person_id);
+        if (!person) {
+            Alert.alert(t("error"), t("personnel_not_found"));
+            return;
+        }
+
+        // Find all assets assigned to this person (including the current one)
+        const personAssets = assets.filter(a => a.assigned_person_id === person.id && a.status === 'ASSIGNED');
+
+        try {
+            const html = `
+            <!DOCTYPE html>
+            <html>
+            <head>
+                <meta charset="utf-8">
+                <meta name="viewport" content="width=device-width, initial-scale=1.0">
+                <style>
+                    body { font-family: 'Helvetica', sans-serif; padding: 40px; color: #333; line-height: 1.4; }
+                    .header { text-align: center; margin-bottom: 40px; border-bottom: 2px solid #333; padding-bottom: 20px; }
+                    .header h1 { margin: 0; font-size: 24px; color: #000; text-transform: uppercase; letter-spacing: 1px; }
+                    .meta-info { display: flex; justify-content: space-between; margin-bottom: 30px; border: 1px solid #ddd; padding: 15px; border-radius: 8px; background-color: #f9f9f9; }
+                    .info-group { flex: 1; }
+                    .info-group h3 { margin: 0 0 10px 0; font-size: 14px; color: #666; text-transform: uppercase; }
+                    .info-group p { margin: 4px 0; font-size: 14px; font-weight: bold; }
+                    .table-section { margin-bottom: 30px; }
+                    table { width: 100%; border-collapse: collapse; font-size: 12px; }
+                    th, td { border: 1px solid #ccc; padding: 10px; text-align: left; }
+                    th { background-color: #f0f0f0; font-weight: bold; text-transform: uppercase; color: #444; }
+                    tr:nth-child(even) { background-color: #fafafa; }
+                    .highlight-row { background-color: #e6fffa !important; border-left: 3px solid #00bfa5; }
+                    .legal-section { font-size: 11px; text-align: justify; margin-bottom: 50px; border: 1px solid #eee; padding: 15px; background: #fff; }
+                    .legal-title { font-weight: bold; margin-bottom: 8px; font-size: 12px; text-transform: uppercase; }
+                    .signatures { display: flex; justify-content: space-between; margin-top: 20px; page-break-inside: avoid; }
+                    .signature-box { width: 45%; border: 1px solid #ccc; padding: 20px; height: 120px; text-align: center; position: relative; }
+                    .sig-title { font-weight: bold; margin-bottom: 40px; font-size: 14px; border-bottom: 1px solid #eee; padding-bottom: 10px; display: block; }
+                    .footer { margin-top: 50px; font-size: 10px; color: #999; text-align: center; border-top: 1px solid #eee; padding-top: 10px; }
+                </style>
+            </head>
+            <body>
+                <div class="header">
+                    <h1>ZİMMET TESLİM TUTANAĞI</h1>
+                    <div style="font-size: 12px; margin-top: 10px; color: #666;">Tarih: ${new Date().toLocaleDateString('tr-TR')}</div>
+                </div>
+
+                <div class="meta-info">
+                    <div class="info-group">
+                        <h3>Zimmet Alan Personel</h3>
+                        <p>${person.name}</p>
+                        <p style="font-weight: normal; font-size: 12px;">${person.role || 'Görevi Belirtilmemiş'}</p>
+                    </div>
+                    <div class="info-group" style="text-align: right;">
+                        <h3>İletişim</h3>
+                        <p>${person.phone || '-'}</p>
+                    </div>
+                </div>
+
+                <div class="table-section">
+                    <div style="font-weight: bold; margin-bottom: 10px; font-size: 14px; border-left: 4px solid #333; padding-left: 10px;">ZİMMETLENEN DEMİRBAŞ LİSTESİ</div>
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>Sıra</th>
+                                <th>Ürün Adı</th>
+                                <th>Marka</th>
+                                <th>Seri No</th>
+                                <th>Veriliş Tarihi</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            ${personAssets.map((item, index) => `
+                            <tr class="${item.id === asset.id ? 'highlight-row' : ''}">
+                                <td>${index + 1}</td>
+                                <td>${item.name}</td>
+                                <td>${item.model || '-'}</td>
+                                <td>${item.serial_number || '-'}</td>
+                                <td>${new Date(item.assigned_date).toLocaleDateString('tr-TR')}</td>
+                            </tr>
+                            `).join('')}
+                        </tbody>
+                    </table>
+                </div>
+
+                <div class="legal-section">
+                    <div class="legal-title">TESLİM VE KULLANIM TAAHHÜTNAMESİ</div>
+                    <p style="margin-bottom: 8px;">
+                        Yukarıdaki listede özellikleri belirtilen demirbaş malzemelerini/cihazlarını sağlam ve çalışır vaziyette, tüm aksesuarları ile birlikte teslim aldım.
+                    </p>
+                    <p style="margin-bottom: 8px;">
+                        Tarafıma tahsis edilen bu ekipmanları; şirket içi çalışma prensiplerine, kullanım kılavuzlarına ve bakım talimatlarına uygun olarak, özenle kullanacağımı,
+                        kasıtlı olarak zarar vermeyeceğimi, yetkisiz kişilere kullandırmayacağımı, şirket dışına izinsiz çıkarmayacağımı beyan ederim.
+                    </p>
+                    <p>
+                        İş sözleşmemin sona ermesi durumunda veya işveren tarafından talep edilmesi halinde, zimmetimdeki malzemeleri eksiksiz ve hasarsız olarak (olağan kullanım yıpranması hariç) 
+                        derhal iade edeceğimi; malzemelerin iade edilmemesi, kaybolması veya kullanım hatası nedeniyle hasar görmesi durumunda 
+                        tespit edilecek güncel rayiç bedeli üzerinden oluşacak zararı nakden ve defaten tazmin etmeyi kabul ve taahhüt ederim.
+                    </p>
+                </div>
+
+                <div class="signatures">
+                    <div class="signature-box">
+                        <span class="sig-title">TESLİM EDEN (Yetkili)</span>
+                        <div style="font-size: 12px; color: #999;">İmza</div>
+                    </div>
+                    <div class="signature-box">
+                        <span class="sig-title">TESLİM ALAN (Personel)</span>
+                        <div style="font-weight: bold; margin-bottom: 5px;">${person.name}</div>
+                        <div style="font-size: 12px; color: #999;">İmza Tarihi: ${new Date().toLocaleDateString('tr-TR')}</div>
+                    </div>
+                </div>
+
+                <div class="footer">
+                    Bu belge elektronik ortamda oluşturulmuştur. | Mini ERP
+                </div>
+            </body>
+            </html>
+            `;
+
+            const { uri } = await printToFileAsync({ html });
+            await shareAsync(uri, { UTI: '.pdf', mimeType: 'application/pdf' });
+        } catch (error) {
+            Alert.alert(t("error"), "PDF oluşturulurken bir hata oluştu.");
+            console.error(error);
+        }
+    };
+
     const renderAssetItem = ({ item }) => {
         const assignedPerson = item.assigned_person_id ? personnel.find(p => p.id === item.assigned_person_id) : null;
 
@@ -201,10 +331,16 @@ export default function AssetManagementScreen({ navigation }) {
                             <Text style={styles.assignBtnText}>{t("asset_assign")}</Text>
                         </TouchableOpacity>
                     ) : (
-                        <TouchableOpacity style={[styles.actionBtn, styles.returnBtn]} onPress={() => handleReturn(item)}>
-                            <Ionicons name="arrow-undo-outline" size={16} color="#000" />
-                            <Text style={styles.returnBtnText}>{t("asset_return")}</Text>
-                        </TouchableOpacity>
+                        <>
+                            <TouchableOpacity style={[styles.actionBtn, { backgroundColor: '#F3F4F6', marginRight: 10 }]} onPress={() => handlePrintZimmetForm(item)}>
+                                <Ionicons name="print-outline" size={16} color="#333" />
+                                <Text style={[styles.returnBtnText, { color: '#333' }]}>Form</Text>
+                            </TouchableOpacity>
+                            <TouchableOpacity style={[styles.actionBtn, styles.returnBtn]} onPress={() => handleReturn(item)}>
+                                <Ionicons name="arrow-undo-outline" size={16} color="#000" />
+                                <Text style={styles.returnBtnText}>{t("asset_return")}</Text>
+                            </TouchableOpacity>
+                        </>
                     )}
 
                     <TouchableOpacity style={[styles.iconBtn, { marginRight: 8 }]} onPress={() => handleEditAsset(item)}>

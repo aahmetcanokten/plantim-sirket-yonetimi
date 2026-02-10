@@ -1,6 +1,7 @@
 import React, { createContext, useState, useEffect, useContext } from 'react';
 import { Alert, Platform } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import * as Linking from 'expo-linking'; // Deep link için
 // Supabase SDK'sını import edin
 import { createClient } from '@supabase/supabase-js';
 
@@ -40,7 +41,8 @@ export const useAuth = () => {
 // AuthProvider Bileşeni
 export function AuthProvider({ children }) {
     const [session, setSession] = useState(null);
-    const [loading, setLoading] = useState(true); // Başlangıçta oturum durumunu kontrol ederken true
+    const [loading, setLoading] = useState(true);
+    const [isPasswordReset, setIsPasswordReset] = useState(false); // YENİ: Şifre sıfırlama durumunu takip eder
 
     // 1. Oturum Dinleyicisi (Session Listener)
     useEffect(() => {
@@ -54,6 +56,15 @@ export function AuthProvider({ children }) {
         const { data: listener } = supabase.auth.onAuthStateChange(
             (event, session) => {
                 setSession(session);
+
+                // Şifre sıfırlama olayı yakalandı
+                if (event === 'PASSWORD_RECOVERY') {
+                    setIsPasswordReset(true);
+                } else if (event === 'SIGNED_OUT') {
+                    // Kullanıcı çıkış yaptığında bu durumu sıfırla
+                    setIsPasswordReset(false);
+                }
+
                 // Auth state değişikliği olduğunda yükleniyor durumunu bitir
                 if (loading) {
                     setLoading(false);
@@ -69,7 +80,54 @@ export function AuthProvider({ children }) {
         };
     }, []);
 
-    // 2. Kimlik Doğrulama Fonksiyonları
+    // 2. Deep Link Dinleyicisi (URL'den gelen session'ı yakalar)
+    useEffect(() => {
+        const handleDeepLink = async ({ url }) => {
+            if (!url) return;
+
+            // Örnek URL: plantim://reset-password#access_token=...&refresh_token=...&type=recovery
+            // Supabase tokenları genellikle fragment (#) içinde gönderir.
+
+            // Eğer URL fragment içeriyorsa parse et
+            if (url.includes('#')) {
+                const fragment = url.split('#')[1];
+                const params = {};
+                fragment.split('&').forEach(pair => {
+                    const [key, value] = pair.split('=');
+                    params[key] = value;
+                });
+
+                if (params.access_token && params.refresh_token) {
+                    // Session'ı manuel olarak kur
+                    const { error } = await supabase.auth.setSession({
+                        access_token: params.access_token,
+                        refresh_token: params.refresh_token,
+                    });
+
+                    // Eğer şifre sıfırlama akışıysa (type=recovery)
+                    if (!error && params.type === 'recovery') {
+                        setIsPasswordReset(true);
+                    }
+                }
+            }
+        };
+
+        // Event listener ekle
+        const subscription = Linking.addEventListener('url', handleDeepLink);
+
+        // Uygulama kapalıyken açıldıysa initial URL'i kontrol et
+        Linking.getInitialURL().then((url) => {
+            if (url) {
+                handleDeepLink({ url });
+            }
+        });
+
+        return () => {
+            subscription.remove();
+        };
+    }, []);
+
+    // 3. Kimlik Doğrulama Fonksiyonları
 
     /**
      * Email ve Şifre ile giriş yapar
@@ -95,10 +153,13 @@ export function AuthProvider({ children }) {
      */
     const signUp = async (email, password) => {
         setLoading(true);
-        // Eğer email onayına ihtiyacınız varsa, disable email confirmation eklemeyin.
+        // Email onayı sonrası kullanıcıyı hazırladığımız web sayfasına yönlendiriyoruz
         const { data, error } = await supabase.auth.signUp({
             email: email,
             password: password,
+            options: {
+                emailRedirectTo: 'https://plantim-new-kayit-fb2604.netlify.app',
+            }
         });
         setLoading(false);
         return { user: data.user, session: data.session, error };
@@ -130,6 +191,11 @@ export function AuthProvider({ children }) {
         const { data, error } = await supabase.auth.updateUser({
             password: newPassword
         });
+
+        if (!error) {
+            setIsPasswordReset(false); // Şifre başarıyla güncellendi, reset modundan çık
+        }
+
         setLoading(false);
         return { data, error };
     };
@@ -147,7 +213,7 @@ export function AuthProvider({ children }) {
         // bir deep link (örn: 'sizinuygulamaniz://sifre-sifirla') 
         // ile değiştirmeniz gerekebilir.
         const { data, error } = await supabase.auth.resetPasswordForEmail(email, {
-            redirectTo: 'plantim://reset-password', // Deep link eklendi
+            redirectTo: 'plantim://reset-password',
         });
         setLoading(false);
         return { data, error };
@@ -158,6 +224,7 @@ export function AuthProvider({ children }) {
     const value = {
         session, // Mevcut oturum bilgisi (null ise çıkış yapılmış)
         loading, // Oturum durumu kontrol ediliyor mu?
+        isPasswordReset, // YENİ: Şifre sıfırlama modunda mıyız?
         signIn,  // Giriş fonksiyonu
         signUp,  // Kayıt fonksiyonu
         signOut, // Çıkış fonksiyonu
