@@ -9,16 +9,14 @@ import { createClient } from '@supabase/supabase-js';
 // Bu değişkenleri genellikle .env dosyasında tutmak daha güvenlidir, 
 // ancak test amaçlı buraya ekleyebilirsiniz.
 // Kendi değerlerinizle değiştirin!
-const supabaseUrl = 'https://wzaxmplzambkjriqtweq.supabase.co';
-const supabaseAnonKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Ind6YXhtcGx6YW1ia2pyaXF0d2VxIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjI4MzQzNTQsImV4cCI6MjA3ODQxMDM1NH0.bpQWqzOoEYC8wi4jTh097OK7ogYOK4xDkvrXpTQaDUs';
+const supabaseUrl = process.env.EXPO_PUBLIC_SUPABASE_URL;
+const supabaseAnonKey = process.env.EXPO_PUBLIC_SUPABASE_ANON_KEY;
 
 // Supabase İstemcisini Oluşturun
 // Bu, uygulamanızın Supabase ile iletişim kurmasını sağlayan tekil istemcidir.
 const supabase = createClient(supabaseUrl, supabaseAnonKey, {
     auth: {
-        // Oturumları yerel olarak saklamak için AsyncStorage kullanılır
-        // React Native için bu ayar önemlidir.
-        storage: AsyncStorage,
+        storage: Platform.OS === 'web' ? window.localStorage : AsyncStorage,
         autoRefreshToken: true,
         persistSession: true,
         detectSessionInUrl: true,
@@ -137,10 +135,12 @@ export function AuthProvider({ children }) {
      */
     const signIn = async (email, password) => {
         setLoading(true);
+        console.log("Giriş denemesi yapılıyor:", email);
         const { data, error } = await supabase.auth.signInWithPassword({
-            email: email,
+            email: email.trim(),
             password: password,
         });
+        if (error) console.error("Giriş Hatası:", error.message);
         setLoading(false);
         return { user: data.user, session: data.session, error };
     };

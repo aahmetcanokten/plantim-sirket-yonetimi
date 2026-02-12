@@ -1,6 +1,6 @@
 import React, { useContext, useState, useMemo } from "react";
 import { useTranslation } from "react-i18next";
-import { View, Text, TextInput, TouchableOpacity, FlatList, Modal, Alert, StyleSheet, Platform, Linking } from "react-native";
+import { View, Text, TextInput, TouchableOpacity, FlatList, Modal, Alert, StyleSheet, Platform, Linking, ScrollView } from "react-native";
 import ImmersiveLayout from "../components/ImmersiveLayout";
 import { Colors, CardRadius, ButtonRadius, IOSShadow } from "../Theme";
 import { AppContext } from "../AppContext";
@@ -49,40 +49,40 @@ const CustomerFormModal = ({ visible, onClose, onSave, initialData = null }) => 
     };
 
     return (
-        <Modal visible={visible} animationType="slide" presentationStyle="pageSheet">
-            <KeyboardSafeView offsetIOS={20}>
-                <View style={styles.modalContainer}>
-                    <View style={styles.modalHeaderRow}>
-                        <Text style={styles.modalHeaderTitle}>
-                            {initialData ? t('edit_customer') : t('new_customer_card')}
-                        </Text>
-                        <TouchableOpacity onPress={onClose} style={styles.closeButton}>
-                            <Ionicons name="close" size={28} color={Colors.textPrimary} />
-                        </TouchableOpacity>
+        <Modal
+            visible={visible}
+            animationType={Platform.OS === 'web' ? "none" : "slide"}
+            presentationStyle={Platform.OS === 'web' ? "overFullScreen" : "pageSheet"}
+            transparent={Platform.OS === 'web'}
+            onRequestClose={onClose}
+        >
+            <View style={Platform.OS === 'web' ? styles.webModalOverlay : { flex: 1 }}>
+                <KeyboardSafeView offsetIOS={20} style={Platform.OS === 'web' ? styles.webModalContent : { flex: 1 }} disableScrollView={Platform.OS === 'web'}>
+                    <View style={[styles.modalContainer, Platform.OS === 'web' && { flex: 0, height: 'auto', maxHeight: '90vh', borderRadius: 16, overflow: 'hidden' }]}>
+                        <View style={styles.modalHeaderRow}>
+                            <Text style={styles.modalHeaderTitle}>{initialData ? t('edit_customer') : t('new_customer_card')}</Text>
+                            <TouchableOpacity onPress={onClose} style={styles.closeButton}>
+                                <Ionicons name="close" size={28} color={Colors.textPrimary} />
+                            </TouchableOpacity>
+                        </View>
+                        <ScrollView contentContainerStyle={styles.formContent}>
+                            <Text style={styles.inputLabel}>{t('company_title')} <Text style={styles.requiredStar}>*</Text></Text>
+                            <TextInput style={styles.input} value={companyName} onChangeText={setCompanyName} placeholder={t('example_company')} />
+                            <Text style={styles.inputLabel}>{t('contact_person')} <Text style={styles.requiredStar}>*</Text></Text>
+                            <TextInput style={styles.input} value={contactName} onChangeText={setContactName} placeholder={t('example_name')} />
+                            <Text style={styles.inputLabel}>{t('phone')} <Text style={styles.requiredStar}>*</Text></Text>
+                            <TextInput style={styles.input} value={phone} onChangeText={setPhone} keyboardType="phone-pad" placeholder={t('example_phone')} />
+                            <Text style={styles.inputLabel}>{t('email')} <Text style={styles.requiredStar}>*</Text></Text>
+                            <TextInput style={styles.input} value={email} onChangeText={setEmail} keyboardType="email-address" autoCapitalize="none" placeholder={t('example_email')} />
+                            <Text style={styles.inputLabel}>{t('cari_code')} <Text style={styles.requiredStar}>*</Text></Text>
+                            <TextInput style={styles.input} value={cariCode} onChangeText={setCariCode} autoCapitalize="characters" placeholder={t('example_code')} />
+                            <TouchableOpacity style={styles.saveButton} onPress={handleSave}>
+                                <Text style={styles.saveButtonText}>{t('save')}</Text>
+                            </TouchableOpacity>
+                        </ScrollView>
                     </View>
-
-                    <View style={styles.formContent}>
-                        <Text style={styles.inputLabel}>{t('company_title')} <Text style={styles.requiredStar}>*</Text></Text>
-                        <TextInput style={styles.input} value={companyName} onChangeText={setCompanyName} placeholder={t('example_company')} />
-
-                        <Text style={styles.inputLabel}>{t('contact_person')} <Text style={styles.requiredStar}>*</Text></Text>
-                        <TextInput style={styles.input} value={contactName} onChangeText={setContactName} placeholder={t('example_name')} />
-
-                        <Text style={styles.inputLabel}>{t('phone')} <Text style={styles.requiredStar}>*</Text></Text>
-                        <TextInput style={styles.input} value={phone} onChangeText={setPhone} keyboardType="phone-pad" placeholder={t('example_phone')} />
-
-                        <Text style={styles.inputLabel}>{t('email')} <Text style={styles.requiredStar}>*</Text></Text>
-                        <TextInput style={styles.input} value={email} onChangeText={setEmail} keyboardType="email-address" autoCapitalize="none" placeholder={t('example_email')} />
-
-                        <Text style={styles.inputLabel}>{t('cari_code')} <Text style={styles.requiredStar}>*</Text></Text>
-                        <TextInput style={styles.input} value={cariCode} onChangeText={setCariCode} autoCapitalize="characters" placeholder={t('example_code')} />
-
-                        <TouchableOpacity style={styles.saveButton} onPress={handleSave}>
-                            <Text style={styles.saveButtonText}>{t('save')}</Text>
-                        </TouchableOpacity>
-                    </View>
-                </View>
-            </KeyboardSafeView>
+                </KeyboardSafeView>
+            </View>
         </Modal>
     );
 };
@@ -124,10 +124,7 @@ const CustomerListItem = ({ item, onEdit, onDelete, orderCount }) => {
                 </TouchableOpacity>
 
                 {/* EMAIL */}
-                <View style={[customerListStyles.infoItem, { flex: 1, paddingLeft: 4 }]}>
-                    <Ionicons name="mail" size={16} color={Colors.secondary} />
-                    <Text style={[customerListStyles.infoText, { color: Colors.textPrimary }]} numberOfLines={1} ellipsizeMode="tail">{item.email || "-"}</Text>
-                </View>
+                <View style={[customerListStyles.infoItem, { flex: 1, paddingLeft: 4 }]}><Ionicons name="mail" size={16} color={Colors.secondary} /><Text style={[customerListStyles.infoText, { color: Colors.textPrimary }]} numberOfLines={1} ellipsizeMode="tail">{item.email || "-"}</Text></View>
             </View>
 
             <View style={customerListStyles.footerRow}>
@@ -412,6 +409,27 @@ const styles = StyleSheet.create({
         color: '#fff',
         fontSize: 18,
         fontWeight: '800',
+    },
+    webModalOverlay: {
+        flex: 1,
+        backgroundColor: 'rgba(0,0,0,0.5)',
+        justifyContent: 'center',
+        alignItems: 'center',
+    },
+    webModalContent: {
+        width: '100%',
+        maxWidth: 600,
+        maxHeight: '90%',
+        margin: 20,
+        backgroundColor: 'transparent',
+        shadowColor: "#000",
+        shadowOffset: {
+            width: 0,
+            height: 2,
+        },
+        shadowOpacity: 0.25,
+        shadowRadius: 3.84,
+        elevation: 5,
     },
 });
 

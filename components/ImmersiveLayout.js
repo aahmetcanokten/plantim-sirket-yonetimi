@@ -177,6 +177,10 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     paddingHorizontal: 16,
     paddingBottom: 8,
+    // Web iyileştirmesi: Başlığı ortala ve çok genişlemesini engelle
+    maxWidth: Platform.OS === 'web' ? 1200 : '100%',
+    alignSelf: 'center',
+    width: '100%',
   },
   textContainer: {
     flex: 1,
@@ -206,5 +210,9 @@ const styles = StyleSheet.create({
   innerContentCompact: {
     paddingHorizontal: 16,
     paddingVertical: 10,
+    // Web iyileştirmesi: İçeriği ortala ve çok genişlemesini engelle
+    maxWidth: Platform.OS === 'web' ? 1200 : '100%',
+    alignSelf: 'center',
+    width: '100%',
   },
 });

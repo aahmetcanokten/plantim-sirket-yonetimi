@@ -328,16 +328,8 @@ export default function SalesScreen() {
               <View style={styles.card}>
                 {/* Kart Üstü: Ürün ve Fiyat */}
                 <View style={styles.cardHeader}>
-                  <View style={styles.productInfo}>
-                    <Text style={styles.productNameText} numberOfLines={1}>{item.productName}</Text>
-                    {productCode && <Text style={styles.productCode}>#{productCode}</Text>}
-                  </View>
-                  <View style={styles.priceContainer}>
-                    <Text style={styles.priceText}>{Number(item.price ?? 0).toFixed(2)} ₺</Text>
-                    <View style={styles.quantityBadge}>
-                      <Text style={styles.quantityText}>x{item.quantity}</Text>
-                    </View>
-                  </View>
+                  <View style={styles.productInfo}><Text style={styles.productNameText} numberOfLines={1}>{item.productName}</Text>{productCode && <Text style={styles.productCode}>#{productCode}</Text>}</View>
+                  <View style={styles.priceContainer}><Text style={styles.priceText}>{Number(item.price ?? 0).toFixed(2)} ₺</Text><View style={styles.quantityBadge}><Text style={styles.quantityText}>x{item.quantity}</Text></View></View>
                 </View>
 
                 {/* Kart Gövdesi: Müşteri ve Detaylar */}

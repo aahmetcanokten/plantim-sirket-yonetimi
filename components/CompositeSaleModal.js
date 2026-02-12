@@ -488,13 +488,19 @@ const styles = StyleSheet.create({
     overlay: {
         flex: 1,
         backgroundColor: "rgba(0,0,0,0.5)",
-        justifyContent: "flex-end",
+        justifyContent: Platform.OS === 'web' ? "center" : "flex-end",
+        alignItems: Platform.OS === 'web' ? "center" : undefined,
     },
     container: {
         backgroundColor: "#fff",
         borderTopLeftRadius: 20,
         borderTopRightRadius: 20,
+        // Web için tam yuvarlak köşeler ve boyut sınırlaması
+        borderRadius: Platform.OS === 'web' ? 16 : undefined,
         height: "90%",
+        width: Platform.OS === 'web' ? '100%' : undefined,
+        maxWidth: Platform.OS === 'web' ? 600 : undefined,
+        maxHeight: Platform.OS === 'web' ? '90%' : undefined,
         overflow: "hidden",
     },
     header: {

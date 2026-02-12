@@ -12,6 +12,7 @@ import {
   StyleSheet,
   Platform,
   ScrollView,
+  Dimensions,
 } from "react-native";
 import { useTranslation } from "react-i18next";
 import ImmersiveLayout from "../components/ImmersiveLayout";
@@ -301,15 +302,62 @@ export default function StockScreen({ navigation }) {
       ) : (
         <>
           {renderHeader()}
-          <FlatList
-            data={filteredAndSortedProducts}
-            keyExtractor={(i) => i.id}
-            renderItem={renderProductItem}
-            scrollEnabled={false}
-            contentContainerStyle={{ paddingBottom: 100 }}
-            initialNumToRender={10}
-            ListEmptyComponent={<Text style={styles.emptyListText}>{t('no_products_in_stock')}</Text>}
-          />
+          {Platform.OS === 'web' && Dimensions.get('window').width > 768 ? (
+            <View style={styles.webTableContainer}>
+              <View style={styles.webTableHeader}>
+                <Text style={[styles.webHeaderCell, { flex: 2 }]}>{t('product_name')}</Text>
+                <Text style={[styles.webHeaderCell, { flex: 1 }]}>{t('category')}</Text>
+                <Text style={[styles.webHeaderCell, { flex: 1, textAlign: 'center' }]}>{t('stock_quantity')}</Text>
+                <Text style={[styles.webHeaderCell, { flex: 1, textAlign: 'right' }]}>{t('sale_price')}</Text>
+                <Text style={[styles.webHeaderCell, { flex: 1, textAlign: 'center' }]}>{t('actions')}</Text>
+              </View>
+              <FlatList
+                data={filteredAndSortedProducts}
+                keyExtractor={(i) => i.id}
+                renderItem={({ item, index }) => (
+                  <View style={[styles.webTableRow, index % 2 === 0 ? styles.webTableRowEven : styles.webTableRowOdd]}>
+                    <View style={{ flex: 2, justifyContent: 'center' }}>
+                      <Text style={styles.webCellTextBold}>{item.name}</Text>
+                      {item.code && <Text style={styles.webCellSubText}>{item.code}</Text>}
+                    </View>
+                    <View style={{ flex: 1, justifyContent: 'center' }}>
+                      <Text style={styles.webCellText}>{item.category || '-'}</Text>
+                    </View>
+                    <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}>
+                      <View style={[styles.webStatusBadge, item.quantity <= (item.criticalStockLimit || 0) ? styles.webStatusCritical : styles.webStatusNormal]}>
+                        <Text style={[styles.webStatusText, item.quantity <= (item.criticalStockLimit || 0) ? { color: '#B91C1C' } : { color: '#15803D' }]}>{item.quantity}</Text>
+                      </View>
+                    </View>
+                    <View style={{ flex: 1, justifyContent: 'center', alignItems: 'flex-end' }}>
+                      <Text style={styles.webCellText}>{Number(item.price ?? 0).toLocaleString('tr-TR', { minimumFractionDigits: 2 })} ₺</Text>
+                    </View>
+                    <View style={{ flex: 1, flexDirection: 'row', justifyContent: 'center', alignItems: 'center', gap: 8 }}>
+                      <TouchableOpacity onPress={() => onEdit(item)} style={styles.webActionBtn}>
+                        <Ionicons name="create-outline" size={18} color={Colors.iosBlue} />
+                      </TouchableOpacity>
+                      <TouchableOpacity onPress={() => openCustomerSelection(item)} style={[styles.webActionBtn, { backgroundColor: Colors.iosGreen }]}>
+                        <Ionicons name="cart-outline" size={18} color="#fff" />
+                      </TouchableOpacity>
+                      <TouchableOpacity onPress={() => confirmDelete(item.id, item.name)} style={[styles.webActionBtn, { backgroundColor: '#FFEEF2' }]}>
+                        <Ionicons name="trash-outline" size={18} color={Colors.critical} />
+                      </TouchableOpacity>
+                    </View>
+                  </View>
+                )}
+                scrollEnabled={false}
+              />
+            </View>
+          ) : (
+            <FlatList
+              data={filteredAndSortedProducts}
+              keyExtractor={(i) => i.id}
+              renderItem={renderProductItem}
+              scrollEnabled={false}
+              contentContainerStyle={{ paddingBottom: 100 }}
+              initialNumToRender={10}
+              ListEmptyComponent={<Text style={styles.emptyListText}>{t('no_products_in_stock')}</Text>}
+            />
+          )}
         </>
       )}
 
@@ -797,6 +845,87 @@ const styles = StyleSheet.create({
     paddingTop: 8,
     borderTopWidth: 1,
     borderTopColor: '#F1F5F9',
+  },
+
+  // --- WEB TABLE STYLES ---
+  webTableContainer: {
+    backgroundColor: '#fff',
+    borderRadius: 8,
+    borderWidth: 1,
+    borderColor: '#E2E8F0',
+    overflow: 'hidden',
+    marginTop: 10,
+    marginBottom: 50,
+  },
+  webTableHeader: {
+    flexDirection: 'row',
+    backgroundColor: '#F8FAFC',
+    borderBottomWidth: 1,
+    borderBottomColor: '#E2E8F0',
+    paddingVertical: 12,
+    paddingHorizontal: 16,
+  },
+  webHeaderCell: {
+    fontSize: 13,
+    fontWeight: '700',
+    color: '#64748B',
+    textTransform: 'uppercase',
+  },
+  webTableRow: {
+    flexDirection: 'row',
+    paddingVertical: 12,
+    paddingHorizontal: 16,
+    borderBottomWidth: 1,
+    borderBottomColor: '#F1F5F9',
+  },
+  webTableRowEven: {
+    backgroundColor: '#FFFFFF',
+  },
+  webTableRowOdd: {
+    backgroundColor: '#F9FAFB', // Çok hafif gri
+  },
+  webCellText: {
+    fontSize: 14,
+    color: '#334155',
+  },
+  webCellTextBold: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: '#0F172A',
+  },
+  webCellSubText: {
+    fontSize: 12,
+    color: '#94A3B8',
+  },
+  webStatusBadge: {
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    borderRadius: 12,
+    backgroundColor: '#E2E8F0',
+  },
+  webStatusCritical: {
+    backgroundColor: '#FEF2F2',
+    borderWidth: 1,
+    borderColor: '#FECACA',
+  },
+  webStatusNormal: {
+    backgroundColor: '#DCFCE7',
+    borderWidth: 1,
+    borderColor: '#86EFAC',
+  },
+  webStatusText: {
+    fontSize: 12,
+    fontWeight: '700',
+  },
+  webActionBtn: {
+    width: 32,
+    height: 32,
+    borderRadius: 6,
+    borderWidth: 1,
+    borderColor: '#E2E8F0',
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: '#fff',
   },
   secondaryInfoItem: {
     flexDirection: 'row',

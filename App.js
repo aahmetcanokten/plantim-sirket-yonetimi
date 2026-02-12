@@ -33,6 +33,7 @@ import OnboardingScreen from "./screens/OnboardingScreen";
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import ErrorBoundary from "./components/ErrorBoundary";
 import OfflineNotice from "./components/OfflineNotice";
+import WebContainer from "./components/WebContainer";
 
 import { Ionicons } from "@expo/vector-icons";
 import { Colors } from "./Theme";
@@ -62,7 +63,7 @@ function MainTabs() {
         tabBarActiveTintColor: Colors.primary,
         tabBarInactiveTintColor: Colors.secondary,
         tabBarStyle: {
-          height: Platform.OS === "ios" ? 90 : 60,
+          height: Platform.OS === "ios" ? 90 : (Platform.OS === 'web' ? 70 : 60),
           borderTopWidth: 0,
           backgroundColor: "#fff",
           ...(Platform.OS === "ios"
@@ -145,7 +146,18 @@ function RootNavigator() {
   );
 }
 
+const getActiveRouteName = (state) => {
+  if (!state || !state.routes) return null;
+  const route = state.routes[state.index];
+  if (route.state) {
+    return getActiveRouteName(route.state);
+  }
+  return { name: route.name, params: route.params };
+};
+
 export default function App() {
+  const [activeRoute, setActiveRoute] = useState(null);
+
   useEffect(() => {
     registerForPushNotificationsAsync();
     resetBadgeCount();
@@ -182,8 +194,15 @@ export default function App() {
           <OfflineNotice />
           <AppProvider>
             <ToastProvider>
-              <NavigationContainer>
-                <RootNavigator />
+              <NavigationContainer
+                onStateChange={(state) => {
+                  const routeInfo = getActiveRouteName(state);
+                  setActiveRoute(routeInfo);
+                }}
+              >
+                <WebContainer activeRoute={activeRoute}>
+                  <RootNavigator />
+                </WebContainer>
               </NavigationContainer>
             </ToastProvider>
           </AppProvider>

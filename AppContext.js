@@ -3,10 +3,7 @@ import { Alert, Platform } from "react-native";
 import { useAuth } from "./AuthContext";
 
 let Purchases;
-try {
-  Purchases = require('react-native-purchases').default;
-} catch (e) {
-  console.log("RevenueCat (react-native-purchases) yüklenemedi. Expo Go kullanıyorsanız bu normaldir.");
+if (Platform.OS === 'web') {
   Purchases = {
     setup: () => { },
     getOfferings: async () => ({ current: null }),
@@ -16,6 +13,21 @@ try {
     getCustomerInfo: async () => ({ entitlements: { active: {} } }),
     configure: async () => { },
   };
+} else {
+  try {
+    Purchases = require('react-native-purchases').default;
+  } catch (e) {
+    console.log("RevenueCat (react-native-purchases) yüklenemedi. Expo Go kullanıyorsanız bu normaldir.");
+    Purchases = {
+      setup: () => { },
+      getOfferings: async () => ({ current: null }),
+      purchasePackage: async () => { },
+      restorePurchases: async () => { },
+      addCustomerInfoUpdateListener: () => { },
+      getCustomerInfo: async () => ({ entitlements: { active: {} } }),
+      configure: async () => { },
+    };
+  }
 }
 
 export const AppContext = createContext(null);
