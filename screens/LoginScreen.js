@@ -10,6 +10,7 @@ export default function LoginScreen() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
+  const [errorMsg, setErrorMsg] = useState(null); // YENİ: Hata mesajı state'i
 
   // YENİ: Ekranın "giriş" mi yoksa "kayıt" modunda mı olduğunu tutan state
   const [isLoginView, setIsLoginView] = useState(true);
@@ -26,12 +27,20 @@ export default function LoginScreen() {
       return;
     }
     setLoading(true);
+    setErrorMsg(null); // Reset error
     try {
       const { error } = await signIn(email, password);
       if (error) {
-        Alert.alert(t("login_failed"), error.message);
+        // Hata mesajını düzgün göster
+        if (error.message.includes("Invalid login credentials")) {
+          setErrorMsg(t("login_error_invalid_credentials"));
+        } else {
+          setErrorMsg(error.message);
+        }
+        Alert.alert(t("login_failed"), error.message.includes("Invalid login credentials") ? t("login_error_invalid_credentials") : error.message);
       }
     } catch (error) {
+      setErrorMsg(error.message);
       Alert.alert(t("error"), t("login_error_prefix") + error.message);
     } finally {
       setLoading(false);
@@ -136,6 +145,7 @@ export default function LoginScreen() {
             loading={loading} handleLogin={handleLogin} handleSignUp={handleSignUp}
             handlePasswordReset={handlePasswordReset} toggleView={toggleView}
             t={t}
+            errorMsg={errorMsg}
           />
         </ScrollView>
       </KeyboardAvoidingView>
@@ -186,6 +196,7 @@ export default function LoginScreen() {
             loading={loading} handleLogin={handleLogin} handleSignUp={handleSignUp}
             handlePasswordReset={handlePasswordReset} toggleView={toggleView}
             t={t}
+            errorMsg={errorMsg}
           />
         </View>
       </View>
@@ -205,9 +216,16 @@ const FeatureItem = ({ icon, text }) => (
 
 const LoginForm = ({
   email, setEmail, password, setPassword, confirmPassword, setConfirmPassword,
-  isLoginView, loading, handleLogin, handleSignUp, handlePasswordReset, toggleView, t
+  isLoginView, loading, handleLogin, handleSignUp, handlePasswordReset, toggleView, t, errorMsg
 }) => (
   <View style={{ width: '100%' }}>
+    {errorMsg && (
+      <View style={styles.errorContainer}>
+        <Ionicons name="alert-circle" size={20} color="#fff" />
+        <Text style={styles.errorText}>{errorMsg}</Text>
+      </View>
+    )}
+
     <TextInput
       style={styles.input}
       placeholder="Email"
@@ -463,5 +481,19 @@ const styles = StyleSheet.create({
     fontSize: 16,
     color: '#64748B',
     marginTop: 8,
+  },
+  errorContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: Colors.critical, // Kırmızı hata rengi
+    padding: 12,
+    borderRadius: 8,
+    marginBottom: 16,
+  },
+  errorText: {
+    color: '#fff',
+    marginLeft: 8,
+    fontSize: 14,
+    fontWeight: '600',
   },
 });

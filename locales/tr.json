@@ -262,6 +262,7 @@
     "login_email_password_required": "Lütfen email ve şifrenizi giriniz.",
     "login_failed": "Giriş Başarısız",
     "login_error_prefix": "Giriş işlemi sırasında bir hata oluştu: ",
+    "login_error_invalid_credentials": "E-posta adresi veya şifre hatalı. Lütfen bilgilerinizi kontrol edin.",
     "signup_fields_required": "Lütfen email, şifre ve şifre tekrarı alanlarını doldurunuz.",
     "passwords_do_not_match": "Şifreler Eşleşmiyor",
     "passwords_mismatch_message": "Girdiğiniz şifreler aynı değil. Lütfen kontrol edin.",

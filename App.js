@@ -136,7 +136,7 @@ function RootNavigator() {
         )
       ) : (
         <>
-          {isFirstLaunch && (
+          {isFirstLaunch && Platform.OS !== 'web' && (
             <Stack.Screen name="Onboarding" component={OnboardingScreen} />
           )}
           <Stack.Screen name="Login" component={LoginScreen} />
