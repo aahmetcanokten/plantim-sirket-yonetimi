@@ -1,6 +1,7 @@
 import * as Print from 'expo-print';
 import * as Sharing from 'expo-sharing';
 import { Colors } from "../Theme";
+import { Platform } from "react-native";
 
 export const createAndPrintSalesForm = async (sale, company, customer, product, t) => {
     // Format dates
@@ -262,11 +263,26 @@ export const createAndPrintSalesForm = async (sale, company, customer, product, 
   `;
 
     try {
-        const { uri } = await Print.printToFileAsync({
-            html: htmlContent
-        });
+        if (Platform.OS === 'web') {
+            const printWindow = window.open('', '', 'width=800,height=600');
+            if (printWindow) {
+                printWindow.document.write(htmlContent);
+                printWindow.document.close();
+                printWindow.focus();
+                setTimeout(() => {
+                    printWindow.print();
+                    // printWindow.close(); 
+                }, 500);
+            } else {
+                alert("Lütfen pop-up engelleyicisini kapatın.");
+            }
+        } else {
+            const { uri } = await Print.printToFileAsync({
+                html: htmlContent
+            });
 
-        await Sharing.shareAsync(uri, { UTI: '.pdf', mimeType: 'application/pdf' });
+            await Sharing.shareAsync(uri, { UTI: '.pdf', mimeType: 'application/pdf' });
+        }
     } catch (error) {
         console.error('PDF oluşturma hatası:', error);
         throw error;

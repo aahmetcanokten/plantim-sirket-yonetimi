@@ -277,6 +277,7 @@ export default function AssemblyModal({ visible, onClose, onComplete }) {
                                         placeholder={t("search_component_placeholder")}
                                         value={searchQuery}
                                         onChangeText={setSearchQuery}
+                                        selectTextOnFocus={Platform.OS === 'web'}
                                     />
                                 </View>
                                 <Text style={styles.stepNote}>{t("production_step_note")}</Text>
@@ -319,6 +320,7 @@ export default function AssemblyModal({ visible, onClose, onComplete }) {
                                     placeholder={t("composite_product_placeholder")}
                                     value={productName}
                                     onChangeText={setProductName}
+                                    selectTextOnFocus={Platform.OS === 'web'}
                                 />
 
                                 <Text style={styles.label}>{t("category")}</Text>
@@ -326,6 +328,7 @@ export default function AssemblyModal({ visible, onClose, onComplete }) {
                                     style={styles.input}
                                     value={category}
                                     onChangeText={setCategory}
+                                    selectTextOnFocus={Platform.OS === 'web'}
                                 />
 
                                 <View style={{ flexDirection: 'row', justifyContent: 'space-between' }}>
@@ -337,6 +340,7 @@ export default function AssemblyModal({ visible, onClose, onComplete }) {
                                             keyboardType="number-pad"
                                             value={productionQuantity}
                                             onChangeText={setProductionQuantity}
+                                            selectTextOnFocus={Platform.OS === 'web'}
                                         />
                                     </View>
                                     <View style={{ width: '48%' }}>
@@ -347,6 +351,7 @@ export default function AssemblyModal({ visible, onClose, onComplete }) {
                                             keyboardType="decimal-pad"
                                             value={salePrice}
                                             onChangeText={setSalePrice}
+                                            selectTextOnFocus={Platform.OS === 'web'}
                                         />
                                     </View>
                                 </View>
@@ -358,6 +363,7 @@ export default function AssemblyModal({ visible, onClose, onComplete }) {
                                     keyboardType="number-pad"
                                     value={criticalLimit}
                                     onChangeText={setCriticalLimit}
+                                    selectTextOnFocus={Platform.OS === 'web'}
                                 />
 
                                 <Text style={styles.label}>{t("product_code_barcode_optional")}</Text>
@@ -367,6 +373,7 @@ export default function AssemblyModal({ visible, onClose, onComplete }) {
                                         value={productCode}
                                         onChangeText={setProductCode}
                                         placeholder={t("barcode") || "Barkod"}
+                                        selectTextOnFocus={Platform.OS === 'web'}
                                     />
                                     <TouchableOpacity onPress={() => setScannerVisible(true)} style={styles.iconContainer}>
                                         <Ionicons name="barcode-outline" size={24} color={Colors.iosBlue} />
@@ -393,13 +400,32 @@ const styles = StyleSheet.create({
     overlay: {
         flex: 1,
         backgroundColor: "rgba(0,0,0,0.5)",
-        justifyContent: "flex-end",
+        ...Platform.select({
+            web: {
+                justifyContent: 'center',
+                alignItems: 'center',
+            },
+            default: {
+                justifyContent: 'flex-end',
+            }
+        }),
     },
     container: {
         backgroundColor: "#fff",
-        borderTopLeftRadius: 20,
-        borderTopRightRadius: 20,
-        height: "90%",
+        ...Platform.select({
+            web: {
+                borderRadius: 16,
+                width: '100%',
+                maxWidth: 600,
+                maxHeight: '90vh',
+                height: 'auto',
+            },
+            default: {
+                borderTopLeftRadius: 20,
+                borderTopRightRadius: 20,
+                height: "90%",
+            }
+        }),
         overflow: "hidden",
     },
     header: {
@@ -472,6 +498,12 @@ const styles = StyleSheet.create({
         backgroundColor: "#F2F5F9",
         justifyContent: "center",
         alignItems: "center",
+        ...Platform.select({
+            web: {
+                cursor: 'pointer',
+                userSelect: 'none',
+            }
+        }),
     },
     qtyText: {
         marginHorizontal: 12,
@@ -505,6 +537,12 @@ const styles = StyleSheet.create({
         borderRadius: 12,
         flexDirection: "row",
         alignItems: "center",
+        ...Platform.select({
+            web: {
+                cursor: 'pointer',
+                userSelect: 'none',
+            }
+        }),
     },
     nextBtnText: {
         color: "#fff",
@@ -584,6 +622,12 @@ const styles = StyleSheet.create({
         shadowOffset: { width: 0, height: 2 },
         shadowOpacity: 0.2,
         shadowRadius: 4,
+        ...Platform.select({
+            web: {
+                cursor: 'pointer',
+                userSelect: 'none',
+            }
+        }),
     },
     completeBtnText: {
         color: "#fff",

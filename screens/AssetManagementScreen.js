@@ -18,7 +18,7 @@ import { AppContext } from "../AppContext";
 import KeyboardSafeView from "../components/KeyboardSafeView";
 import BarcodeScannerModal from "../components/BarcodeScannerModal";
 import { useTranslation } from "react-i18next";
-import { printToFileAsync } from 'expo-print';
+import { printToFileAsync, printAsync } from 'expo-print';
 import { shareAsync } from 'expo-sharing';
 
 export default function AssetManagementScreen({ navigation }) {
@@ -276,8 +276,23 @@ export default function AssetManagementScreen({ navigation }) {
             </html>
             `;
 
-            const { uri } = await printToFileAsync({ html });
-            await shareAsync(uri, { UTI: '.pdf', mimeType: 'application/pdf' });
+            if (Platform.OS === 'web') {
+                const printWindow = window.open('', '', 'width=800,height=600');
+                if (printWindow) {
+                    printWindow.document.write(html);
+                    printWindow.document.close();
+                    printWindow.focus();
+                    setTimeout(() => {
+                        printWindow.print();
+                        // printWindow.close(); // Optional: Close after print
+                    }, 500);
+                } else {
+                    Alert.alert(t("error"), "Lütfen pop-up engelleyicisini kapatın.");
+                }
+            } else {
+                const { uri } = await printToFileAsync({ html });
+                await shareAsync(uri, { UTI: '.pdf', mimeType: 'application/pdf' });
+            }
         } catch (error) {
             Alert.alert(t("error"), "PDF oluşturulurken bir hata oluştu.");
             console.error(error);

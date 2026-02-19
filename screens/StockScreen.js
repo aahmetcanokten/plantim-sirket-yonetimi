@@ -256,6 +256,7 @@ export default function StockScreen({ navigation }) {
             style={styles.searchInputField}
             returnKeyType="search"
             placeholderTextColor={Colors.secondary}
+            selectTextOnFocus={Platform.OS === 'web'}
           />
           {searchQuery !== "" && (
             <TouchableOpacity onPress={() => setSearchQuery("")} style={styles.clearSearchBtn}>
@@ -372,10 +373,10 @@ export default function StockScreen({ navigation }) {
 
               <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={{ paddingBottom: 20 }}>
                 <Text style={styles.inputLabel}>{t('sale_quantity')}</Text>
-                <TextInput style={styles.input} value={saleQuantity} onChangeText={setSaleQuantity} keyboardType="number-pad" placeholder="1" />
+                <TextInput style={styles.input} value={saleQuantity} onChangeText={setSaleQuantity} keyboardType="number-pad" placeholder="1" selectTextOnFocus={Platform.OS === 'web'} />
 
                 <Text style={styles.inputLabel}>{t('sale_price')} (₺)</Text>
-                <TextInput style={styles.input} value={salePrice} onChangeText={setSalePrice} keyboardType="decimal-pad" placeholder="₺" />
+                <TextInput style={styles.input} value={salePrice} onChangeText={setSalePrice} keyboardType="decimal-pad" placeholder="₺" selectTextOnFocus={Platform.OS === 'web'} />
 
                 <Text style={[styles.inputLabel, { marginTop: 20 }]}>{t('select_customer')}</Text>
                 <View style={styles.customerListContainer}>
@@ -414,27 +415,27 @@ export default function StockScreen({ navigation }) {
               <Text style={styles.modalTitle}>{t('edit_product')}</Text>
               <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={{ paddingBottom: 20 }}>
                 <Text style={styles.inputLabel}>{t('product_name')}</Text>
-                <TextInput style={styles.input} value={editProduct?.name} onChangeText={(text) => setEditProduct(prev => ({ ...prev, name: text }))} placeholder={t('product_name')} />
+                <TextInput style={styles.input} value={editProduct?.name} onChangeText={(text) => setEditProduct(prev => ({ ...prev, name: text }))} placeholder={t('product_name')} selectTextOnFocus={Platform.OS === 'web'} />
 
                 <View style={styles.rowInputs}>
                   <View style={{ flex: 1, marginRight: 10 }}>
                     <Text style={styles.inputLabel}>{t('stock_quantity')}</Text>
-                    <TextInput style={styles.input} value={editProduct?.quantity} onChangeText={(text) => setEditProduct(prev => ({ ...prev, quantity: text.replace(/[^0-9]/g, '') }))} keyboardType="number-pad" />
+                    <TextInput style={styles.input} value={editProduct?.quantity} onChangeText={(text) => setEditProduct(prev => ({ ...prev, quantity: text.replace(/[^0-9]/g, '') }))} keyboardType="number-pad" selectTextOnFocus={Platform.OS === 'web'} />
                   </View>
                   <View style={{ flex: 1 }}>
                     <Text style={styles.inputLabel}>{t('critical_limit')}</Text>
-                    <TextInput style={styles.input} value={editProduct?.criticalStockLimit} onChangeText={(text) => setEditProduct(prev => ({ ...prev, criticalStockLimit: text.replace(/[^0-9]/g, '') }))} keyboardType="number-pad" />
+                    <TextInput style={styles.input} value={editProduct?.criticalStockLimit} onChangeText={(text) => setEditProduct(prev => ({ ...prev, criticalStockLimit: text.replace(/[^0-9]/g, '') }))} keyboardType="number-pad" selectTextOnFocus={Platform.OS === 'web'} />
                   </View>
                 </View>
 
                 <View style={styles.rowInputs}>
                   <View style={{ flex: 1, marginRight: 10 }}>
                     <Text style={styles.inputLabel}>{t('purchase_price')} (₺)</Text>
-                    <TextInput style={styles.input} value={editProduct?.cost} onChangeText={(text) => setEditProduct(prev => ({ ...prev, cost: text.replace(/[^0-9.]/g, '') }))} keyboardType="decimal-pad" />
+                    <TextInput style={styles.input} value={editProduct?.cost} onChangeText={(text) => setEditProduct(prev => ({ ...prev, cost: text.replace(/[^0-9.]/g, '') }))} keyboardType="decimal-pad" selectTextOnFocus={Platform.OS === 'web'} />
                   </View>
                   <View style={{ flex: 1 }}>
                     <Text style={styles.inputLabel}>{t('sale_price')} (₺)</Text>
-                    <TextInput style={styles.input} value={editProduct?.price} onChangeText={(text) => setEditProduct(prev => ({ ...prev, price: text.replace(/[^0-9.]/g, '') }))} keyboardType="decimal-pad" />
+                    <TextInput style={styles.input} value={editProduct?.price} onChangeText={(text) => setEditProduct(prev => ({ ...prev, price: text.replace(/[^0-9.]/g, '') }))} keyboardType="decimal-pad" selectTextOnFocus={Platform.OS === 'web'} />
                   </View>
                 </View>
 
@@ -669,6 +670,12 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.2,
     shadowRadius: 4,
     elevation: 3,
+    ...Platform.select({
+      web: {
+        cursor: 'pointer',
+        userSelect: 'none',
+      }
+    }),
   },
   sortContainer: {
     flexDirection: 'row',
@@ -718,12 +725,17 @@ const styles = StyleSheet.create({
     marginBottom: 14,
     shadowColor: "#000",
     shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.05,
-    shadowRadius: 4,
+    shadowOpacity: 0.08,
+    shadowRadius: 2,
     elevation: 2,
     borderWidth: 1,
     borderColor: '#E2E8F0',
     overflow: 'hidden',
+    ...Platform.select({
+      web: {
+        cursor: 'pointer',
+      }
+    }),
   },
   cardHeader: {
     flexDirection: 'row',
@@ -926,6 +938,12 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     backgroundColor: '#fff',
+    ...Platform.select({
+      web: {
+        cursor: 'pointer',
+        userSelect: 'none',
+      }
+    }),
   },
   secondaryInfoItem: {
     flexDirection: 'row',
@@ -958,11 +976,23 @@ const styles = StyleSheet.create({
     paddingHorizontal: 14,
     borderRadius: 8,
     marginRight: 10,
+    ...Platform.select({
+      web: {
+        cursor: 'pointer',
+        userSelect: 'none',
+      }
+    }),
   },
   editBtn: {
     backgroundColor: '#fff',
     borderWidth: 1,
     borderColor: '#E2E8F0',
+    ...Platform.select({
+      web: {
+        cursor: 'pointer',
+        userSelect: 'none',
+      }
+    }),
   },
   editBtnText: {
     color: Colors.iosBlue,
@@ -973,6 +1003,12 @@ const styles = StyleSheet.create({
   sellBtn: {
     backgroundColor: Colors.iosBlue,
     flex: 1,
+    ...Platform.select({
+      web: {
+        cursor: 'pointer',
+        userSelect: 'none',
+      }
+    }),
   },
   sellBtnText: {
     color: '#fff',
@@ -988,6 +1024,12 @@ const styles = StyleSheet.create({
     backgroundColor: '#FEF2F2',
     borderRadius: 8,
     marginLeft: 'auto',
+    ...Platform.select({
+      web: {
+        cursor: 'pointer',
+        userSelect: 'none',
+      }
+    }),
   },
 
   // --- MODAL STİLLERİ (Aynı kaldı) ---

@@ -9,6 +9,7 @@ import {
   Modal,
   StyleSheet,
   ActivityIndicator,
+  Platform,
 } from "react-native";
 import { useTranslation } from "react-i18next";
 import ImmersiveLayout from "../components/ImmersiveLayout";
@@ -105,6 +106,16 @@ export default function SalesScreen() {
   // Satış İptali İşlevi
   const confirmCancel = (sale) => {
     triggerHaptic(HapticType.WARNING); // Uyarı titreşimi
+
+    if (Platform.OS === 'web') {
+      if (window.confirm(`${sale.productName} x${sale.quantity} (${sale.customerName}) ${t('cancel_sale_confirmation')}\n\n${t('cancel_sale_disclaimer')}`)) {
+        recreateProductFromSale(sale); // Ürünü stoğa geri ekler
+        removeSale(sale.id); // Satış kaydını siler
+        triggerHaptic(HapticType.SUCCESS);
+      }
+      return;
+    }
+
     Alert.alert(
       t('cancel_sale'),
       `${sale.productName} x${sale.quantity} (${sale.customerName}) ${t('cancel_sale_confirmation')}\n\n${t('cancel_sale_disclaimer')}`,
@@ -148,6 +159,16 @@ export default function SalesScreen() {
 
   const markAsShipped = (sale) => {
     triggerHaptic(HapticType.IMPACT_LIGHT);
+
+    if (Platform.OS === 'web') {
+      if (window.confirm(`${sale.productName} x${sale.quantity} ${t('shipment_confirmation_message')}`)) {
+        updateSale({ ...sale, isShipped: true });
+        triggerHaptic(HapticType.SUCCESS);
+        requestStoreReview();
+      }
+      return;
+    }
+
     Alert.alert(
       t('shipment_confirmation'),
       `${sale.productName} x${sale.quantity} ${t('shipment_confirmation_message')}`,
@@ -278,6 +299,7 @@ export default function SalesScreen() {
             placeholderTextColor={Colors.muted}
             value={productFilterInput}
             onChangeText={setProductFilterInput}
+            selectTextOnFocus={Platform.OS === 'web'}
           />
         </View>
         <View style={[styles.searchInputWrapper, { marginTop: 10 }]}>
@@ -288,6 +310,7 @@ export default function SalesScreen() {
             placeholderTextColor={Colors.muted}
             value={customerFilterInput}
             onChangeText={setCustomerFilterInput}
+            selectTextOnFocus={Platform.OS === 'web'}
           />
         </View>
       </View>
@@ -417,8 +440,8 @@ export default function SalesScreen() {
             const hasMore = visibleData.length < filtered.length;
             if (hasMore) {
               return (
-                <TouchableOpacity onPress={loadMoreItems} style={{ padding: 15, alignItems: 'center', backgroundColor: '#F0F9FF', borderRadius: 10, marginTop: 10 }}>
-                  <Text style={{ color: Colors.iosBlue, fontWeight: '700' }}>{t('show_more')}</Text>
+                <TouchableOpacity onPress={loadMoreItems} style={styles.loadMoreButton}>
+                  <Text style={styles.loadMoreText}>{t('show_more')}</Text>
                 </TouchableOpacity>
               );
             }
@@ -579,17 +602,20 @@ const styles = StyleSheet.create({
 
   // --- Liste ve Kartlar ---
   card: {
-    backgroundColor: "#fff",
-    borderRadius: 16,
-    padding: 16,
-    marginBottom: 12,
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.06,
-    shadowRadius: 8,
+    backgroundColor: '#fff',
+    borderRadius: 14,
+    marginBottom: 14,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.08,
+    shadowRadius: 2,
     elevation: 2,
-    borderWidth: 1,
-    borderColor: '#F2F4F8',
+    overflow: 'hidden',
+    ...Platform.select({
+      web: {
+        cursor: 'pointer',
+      }
+    }),
   },
   cardHeader: {
     flexDirection: 'row',
@@ -701,6 +727,12 @@ const styles = StyleSheet.create({
   },
   iconButton: {
     marginLeft: 10,
+    ...Platform.select({
+      web: {
+        cursor: 'pointer',
+        userSelect: 'none',
+      }
+    }),
   },
   iconButtonBg: {
     width: 36,
@@ -725,8 +757,8 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     marginBottom: 16,
   },
-  emptyListText: {
-    textAlign: "center",
+  emptySecondaryText: {
+    textAlign: 'center',
     color: Colors.secondary,
     fontSize: 15,
     fontWeight: '500',
@@ -736,6 +768,23 @@ const styles = StyleSheet.create({
     color: Colors.muted,
     marginVertical: 15,
     fontSize: 12,
+  },
+  loadMoreButton: {
+    padding: 15,
+    alignItems: 'center',
+    backgroundColor: '#F0F9FF',
+    borderRadius: 10,
+    marginTop: 10,
+    ...Platform.select({
+      web: {
+        cursor: 'pointer',
+        userSelect: 'none',
+      }
+    }),
+  },
+  loadMoreText: {
+    color: Colors.iosBlue,
+    fontWeight: '700',
   },
   adContainer: {
     alignItems: 'center',

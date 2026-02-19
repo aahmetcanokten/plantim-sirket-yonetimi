@@ -69,6 +69,14 @@ export default function PurchasesScreen() {
     };
 
     const handleDeletePurchase = (id) => {
+        if (Platform.OS === 'web') {
+            if (window.confirm(t('delete_order_confirmation'))) {
+                deletePurchase(id);
+                toast?.showToast && toast.showToast(t('order_deleted'));
+            }
+            return;
+        }
+
         Alert.alert(
             t('delete_order'),
             t('delete_order_confirmation'),
@@ -87,6 +95,14 @@ export default function PurchasesScreen() {
     };
 
     const handleDeliverPurchase = (purchaseItem) => {
+        if (Platform.OS === 'web') {
+            if (window.confirm(`${purchaseItem.productName} ${t('receive_confirmation')} ${t('stock_will_update')}`)) {
+                markPurchaseDelivered(purchaseItem.id);
+                toast?.showToast && toast.showToast(t('product_received_stock_updated'));
+            }
+            return;
+        }
+
         Alert.alert(
             t('receive'),
             `${purchaseItem.productName} ${t('receive_confirmation')} ${t('stock_will_update')}`,

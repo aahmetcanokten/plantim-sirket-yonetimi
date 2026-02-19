@@ -9,6 +9,7 @@ import {
   FlatList,
   Alert,
   ScrollView,
+  Platform,
 } from "react-native";
 import { AppContext } from "../AppContext";
 import { Colors, CardRadius, ButtonRadius } from "../Theme";
@@ -198,17 +199,17 @@ export default function AddPurchaseForm({ onAdd, onCancel, initial = null }) {
           <View style={{ flexDirection: "row", marginTop: 12 }}>
             <View style={{ flex: 1 }}>
               <Text style={styles.label}>{t("order_quantity")}</Text>
-              <TextInput style={styles.input} value={quantity} onChangeText={setQuantity} keyboardType="number-pad" placeholder="1" />
+              <TextInput style={styles.input} value={quantity} onChangeText={setQuantity} keyboardType="number-pad" placeholder="1" selectTextOnFocus={Platform.OS === 'web'} />
             </View>
             <View style={{ width: 12 }} />
             <View style={{ flex: 1 }}>
               <Text style={styles.label}>{t("unit_cost_currency")}</Text>
-              <TextInput style={styles.input} value={unitCost} onChangeText={setUnitCost} keyboardType="decimal-pad" placeholder="0.00" />
+              <TextInput style={styles.input} value={unitCost} onChangeText={setUnitCost} keyboardType="decimal-pad" placeholder="0.00" selectTextOnFocus={Platform.OS === 'web'} />
             </View>
           </View>
 
           <Text style={[styles.label, { marginTop: 8 }]}>{t("supplier_company")}</Text>
-          <TextInput style={styles.input} value={supplier} onChangeText={setSupplier} placeholder={t("supplier_placeholder")} />
+          <TextInput style={styles.input} value={supplier} onChangeText={setSupplier} placeholder={t("supplier_placeholder")} selectTextOnFocus={Platform.OS === 'web'} />
 
           <Text style={[styles.label, { marginTop: 8 }]}>{t("expected_delivery_date")}</Text>
           <DatePickerButton value={expectedDate} onChange={setExpectedDate} placeholder={t("date_not_specified")} />
@@ -249,6 +250,7 @@ export default function AddPurchaseForm({ onAdd, onCancel, initial = null }) {
                 placeholder={t("search_product_model")}
                 value={prodSearch}
                 onChangeText={setProdSearch}
+                selectTextOnFocus={Platform.OS === 'web'}
               />
               <FlatList
                 data={filteredProducts}
@@ -291,11 +293,11 @@ export default function AddPurchaseForm({ onAdd, onCancel, initial = null }) {
                   {t("define_new_product_for_order")}
                 </Text>
                 <Text style={styles.label}>{t("product_name")} <Text style={{ color: Colors.critical }}>*</Text></Text>
-                <TextInput style={styles.input} value={qaName} onChangeText={setQaName} placeholder={t("search_product_model")} />
+                <TextInput style={styles.input} value={qaName} onChangeText={setQaName} placeholder={t("search_product_model")} selectTextOnFocus={Platform.OS === 'web'} />
                 <Text style={[styles.label, { marginTop: 10 }]}>{t("category")}</Text>
-                <TextInput style={styles.input} value={qaCategory} onChangeText={setQaCategory} placeholder={t("category")} />
+                <TextInput style={styles.input} value={qaCategory} onChangeText={setQaCategory} placeholder={t("category")} selectTextOnFocus={Platform.OS === 'web'} />
                 <Text style={[styles.label, { marginTop: 10 }]}>{t("product_code_barcode_optional")}</Text>
-                <TextInput style={styles.input} value={qaCode} onChangeText={setQaCode} placeholder={t("code_barcode_label")} />
+                <TextInput style={styles.input} value={qaCode} onChangeText={setQaCode} placeholder={t("code_barcode_label")} selectTextOnFocus={Platform.OS === 'web'} />
                 <TouchableOpacity style={[styles.addButton, { marginTop: 20, backgroundColor: Colors.iosGreen }]} onPress={handleQuickAddProduct}>
                   <Text style={styles.addButtonText}>{t("save_and_select_order")}</Text>
                 </TouchableOpacity>

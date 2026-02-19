@@ -492,5 +492,16 @@
     "premium_active": "Premium Üyelik Aktif",
     "premium_active_subtitle": "Tüm özelliklere erişiminiz var.",
     "manage_subscription": "Aboneliği Yönet",
-    "manage_subscription_subtitle": "App Store üzerinden yönetin"
+    "manage_subscription_subtitle": "App Store üzerinden yönetin",
+    "web_hero_title": "İşletmenizi Geleceğe Taşıyın",
+    "web_hero_sub": "Bulut tabanlı stok, cari ve personel yönetimi ile kontrol tamamen sizde.",
+    "web_feature_stock": "Gelişmiş Stok Takibi",
+    "web_feature_reports": "Detaylı Satış Analizleri",
+    "web_feature_personnel": "Personel ve Görev Yönetimi",
+    "web_feature_mobile": "Mobilden ve Webden Erişim",
+    "web_footer_text": "Hemen ücretsiz hesabınızı oluşturun.",
+    "welcome_back": "Tekrar Hoşgeldiniz",
+    "login_to_continue": "Devam etmek için giriş yapın",
+    "create_account": "Hesap Oluştur",
+    "signup_to_start": "Başlamak için bilgilerinizi girin"
 }

@@ -71,10 +71,8 @@ export default function WebContainer({ children, activeRoute }) {
 
     if (!session) {
         return (
-            <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center', backgroundColor: '#F1F5F9' }}>
-                <View style={{ maxWidth: 480, width: '100%', height: '100%', backgroundColor: '#fff', shadowColor: "#000", shadowOpacity: 0.1, shadowRadius: 20 }}>
-                    {children}
-                </View>
+            <View style={{ flex: 1, height: '100vh', width: '100%' }}>
+                {children}
             </View>
         )
     }
@@ -86,10 +84,13 @@ export default function WebContainer({ children, activeRoute }) {
         <View style={styles.container}>
             {/* --- SIDEBAR (Sol Menü) --- */}
             <View style={styles.sidebar}>
-                <View style={styles.logoContainer}>
+                <TouchableOpacity
+                    style={styles.logoContainer}
+                    onPress={() => navigation.navigate('MainTabs', { screen: 'Stok' })}
+                >
                     <Ionicons name="leaf" size={32} color={Colors.iosBlue} />
                     <Text style={styles.logoText}>PLANTİM ERP</Text>
-                </View>
+                </TouchableOpacity>
 
                 <ScrollView style={styles.menuContainer}>
                     {MENU_ITEMS.map((item, index) => {
@@ -137,11 +138,13 @@ export default function WebContainer({ children, activeRoute }) {
                     </View>
 
                     <View style={styles.headerRight}>
-                        <View style={styles.userBadge}>
-                            <View style={styles.avatar}>
-                                <Text style={{ color: '#fff', fontWeight: 'bold' }}>U</Text>
-                            </View>
-                            <Text style={styles.userName}>Kullanıcı</Text>
+                        <View style={styles.headerRight}>
+                            <TouchableOpacity style={styles.userBadge} onPress={() => navigation.navigate('Ayarlar')}>
+                                <View style={styles.avatar}>
+                                    <Text style={{ color: '#fff', fontWeight: 'bold' }}>U</Text>
+                                </View>
+                                <Text style={styles.userName}>Kullanıcı</Text>
+                            </TouchableOpacity>
                         </View>
                     </View>
                 </View>

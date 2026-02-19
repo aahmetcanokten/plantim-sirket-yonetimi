@@ -285,6 +285,7 @@ export default function CompositeSaleModal({ visible, onClose, onComplete }) {
                                         placeholder={t("search_component_placeholder")}
                                         value={searchQuery}
                                         onChangeText={setSearchQuery}
+                                        selectTextOnFocus={Platform.OS === 'web'}
                                     />
                                 </View>
 
@@ -322,6 +323,7 @@ export default function CompositeSaleModal({ visible, onClose, onComplete }) {
                                     placeholder={t("composite_product_placeholder")}
                                     value={parentName}
                                     onChangeText={setParentName}
+                                    selectTextOnFocus={Platform.OS === 'web'}
                                 />
 
                                 <Text style={styles.label}>{t("sales_price_currency")}</Text>
@@ -331,6 +333,7 @@ export default function CompositeSaleModal({ visible, onClose, onComplete }) {
                                     keyboardType="numeric"
                                     value={salePrice}
                                     onChangeText={setSalePrice}
+                                    selectTextOnFocus={Platform.OS === 'web'}
                                 />
 
                                 <Text style={styles.label}>{t("shipment_date")}</Text>
@@ -393,7 +396,7 @@ function QuantityInputModal({ visible, value, onChangeText, onClose, onSave, pro
                         onChangeText={onChangeText}
                         keyboardType="number-pad"
                         autoFocus
-                        selectTextOnFocus
+                        selectTextOnFocus={Platform.OS === 'web'}
                     />
 
                     <View style={styles.qtyModalActions}>
@@ -466,7 +469,13 @@ const styles = StyleSheet.create({
         marginRight: 10,
         alignItems: 'center',
         borderRadius: 10,
-        backgroundColor: '#F2F4F8'
+        backgroundColor: '#F2F4F8',
+        ...Platform.select({
+            web: {
+                cursor: 'pointer',
+                userSelect: 'none',
+            }
+        }),
     },
     qtyCancelText: {
         color: Colors.textPrimary,
@@ -478,7 +487,13 @@ const styles = StyleSheet.create({
         marginLeft: 10,
         alignItems: 'center',
         borderRadius: 10,
-        backgroundColor: Colors.iosBlue
+        backgroundColor: Colors.iosBlue,
+        ...Platform.select({
+            web: {
+                cursor: 'pointer',
+                userSelect: 'none',
+            }
+        }),
     },
     qtySaveText: {
         color: "#fff",
@@ -565,6 +580,12 @@ const styles = StyleSheet.create({
         backgroundColor: "#F2F5F9",
         justifyContent: "center",
         alignItems: "center",
+        ...Platform.select({
+            web: {
+                cursor: 'pointer',
+                userSelect: 'none',
+            }
+        }),
     },
     qtyText: {
         marginHorizontal: 12,
@@ -598,6 +619,12 @@ const styles = StyleSheet.create({
         borderRadius: 12,
         flexDirection: "row",
         alignItems: "center",
+        ...Platform.select({
+            web: {
+                cursor: 'pointer',
+                userSelect: 'none',
+            }
+        }),
     },
     nextBtnText: {
         color: "#fff",
@@ -679,6 +706,12 @@ const styles = StyleSheet.create({
         shadowOffset: { width: 0, height: 2 },
         shadowOpacity: 0.2,
         shadowRadius: 4,
+        ...Platform.select({
+            web: {
+                cursor: 'pointer',
+                userSelect: 'none',
+            }
+        }),
     },
     completeBtnText: {
         color: "#fff",

@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import { TouchableOpacity, Text, StyleSheet, Platform } from "react-native";
+import { TouchableOpacity, Text, StyleSheet, Platform, View } from "react-native";
 import DateTimePicker from "@react-native-community/datetimepicker";
 import { Colors } from "../Theme";
 import { useTranslation } from "react-i18next";
@@ -24,6 +24,38 @@ export default function DatePickerButton({ value, onChange, placeholder }) {
 
   const displayText = value ? value.toLocaleDateString(i18n.language) : displayPlaceholder;
 
+  if (Platform.OS === 'web') {
+    const dateValue = value ? value.toISOString().split('T')[0] : '';
+    return (
+      <View style={[styles.button, { padding: 0, justifyContent: 'center' }]}>
+        <input
+          type="date"
+          value={dateValue}
+          onChange={(e) => {
+            if (e.target.value) {
+              // valueAsDate kullanmak timezone sorunlarını çözebilir
+              const date = new Date(e.target.value);
+              onChange(date);
+            } else {
+              onChange(null);
+            }
+          }}
+          style={{
+            border: 'none',
+            background: 'transparent',
+            width: '100%',
+            height: '100%',
+            padding: 10,
+            fontSize: 16,
+            fontFamily: 'inherit',
+            color: '#0B1220',
+            outline: 'none'
+          }}
+        />
+      </View>
+    );
+  }
+
   return (
     <>
       <TouchableOpacity
@@ -42,7 +74,10 @@ export default function DatePickerButton({ value, onChange, placeholder }) {
           mode="date"
           is24Hour={true}
           display="default"
-          onChange={onDateChange}
+          onChange={(event, date) => {
+            setShow(Platform.OS === 'ios');
+            if (date) onChange(date);
+          }}
         />
       )}
     </>
@@ -66,4 +101,17 @@ const styles = StyleSheet.create({
   placeholder: {
     color: "#9CA3AF", // input placeholder rengiyle uyumlu
   },
+  webInput: {
+    padding: 10,
+    borderWidth: 1,
+    borderColor: "#E6E9EE",
+    borderRadius: 8,
+    backgroundColor: "#FBFDFF",
+    marginBottom: 8,
+    height: 44,
+    fontSize: 14,
+    color: "#0B1220",
+    width: '100%',
+    fontFamily: 'System', // Varsayılan sistem fontu
+  }
 });

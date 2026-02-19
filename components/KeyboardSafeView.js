@@ -28,24 +28,27 @@ export default function KeyboardSafeView({
   const contentWrapperProps = disableScrollView
     ? { style: [{ flex: 1 }, contentContainerStyle] }
     : {
-        contentContainerStyle: [styles.scrollContent, contentContainerStyle],
-        keyboardShouldPersistTaps: "handled",
-        showsVerticalScrollIndicator: false,
-      };
+      contentContainerStyle: [styles.scrollContent, contentContainerStyle],
+      keyboardShouldPersistTaps: "handled",
+      showsVerticalScrollIndicator: false,
+    };
+
+  const Wrapper = Platform.OS === 'web' ? View : TouchableWithoutFeedback;
+  const wrapperProps = Platform.OS === 'web' ? { style: { flex: 1 } } : { onPress: Keyboard.dismiss, accessible: false };
 
   return (
     <KeyboardAvoidingView
-      behavior={Platform.OS === "ios" ? "padding" : undefined} // Android'de genellikle 'undefined' veya 'height' daha iyi çalışır, test edilmeli.
+      behavior={Platform.OS === "ios" ? "padding" : undefined}
       keyboardVerticalOffset={Platform.OS === "ios" ? offsetIOS : 0}
       style={[styles.wrapper, style]}
     >
-      <TouchableWithoutFeedback onPress={Keyboard.dismiss} accessible={false}>
+      <Wrapper {...wrapperProps}>
         <SafeAreaView style={styles.safeArea}>
           <ContentWrapper {...contentWrapperProps}>
             {disableScrollView ? children : <View style={{ flex: 1, width: "100%" }}>{children}</View>}
           </ContentWrapper>
         </SafeAreaView>
-      </TouchableWithoutFeedback>
+      </Wrapper>
     </KeyboardAvoidingView>
   );
 }

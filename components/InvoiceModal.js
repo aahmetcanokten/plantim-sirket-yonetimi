@@ -51,57 +51,64 @@ export default function InvoiceModal({
   };
 
   return (
-    <Modal visible={visible} animationType="slide" transparent onRequestClose={onCancel}>
-      {/* offsetIOS değerini duruma göre ayarlayabilirsiniz (örn: 0 veya küçük bir değer) */}
-      <KeyboardSafeView offsetIOS={Platform.OS === "ios" ? 0 : 0}>
+    <Modal
+      visible={visible}
+      animationType={Platform.OS === 'web' ? "fade" : "slide"}
+      transparent
+      onRequestClose={onCancel}
+    >
+      <KeyboardSafeView offsetIOS={Platform.OS === "ios" ? 0 : 0} disableScrollView={Platform.OS === 'web'}>
         <View style={styles.modalOverlay}>
-          <View style={styles.modalContent}>
-            <Text style={styles.modalTitle}>{t("complete_sales_record")}</Text>
-            <Text style={styles.modalSubtitle}>{t("enter_invoice_shipment_info")}</Text>
+          <View style={styles.modalWrapper}>
+            <View style={styles.modalContent}>
+              <Text style={styles.modalTitle}>{t("complete_sales_record")}</Text>
+              <Text style={styles.modalSubtitle}>{t("enter_invoice_shipment_info")}</Text>
 
-            {/* Fatura Numarası Alanı */}
-            <Text style={styles.label}>{t("invoice_number")}</Text>
-            <View style={styles.row}>
-              <TextInput
-                style={[styles.input, { flex: 1, marginRight: 10 }]}
-                value={invoiceNum}
-                onChangeText={setInvoiceNum}
-                placeholder={t("invoice_number_placeholder")}
+              {/* Fatura Numarası Alanı */}
+              <Text style={styles.label}>{t("invoice_number")}</Text>
+              <View style={styles.row}>
+                <TextInput
+                  style={[styles.input, { flex: 1, marginRight: 10 }]}
+                  value={invoiceNum}
+                  onChangeText={setInvoiceNum}
+                  placeholder={t("invoice_number_placeholder")}
+                  selectTextOnFocus={Platform.OS === 'web'}
+                />
+                <TouchableOpacity
+                  style={styles.generateButton}
+                  onPress={generateInvoiceNumber}
+                >
+                  <Text style={styles.generateButtonText}>{t("generate")}</Text>
+                </TouchableOpacity>
+              </View>
+
+              {/* Sevk Tarihi Alanı */}
+              <Text style={[styles.label, { marginTop: 15 }]}>{t("shipment_date")}</Text>
+              <DatePickerButton
+                value={shipmentDate}
+                onChange={setShipmentDate}
+                placeholder={t("date_picker_placeholder")}
               />
-              <TouchableOpacity
-                style={styles.generateButton}
-                onPress={generateInvoiceNumber} // Buton artık aktif
-              >
-                <Text style={styles.generateButtonText}>{t("generate")}</Text>
+
+              {/* Ürün Bilgisi Özeti */}
+              {productInfo && (
+                <View style={styles.productInfoContainer}>
+                  <Text style={styles.productInfoTitle}>{productInfo.name}</Text>
+                  <Text style={styles.productInfoDetail}>
+                    {t("quantity_label")} {productInfo.quantity} • {t("amount_label")} {productInfo.totalPrice} ₺
+                  </Text>
+                </View>
+              )}
+
+              {/* Aksiyon Butonları */}
+              <TouchableOpacity style={styles.saveButton} onPress={handleSave}>
+                <Text style={styles.saveButtonText}>{t("save_and_complete_sale")}</Text>
+              </TouchableOpacity>
+
+              <TouchableOpacity style={styles.cancelButton} onPress={onCancel}>
+                <Text style={styles.cancelButtonText}>{t("cancel")}</Text>
               </TouchableOpacity>
             </View>
-
-            {/* Sevk Tarihi Alanı */}
-            <Text style={[styles.label, { marginTop: 15 }]}>{t("shipment_date")}</Text>
-            <DatePickerButton
-              value={shipmentDate}
-              onChange={setShipmentDate}
-              placeholder={t("date_picker_placeholder")}
-            />
-
-            {/* Ürün Bilgisi Özeti (Opsiyonel ama şık durur) */}
-            {productInfo && (
-              <View style={styles.productInfoContainer}>
-                <Text style={styles.productInfoTitle}>{productInfo.name}</Text>
-                <Text style={styles.productInfoDetail}>
-                  {t("quantity_label")} {productInfo.quantity} • {t("amount_label")} {productInfo.totalPrice} ₺
-                </Text>
-              </View>
-            )}
-
-            {/* Aksiyon Butonları */}
-            <TouchableOpacity style={styles.saveButton} onPress={handleSave}>
-              <Text style={styles.saveButtonText}>{t("save_and_complete_sale")}</Text>
-            </TouchableOpacity>
-
-            <TouchableOpacity style={styles.cancelButton} onPress={onCancel}>
-              <Text style={styles.cancelButtonText}>{t("cancel")}</Text>
-            </TouchableOpacity>
           </View>
         </View>
       </KeyboardSafeView>
@@ -112,13 +119,36 @@ export default function InvoiceModal({
 const styles = StyleSheet.create({
   modalOverlay: {
     flex: 1,
-    justifyContent: "flex-end", // Klavye açılınca yukarı itilmesi için flex-end genellikle iyidir
     backgroundColor: "rgba(0,0,0,0.5)",
+    ...Platform.select({
+      web: {
+        justifyContent: 'center',
+        alignItems: 'center',
+      },
+      default: {
+        justifyContent: 'flex-end',
+      }
+    }),
+  },
+  modalWrapper: {
+    backgroundColor: '#fff',
+    ...Platform.select({
+      web: {
+        borderRadius: 16,
+        width: '100%',
+        maxWidth: 600,
+        maxHeight: '90vh',
+        overflow: 'hidden',
+        boxShadow: '0 10px 25px rgba(0,0,0,0.2)',
+      },
+      default: {
+        borderTopLeftRadius: 24,
+        borderTopRightRadius: 24,
+        width: '100%',
+      }
+    })
   },
   modalContent: {
-    backgroundColor: "#fff",
-    borderTopLeftRadius: 24,
-    borderTopRightRadius: 24,
     padding: 24,
     // Klavye açıldığında içeriğin tamamen görünmesi için paddingBottom artırılabilir
     paddingBottom: Platform.OS === "ios" ? 40 : 24,
@@ -151,6 +181,11 @@ const styles = StyleSheet.create({
     fontSize: 16,
     backgroundColor: "#FBFDFF",
     color: Colors.textPrimary,
+    ...Platform.select({
+      web: {
+        outlineStyle: 'none',
+      }
+    }),
   },
   generateButton: {
     backgroundColor: Colors.secondary, // Pasif griden, daha belirgin bir renge geçiş
@@ -159,6 +194,12 @@ const styles = StyleSheet.create({
     borderRadius: 10,
     justifyContent: 'center',
     alignItems: 'center',
+    ...Platform.select({
+      web: {
+        cursor: 'pointer',
+        userSelect: 'none',
+      }
+    }),
   },
   generateButtonText: {
     color: "#fff",
@@ -188,6 +229,12 @@ const styles = StyleSheet.create({
     borderRadius: ButtonRadius,
     alignItems: "center",
     marginTop: 24,
+    ...Platform.select({
+      web: {
+        cursor: 'pointer',
+        userSelect: 'none',
+      }
+    }),
   },
   saveButtonText: {
     color: "#fff",
@@ -198,6 +245,12 @@ const styles = StyleSheet.create({
     alignItems: "center",
     marginTop: 16,
     padding: 8,
+    ...Platform.select({
+      web: {
+        cursor: 'pointer',
+        userSelect: 'none',
+      }
+    }),
   },
   cancelButtonText: {
     color: Colors.critical,

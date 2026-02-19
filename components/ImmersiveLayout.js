@@ -85,6 +85,7 @@ export default function ImmersiveLayout(props) {
     // Başlığı daha kompakt hale getir
     height: Platform.OS === 'ios' ? 96 : 70,
     paddingTop: Platform.OS === 'ios' ? 44 : StatusBar.currentHeight + 8, // Güvenli alanları dahil et
+    display: Platform.OS === 'web' ? 'none' : 'flex', // Web'de header'ı gizle (WebContainer zaten var)
   };
 
   const titleStyle = {
@@ -203,7 +204,7 @@ const styles = StyleSheet.create({
     backgroundColor: "transparent",
   },
   scrollContainerCompact: {
-    paddingTop: Platform.OS === 'ios' ? 96 : 70, // Header yüksekliği kadar boşluk bırakır
+    paddingTop: Platform.OS === 'web' ? 16 : (Platform.OS === 'ios' ? 96 : 70), // Web'de header gizlendiği için padding azaltıldı
     paddingBottom: 48, // Alt menü (tab bar) için boşluk bırakır
     backgroundColor: LIGHT_CONTAINER_BG,
   },

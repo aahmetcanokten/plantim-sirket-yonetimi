@@ -178,6 +178,7 @@ export default function PersonnelScreen({ navigation }) {
             value={searchQuery}
             onChangeText={setSearchQuery}
             style={{ flex: 1 }}
+            selectTextOnFocus={Platform.OS === 'web'}
           />
         </View>
         <TouchableOpacity style={styles.sortButton} onPress={() => setSortAsc(!sortAsc)}>
@@ -290,11 +291,11 @@ export default function PersonnelScreen({ navigation }) {
           <View style={styles.modalContent}>
             <Text style={styles.modalTitle}>{formPerson.id ? t("edit_personnel") : t("new_personnel")}</Text>
             <ScrollView showsVerticalScrollIndicator={false}>
-              <Text style={styles.inputLabel}>{t("full_name")} <Text style={{ color: 'red' }}>*</Text></Text><TextInput style={styles.input} value={formPerson.name} onChangeText={(t) => setFormPerson({ ...formPerson, name: t })} placeholder="Örn: Ahmet Yılmaz" />
-              <Text style={styles.inputLabel}>{t("title_position")} <Text style={{ color: 'red' }}>*</Text></Text><TextInput style={styles.input} value={formPerson.role} onChangeText={(t) => setFormPerson({ ...formPerson, role: t })} placeholder="Örn: Satış Sorumlusu" />
-              <Text style={styles.inputLabel}>{t("phone")}</Text><TextInput style={styles.input} value={formPerson.phone} onChangeText={(t) => setFormPerson({ ...formPerson, phone: t })} keyboardType="phone-pad" placeholder="0555..." />
-              <Text style={styles.inputLabel}>{t("hire_date_format")}</Text><TextInput style={styles.input} value={formPerson.hireDate} onChangeText={(t) => setFormPerson({ ...formPerson, hireDate: t })} placeholder="Örn: 01.01.2023" />
-              <Text style={styles.inputLabel}>{t("leave_entitlement_days")}</Text><TextInput style={styles.input} value={formPerson.annualLeaveEntitlement} onChangeText={(t) => setFormPerson({ ...formPerson, annualLeaveEntitlement: t })} keyboardType="numeric" placeholder="14" />
+              <Text style={styles.inputLabel}>{t("full_name")} <Text style={{ color: 'red' }}>*</Text></Text><TextInput style={styles.input} value={formPerson.name} onChangeText={(t) => setFormPerson({ ...formPerson, name: t })} placeholder="Örn: Ahmet Yılmaz" selectTextOnFocus={Platform.OS === 'web'} />
+              <Text style={styles.inputLabel}>{t("title_position")} <Text style={{ color: 'red' }}>*</Text></Text><TextInput style={styles.input} value={formPerson.role} onChangeText={(t) => setFormPerson({ ...formPerson, role: t })} placeholder="Örn: Satış Sorumlusu" selectTextOnFocus={Platform.OS === 'web'} />
+              <Text style={styles.inputLabel}>{t("phone")}</Text><TextInput style={styles.input} value={formPerson.phone} onChangeText={(t) => setFormPerson({ ...formPerson, phone: t })} keyboardType="phone-pad" placeholder="0555..." selectTextOnFocus={Platform.OS === 'web'} />
+              <Text style={styles.inputLabel}>{t("hire_date_format")}</Text><TextInput style={styles.input} value={formPerson.hireDate} onChangeText={(t) => setFormPerson({ ...formPerson, hireDate: t })} placeholder="Örn: 01.01.2023" selectTextOnFocus={Platform.OS === 'web'} />
+              <Text style={styles.inputLabel}>{t("leave_entitlement_days")}</Text><TextInput style={styles.input} value={formPerson.annualLeaveEntitlement} onChangeText={(t) => setFormPerson({ ...formPerson, annualLeaveEntitlement: t })} keyboardType="numeric" placeholder="14" selectTextOnFocus={Platform.OS === 'web'} />
             </ScrollView>
             <View style={styles.modalButtons}>
               <TouchableOpacity style={[styles.modalBtn, styles.cancelBtn]} onPress={() => setPersonnelModalVisible(false)}><Text style={styles.cancelBtnText}>{t("cancel")}</Text></TouchableOpacity>
@@ -313,9 +314,9 @@ export default function PersonnelScreen({ navigation }) {
           <View style={styles.modalContent}>
             <Text style={styles.modalTitle}>{t("assign_new_task")}</Text>
             <ScrollView showsVerticalScrollIndicator={false}>
-              <Text style={styles.inputLabel}>{t("task_title")}</Text><TextInput style={styles.input} value={formTask.title} onChangeText={(t) => setFormTask({ ...formTask, title: t })} placeholder="Örn: Aylık Rapor Hazırlığı" />
-              <Text style={styles.inputLabel}>{t("description_optional")}</Text><TextInput style={[styles.input, { height: 80, textAlignVertical: 'top' }]} value={formTask.description} onChangeText={(t) => setFormTask({ ...formTask, description: t })} multiline placeholder="Görev detayları..." />
-              <Text style={styles.inputLabel}>{t("due_date_format")}</Text><TextInput style={styles.input} value={formTask.dueDate} onChangeText={(t) => setFormTask({ ...formTask, dueDate: t })} placeholder="Örn: 15.11.2025" />
+              <Text style={styles.inputLabel}>{t("task_title")}</Text><TextInput style={styles.input} value={formTask.title} onChangeText={(t) => setFormTask({ ...formTask, title: t })} placeholder="Örn: Aylık Rapor Hazırlığı" selectTextOnFocus={Platform.OS === 'web'} />
+              <Text style={styles.inputLabel}>{t("description_optional")}</Text><TextInput style={[styles.input, { height: 80, textAlignVertical: 'top' }]} value={formTask.description} onChangeText={(t) => setFormTask({ ...formTask, description: t })} multiline placeholder="Görev detayları..." selectTextOnFocus={Platform.OS === 'web'} />
+              <Text style={styles.inputLabel}>{t("due_date_format")}</Text><TextInput style={styles.input} value={formTask.dueDate} onChangeText={(t) => setFormTask({ ...formTask, dueDate: t })} placeholder="Örn: 15.11.2025" selectTextOnFocus={Platform.OS === 'web'} />
             </ScrollView>
             <View style={styles.modalButtons}>
               <TouchableOpacity style={[styles.modalBtn, styles.cancelBtn]} onPress={() => setTaskModalVisible(false)}><Text style={styles.cancelBtnText}>{t("cancel")}</Text></TouchableOpacity>

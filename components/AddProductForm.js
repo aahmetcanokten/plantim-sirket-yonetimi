@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import { View, TextInput, Text, TouchableOpacity, StyleSheet, Alert } from "react-native";
+import { View, TextInput, Text, TouchableOpacity, StyleSheet, Alert, Platform } from "react-native";
 // import { AppContext } from "../AppContext";
 import { Colors, CardRadius, ButtonRadius } from "../Theme";
 import { useToast } from "./ToastProvider";
@@ -98,31 +98,32 @@ export default function AddProductForm({ onAdd }) {
         placeholder={t("product_code_placeholder")}
         autoCapitalize="characters"
         accessibilityLabel={t("product_code_label")}
+        selectTextOnFocus={Platform.OS === 'web'}
       />
 
       <Text style={styles.label}>{t("product_name")}</Text>
-      <TextInput style={styles.input} value={name} onChangeText={setName} placeholder={t("product_name_placeholder")} accessibilityLabel={t("product_name")} />
+      <TextInput style={styles.input} value={name} onChangeText={setName} placeholder={t("product_name_placeholder")} accessibilityLabel={t("product_name")} selectTextOnFocus={Platform.OS === 'web'} />
 
       <Text style={styles.label}>{t("model_category")}</Text>
-      <TextInput style={styles.input} value={category} onChangeText={setCategory} placeholder={t("model_category_placeholder")} accessibilityLabel={t("model_category")} />
+      <TextInput style={styles.input} value={category} onChangeText={setCategory} placeholder={t("model_category_placeholder")} accessibilityLabel={t("model_category")} selectTextOnFocus={Platform.OS === 'web'} />
 
       <View style={{ flexDirection: "row" }}>
         <View style={{ flex: 1 }}>
           <Text style={styles.label}>{t("quantity_simple")}</Text>
-          <TextInput style={styles.input} value={quantity} onChangeText={setQuantity} keyboardType="number-pad" accessibilityLabel={t("quantity_simple")} />
+          <TextInput style={styles.input} value={quantity} onChangeText={setQuantity} keyboardType="number-pad" accessibilityLabel={t("quantity_simple")} selectTextOnFocus={Platform.OS === 'web'} />
         </View>
         <View style={{ width: 12 }} />
         <View style={{ flex: 1 }}>
           <Text style={styles.label}>{t("price_currency_simple")}</Text>
-          <TextInput style={styles.input} value={price} onChangeText={setPrice} keyboardType="decimal-pad" accessibilityLabel={t("price_currency_simple")} />
+          <TextInput style={styles.input} value={price} onChangeText={setPrice} keyboardType="decimal-pad" accessibilityLabel={t("price_currency_simple")} selectTextOnFocus={Platform.OS === 'web'} />
         </View>
       </View>
 
       <Text style={styles.label}>{t("serial_number")}</Text>
-      <TextInput style={styles.input} value={serialNumber} onChangeText={setSerialNumber} placeholder={t("serial_number")} accessibilityLabel={t("serial_number")} />
+      <TextInput style={styles.input} value={serialNumber} onChangeText={setSerialNumber} placeholder={t("serial_number")} accessibilityLabel={t("serial_number")} selectTextOnFocus={Platform.OS === 'web'} />
 
       <Text style={styles.label}>{t("critical_level")}</Text>
-      <TextInput style={styles.input} value={criticalLevel} onChangeText={setCriticalLevel} keyboardType="number-pad" accessibilityLabel={t("critical_level")} />
+      <TextInput style={styles.input} value={criticalLevel} onChangeText={setCriticalLevel} keyboardType="number-pad" accessibilityLabel={t("critical_level")} selectTextOnFocus={Platform.OS === 'web'} />
 
       <TouchableOpacity style={styles.addButton} onPress={submit} accessibilityRole="button" accessibilityLabel={t("add_product_button")}>
         <Text style={styles.addButtonText}>{t("add_product_button")}</Text>

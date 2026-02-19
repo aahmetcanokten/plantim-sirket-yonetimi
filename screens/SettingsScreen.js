@@ -110,6 +110,24 @@ export default function SettingsScreen({ navigation }) {
 
   // Hesabı Sil Fonksiyonu
   const handleDeleteAccount = async () => {
+    if (Platform.OS === 'web') {
+      if (window.confirm(t('delete_account_confirm_message'))) {
+        try {
+          const success = await deleteUserAccount();
+          if (!success) {
+            Alert.alert(t('error'), "Veriler silinirken bir sorun oluştu, ancak çıkış yapılacak.");
+          }
+          const { error } = await signOut();
+          if (error) {
+            Alert.alert("Hata", "Çıkış yapılırken hata: " + error.message);
+          }
+        } catch (e) {
+          Alert.alert("Hata", "Bir sorun oluştu: " + e.message);
+        }
+      }
+      return;
+    }
+
     Alert.alert(
       t('delete_account_confirm_title'),
       t('delete_account_confirm_message'),
@@ -142,6 +160,16 @@ export default function SettingsScreen({ navigation }) {
 
   // Çıkış Yap Fonksiyonu
   const handleLogout = async () => {
+    if (Platform.OS === 'web') {
+      if (window.confirm(t('logout_subtitle'))) {
+        const { error } = await signOut();
+        if (error) {
+          Alert.alert(t('error'), "Çıkış yapılamadı: " + error.message);
+        }
+      }
+      return;
+    }
+
     Alert.alert(
       t('logout'),
       t('logout_subtitle'),
@@ -576,11 +604,11 @@ export default function SettingsScreen({ navigation }) {
             </View>
             <ScrollView>
               <Text style={styles.inputLabel}>{t('company_name')}</Text>
-              <TextInput style={styles.input} value={cName} onChangeText={setCName} placeholder={t('company_name')} />
+              <TextInput style={styles.input} value={cName} onChangeText={setCName} placeholder={t('company_name')} selectTextOnFocus={Platform.OS === 'web'} />
               <Text style={styles.inputLabel}>{t('address')}</Text>
-              <TextInput style={[styles.input, { height: 80, textAlignVertical: 'top' }]} value={cAddress} onChangeText={setCAddress} placeholder={t('company_address_placeholder')} multiline />
+              <TextInput style={[styles.input, { height: 80, textAlignVertical: 'top' }]} value={cAddress} onChangeText={setCAddress} placeholder={t('company_address_placeholder')} multiline selectTextOnFocus={Platform.OS === 'web'} />
               <Text style={styles.inputLabel}>{t('tax_no_prefix')}</Text>
-              <TextInput style={styles.input} value={cTax} onChangeText={setCTax} placeholder={t('tax_no_placeholder')} keyboardType="numeric" />
+              <TextInput style={styles.input} value={cTax} onChangeText={setCTax} placeholder={t('tax_no_placeholder')} keyboardType="numeric" selectTextOnFocus={Platform.OS === 'web'} />
               <View style={styles.modalButtons}>
                 <TouchableOpacity style={[styles.modalBtn, styles.saveBtn]} onPress={saveCompany}>
                   <Text style={styles.saveBtnText}>{t('save')}</Text>
@@ -603,11 +631,11 @@ export default function SettingsScreen({ navigation }) {
             </View>
             <ScrollView>
               <Text style={styles.inputLabel}>{t('vehicle_model')}</Text>
-              <TextInput style={styles.input} value={vehicleForm.model} onChangeText={(t) => setVehicleForm({ ...vehicleForm, model: t })} placeholder="Örn: Ford Transit 2023" />
+              <TextInput style={styles.input} value={vehicleForm.model} onChangeText={(t) => setVehicleForm({ ...vehicleForm, model: t })} placeholder="Örn: Ford Transit 2023" selectTextOnFocus={Platform.OS === 'web'} />
               <Text style={styles.inputLabel}>{t('plate')}</Text>
-              <TextInput style={styles.input} value={vehicleForm.plate} onChangeText={(t) => setVehicleForm({ ...vehicleForm, plate: t })} placeholder="34 ABC 123" autoCapitalize="characters" />
+              <TextInput style={styles.input} value={vehicleForm.plate} onChangeText={(t) => setVehicleForm({ ...vehicleForm, plate: t })} placeholder="34 ABC 123" autoCapitalize="characters" selectTextOnFocus={Platform.OS === 'web'} />
               <Text style={styles.inputLabel}>{t('last_service_date_format')}</Text>
-              <TextInput style={styles.input} value={vehicleForm.lastServiceDate} onChangeText={(t) => setVehicleForm({ ...vehicleForm, lastServiceDate: t })} placeholder="Örn: 01.01.2024" />
+              <TextInput style={styles.input} value={vehicleForm.lastServiceDate} onChangeText={(t) => setVehicleForm({ ...vehicleForm, lastServiceDate: t })} placeholder="Örn: 01.01.2024" selectTextOnFocus={Platform.OS === 'web'} />
               <View style={styles.modalButtons}>
                 <TouchableOpacity style={[styles.modalBtn, styles.saveBtn]} onPress={saveVehicle}>
                   <Text style={styles.saveBtnText}>{t('save')}</Text>
@@ -637,6 +665,7 @@ export default function SettingsScreen({ navigation }) {
                 placeholder={t('new_password')}
                 secureTextEntry
                 autoCapitalize="none"
+                selectTextOnFocus={Platform.OS === 'web'}
               />
               <Text style={styles.inputLabel}>{t('new_password_confirm')}</Text>
               <TextInput
@@ -646,6 +675,7 @@ export default function SettingsScreen({ navigation }) {
                 placeholder={t('new_password_confirm')}
                 secureTextEntry
                 autoCapitalize="none"
+                selectTextOnFocus={true}
               />
               <View style={styles.modalButtons}>
                 <TouchableOpacity style={[styles.modalBtn, styles.saveBtn]} onPress={handleChangePassword}>

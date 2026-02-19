@@ -68,19 +68,19 @@ const CustomerFormModal = ({ visible, onClose, onSave, initialData = null }) => 
                             </View>
                             <ScrollView contentContainerStyle={styles.formContent} showsVerticalScrollIndicator={false}>
                                 <Text style={styles.inputLabel}>{t('company_title')} <Text style={styles.requiredStar}>*</Text></Text>
-                                <TextInput style={styles.input} value={companyName} onChangeText={setCompanyName} placeholder={t('example_company')} />
+                                <TextInput style={styles.input} value={companyName} onChangeText={setCompanyName} placeholder={t('example_company')} selectTextOnFocus={Platform.OS === 'web'} />
 
                                 <Text style={styles.inputLabel}>{t('contact_person')} <Text style={styles.requiredStar}>*</Text></Text>
-                                <TextInput style={styles.input} value={contactName} onChangeText={setContactName} placeholder={t('example_name')} />
+                                <TextInput style={styles.input} value={contactName} onChangeText={setContactName} placeholder={t('example_name')} selectTextOnFocus={Platform.OS === 'web'} />
 
                                 <Text style={styles.inputLabel}>{t('phone')} <Text style={styles.requiredStar}>*</Text></Text>
-                                <TextInput style={styles.input} value={phone} onChangeText={setPhone} keyboardType="phone-pad" placeholder={t('example_phone')} />
+                                <TextInput style={styles.input} value={phone} onChangeText={setPhone} keyboardType="phone-pad" placeholder={t('example_phone')} selectTextOnFocus={Platform.OS === 'web'} />
 
                                 <Text style={styles.inputLabel}>{t('email')} <Text style={styles.requiredStar}>*</Text></Text>
-                                <TextInput style={styles.input} value={email} onChangeText={setEmail} keyboardType="email-address" autoCapitalize="none" placeholder={t('example_email')} />
+                                <TextInput style={styles.input} value={email} onChangeText={setEmail} keyboardType="email-address" autoCapitalize="none" placeholder={t('example_email')} selectTextOnFocus={Platform.OS === 'web'} />
 
                                 <Text style={styles.inputLabel}>{t('cari_code')} <Text style={styles.requiredStar}>*</Text></Text>
-                                <TextInput style={styles.input} value={cariCode} onChangeText={setCariCode} autoCapitalize="characters" placeholder={t('example_code')} />
+                                <TextInput style={styles.input} value={cariCode} onChangeText={setCariCode} autoCapitalize="characters" placeholder={t('example_code')} selectTextOnFocus={Platform.OS === 'web'} />
 
                                 <TouchableOpacity style={styles.saveButton} onPress={handleSave}>
                                     <Text style={styles.saveButtonText}>{t('save')}</Text>
@@ -229,6 +229,7 @@ export default function CustomerScreen() {
                         value={searchQuery}
                         onChangeText={setSearchQuery}
                         style={styles.searchInput}
+                        selectTextOnFocus={Platform.OS === 'web'}
                     />
                     {searchQuery.length > 0 && (
                         <TouchableOpacity onPress={() => setSearchQuery("")}>
@@ -320,6 +321,12 @@ const styles = StyleSheet.create({
         alignItems: 'center',
         justifyContent: 'center',
         ...IOSShadow,
+        ...Platform.select({
+            web: {
+                cursor: 'pointer',
+                userSelect: 'none',
+            }
+        }),
     },
     listContentContainer: {
         paddingBottom: 100,
@@ -351,6 +358,12 @@ const styles = StyleSheet.create({
         shadowOpacity: 0.4,
         shadowRadius: 8,
         elevation: 6,
+        ...Platform.select({
+            web: {
+                cursor: 'pointer',
+                userSelect: 'none',
+            }
+        }),
     },
     fabText: {
         color: '#fff',
@@ -411,6 +424,12 @@ const styles = StyleSheet.create({
         alignItems: 'center',
         marginTop: 30,
         ...IOSShadow,
+        ...Platform.select({
+            web: {
+                cursor: 'pointer',
+                userSelect: 'none',
+            }
+        }),
     },
     saveButtonText: {
         color: '#fff',
@@ -453,6 +472,11 @@ const customerListStyles = StyleSheet.create({
         ...IOSShadow,
         borderWidth: 1,
         borderColor: '#F8FAFC',
+        ...Platform.select({
+            web: {
+                cursor: 'pointer',
+            }
+        }),
     },
     headerRow: {
         flexDirection: 'row',

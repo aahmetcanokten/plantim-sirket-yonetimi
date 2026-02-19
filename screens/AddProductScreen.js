@@ -110,6 +110,7 @@ export default function AddProductScreen({ navigation }) {
             onChangeText={setName}
             placeholder={t('product_name')}
             placeholderTextColor={Colors.secondary}
+            selectTextOnFocus={Platform.OS === 'web'}
           />
 
           {/* Kategori */}
@@ -120,6 +121,7 @@ export default function AddProductScreen({ navigation }) {
             onChangeText={setCategory}
             placeholder={t('category')}
             placeholderTextColor={Colors.secondary}
+            selectTextOnFocus={Platform.OS === 'web'}
           />
 
           {/* Stok Miktarı */}
@@ -131,6 +133,7 @@ export default function AddProductScreen({ navigation }) {
             keyboardType="number-pad"
             placeholder="0"
             placeholderTextColor={Colors.secondary}
+            selectTextOnFocus={Platform.OS === 'web'}
           />
 
           {/* Kritik Stok Seviyesi */}
@@ -142,6 +145,7 @@ export default function AddProductScreen({ navigation }) {
             keyboardType="number-pad"
             placeholder="5"
             placeholderTextColor={Colors.secondary}
+            selectTextOnFocus={Platform.OS === 'web'}
           />
 
           <View style={styles.priceRow}>
@@ -155,6 +159,7 @@ export default function AddProductScreen({ navigation }) {
                 keyboardType="decimal-pad"
                 placeholder="0.00"
                 placeholderTextColor={Colors.secondary}
+                selectTextOnFocus={Platform.OS === 'web'}
               />
             </View>
 
@@ -168,6 +173,7 @@ export default function AddProductScreen({ navigation }) {
                 keyboardType="decimal-pad"
                 placeholder="0.00"
                 placeholderTextColor={Colors.secondary}
+                selectTextOnFocus={Platform.OS === 'web'}
               />
             </View>
           </View>
@@ -180,6 +186,7 @@ export default function AddProductScreen({ navigation }) {
             onChangeText={setSerialNumber}
             placeholder={t('serial_number')}
             placeholderTextColor={Colors.secondary}
+            selectTextOnFocus={Platform.OS === 'web'}
           />
 
           {/* Ürün Kodu */}
@@ -191,6 +198,7 @@ export default function AddProductScreen({ navigation }) {
               onChangeText={setCode}
               placeholder={t('product_code_barcode')}
               placeholderTextColor={Colors.secondary}
+              selectTextOnFocus={Platform.OS === 'web'}
             />
             <TouchableOpacity onPress={() => setScannerVisible(true)} style={styles.iconContainer}>
               <Ionicons name="barcode-outline" size={24} color={Colors.primary || Colors.iosBlue} />
