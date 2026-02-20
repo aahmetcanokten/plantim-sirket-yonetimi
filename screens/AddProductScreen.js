@@ -82,7 +82,11 @@ export default function AddProductScreen({ navigation }) {
     if (success) {
       resetForm();
       toast.showToast && toast.showToast(`${newProduct.name} ${t('added_to_stock')}`);
-      navigation.goBack();
+      if (Platform.OS === 'web') {
+        navigation.navigate("MainTabs", { screen: 'Stok' });
+      } else {
+        navigation.goBack();
+      }
     }
   };
 

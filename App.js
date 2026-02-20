@@ -26,6 +26,7 @@ import AddProductScreen from "./screens/AddProductScreen";
 import PersonnelScreen from "./screens/PersonnelScreen";
 import TaskListScreen from "./screens/TaskListScreen";
 import AssetManagementScreen from "./screens/AssetManagementScreen"; // YENİ
+import AssemblyScreen from "./screens/AssemblyScreen";
 import ResetPasswordScreen from "./screens/ResetPasswordScreen";
 import LoginScreen from "./screens/LoginScreen";
 import PaywallScreen from "./screens/PaywallScreen";
@@ -131,6 +132,7 @@ function RootNavigator() {
             <Stack.Screen name="PersonnelScreen" component={PersonnelScreen} />
             <Stack.Screen name="TaskListScreen" component={TaskListScreen} />
             <Stack.Screen name="AssetManagementScreen" component={AssetManagementScreen} />
+            <Stack.Screen name="AssemblyScreen" component={AssemblyScreen} />
             <Stack.Screen name="Paywall" component={PaywallScreen} options={{ presentation: 'modal' }} />
           </>
         )

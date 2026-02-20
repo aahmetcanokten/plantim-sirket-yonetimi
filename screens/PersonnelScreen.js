@@ -60,14 +60,20 @@ export default function PersonnelScreen({ navigation }) {
 
   const openAddPerson = () => {
     if (!isPremium && personnel.length >= 2) {
-      Alert.alert(
-        t("premium_feature"),
-        t("personnel_limit_message"),
-        [
-          { text: t("cancel"), style: "cancel" },
-          { text: t("get_premium"), onPress: () => navigation.navigate("Paywall") }
-        ]
-      );
+      if (Platform.OS === 'web') {
+        if (window.confirm(t("personnel_limit_message"))) {
+          navigation.navigate("Paywall");
+        }
+      } else {
+        Alert.alert(
+          t("premium_feature"),
+          t("personnel_limit_message"),
+          [
+            { text: t("cancel"), style: "cancel" },
+            { text: t("get_premium"), onPress: () => navigation.navigate("Paywall") }
+          ]
+        );
+      }
       return;
     }
     setFormPerson({ id: null, name: "", role: "", phone: "", hireDate: "", annualLeaveEntitlement: "", tasks: [] });
@@ -97,10 +103,17 @@ export default function PersonnelScreen({ navigation }) {
 
   const confirmDeletePerson = (person) => {
     // Admin kontrolü kaldırıldı
-    Alert.alert(t("delete_personnel"), `${person.name} ${t("delete_personnel_confirmation")}`, [
-      { text: t("cancel"), style: "cancel" },
-      { text: t("delete"), style: "destructive", onPress: () => { deletePersonnel(person.id); setSelectedPerson(null); } },
-    ]);
+    if (Platform.OS === 'web') {
+      if (window.confirm(`${person.name} ${t("delete_personnel_confirmation")}`)) {
+        deletePersonnel(person.id);
+        setSelectedPerson(null);
+      }
+    } else {
+      Alert.alert(t("delete_personnel"), `${person.name} ${t("delete_personnel_confirmation")}`, [
+        { text: t("cancel"), style: "cancel" },
+        { text: t("delete"), style: "destructive", onPress: () => { deletePersonnel(person.id); setSelectedPerson(null); } },
+      ]);
+    }
   };
 
   const openAddTask = () => {
@@ -154,14 +167,20 @@ export default function PersonnelScreen({ navigation }) {
     };
 
     if (amount < 0) {
-      Alert.alert(
-        t("annual_leave_usage"),
-        t("annual_leave_usage_confirmation"),
-        [
-          { text: t("cancel"), style: "cancel" },
-          { text: t("confirm"), onPress: applyChange }
-        ]
-      );
+      if (Platform.OS === 'web') {
+        if (window.confirm(t("annual_leave_usage_confirmation"))) {
+          applyChange();
+        }
+      } else {
+        Alert.alert(
+          t("annual_leave_usage"),
+          t("annual_leave_usage_confirmation"),
+          [
+            { text: t("cancel"), style: "cancel" },
+            { text: t("confirm"), onPress: applyChange }
+          ]
+        );
+      }
     } else {
       applyChange();
     }

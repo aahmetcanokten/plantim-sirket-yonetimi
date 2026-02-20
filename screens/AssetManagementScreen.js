@@ -72,14 +72,20 @@ export default function AssetManagementScreen({ navigation }) {
 
     const handleOpenAddModal = () => {
         if (!isPremium && assets.length >= 3) {
-            Alert.alert(
-                t("premium_feature"),
-                t("asset_limit_message"),
-                [
-                    { text: t("cancel"), style: "cancel" },
-                    { text: t("get_premium"), onPress: () => navigation.navigate("Paywall") }
-                ]
-            );
+            if (Platform.OS === 'web') {
+                if (window.confirm(t("asset_limit_message"))) {
+                    navigation.navigate("Paywall");
+                }
+            } else {
+                Alert.alert(
+                    t("premium_feature"),
+                    t("asset_limit_message"),
+                    [
+                        { text: t("cancel"), style: "cancel" },
+                        { text: t("get_premium"), onPress: () => navigation.navigate("Paywall") }
+                    ]
+                );
+            }
             return;
         }
 
@@ -122,14 +128,20 @@ export default function AssetManagementScreen({ navigation }) {
     };
 
     const handleDeleteAsset = (id) => {
-        Alert.alert(
-            t("delete"),
-            t("asset_delete_confirmation"),
-            [
-                { text: t("cancel"), style: "cancel" },
-                { text: t("delete"), style: "destructive", onPress: () => deleteAsset(id) }
-            ]
-        );
+        if (Platform.OS === 'web') {
+            if (window.confirm(t("asset_delete_confirmation"))) {
+                deleteAsset(id);
+            }
+        } else {
+            Alert.alert(
+                t("delete"),
+                t("asset_delete_confirmation"),
+                [
+                    { text: t("cancel"), style: "cancel" },
+                    { text: t("delete"), style: "destructive", onPress: () => deleteAsset(id) }
+                ]
+            );
+        }
     };
 
     const openAssignModal = (asset) => {
@@ -146,14 +158,20 @@ export default function AssetManagementScreen({ navigation }) {
     };
 
     const handleReturn = (asset) => {
-        Alert.alert(
-            t("asset_return"),
-            t("asset_return_confirmation"),
-            [
-                { text: t("cancel"), style: "cancel" },
-                { text: t("asset_return"), onPress: () => unassignAsset(asset.id) }
-            ]
-        );
+        if (Platform.OS === 'web') {
+            if (window.confirm(t("asset_return_confirmation"))) {
+                unassignAsset(asset.id);
+            }
+        } else {
+            Alert.alert(
+                t("asset_return"),
+                t("asset_return_confirmation"),
+                [
+                    { text: t("cancel"), style: "cancel" },
+                    { text: t("asset_return"), onPress: () => unassignAsset(asset.id) }
+                ]
+            );
+        }
     };
 
     const handlePrintZimmetForm = async (asset) => {

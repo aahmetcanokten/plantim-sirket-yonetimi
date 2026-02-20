@@ -212,10 +212,17 @@ export default function CustomerScreen() {
     };
 
     const confirmDelete = (id, nameVal) => {
-        Alert.alert(t('delete_confirmation'), `${nameVal} ${t('delete_customer_confirmation')}`, [
-            { text: t('cancel'), style: "cancel" },
-            { text: t('delete'), style: "destructive", onPress: () => deleteCustomer(id) }
-        ]);
+        if (Platform.OS === 'web') {
+            if (window.confirm(`${nameVal} ${t('delete_customer_confirmation')}`)) {
+                deleteCustomer(id);
+                showToast(t('success'));
+            }
+        } else {
+            Alert.alert(t('delete_confirmation'), `${nameVal} ${t('delete_customer_confirmation')}`, [
+                { text: t('cancel'), style: "cancel" },
+                { text: t('delete'), style: "destructive", onPress: () => deleteCustomer(id) }
+            ]);
+        }
     };
 
     return (

@@ -158,32 +158,64 @@ export default function LoginScreen() {
       {/* Sol Taraf: Pazarlama / Tanıtım */}
       <View style={styles.webLeftPanel}>
         <View style={styles.webBranding}>
-          <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 20 }}>
-            <Ionicons name="leaf" size={48} color="#fff" />
-            <Text style={styles.webLogoText}>PLANTİM ERP</Text>
+          <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 40 }}>
+            <View style={styles.webLogoIcon}>
+              <Ionicons name="leaf" size={32} color={Colors.iosBlue} />
+            </View>
+            <Text style={styles.webLogoText}>PLANTİM <Text style={{ fontWeight: '400', opacity: 0.8 }}>ERP</Text></Text>
           </View>
 
-          <Text style={styles.webHeroTitle}>{t("web_hero_title") || "İşletmenizi Geleceğe Taşıyın"}</Text>
-          <Text style={styles.webHeroSub}>{t("web_hero_sub") || "Bulut tabanlı stok, cari ve personel yönetimi ile kontrol tamamen sizde."}</Text>
+          <Text style={styles.webHeroTitle}>{t("web_hero_title")}</Text>
+          <Text style={styles.webHeroSub}>{t("web_hero_sub")}</Text>
 
-          <View style={styles.featureList}>
-            <FeatureItem icon="cube-outline" text={t("web_feature_stock") || "Gelişmiş Stok Takibi"} />
-            <FeatureItem icon="bar-chart-outline" text={t("web_feature_reports") || "Detaylı Satış Analizleri"} />
-            <FeatureItem icon="people-outline" text={t("web_feature_personnel") || "Personel ve Görev Yönetimi"} />
-            <FeatureItem icon="phone-portrait-outline" text={t("web_feature_mobile") || "Mobilden ve Webden Erişim"} />
+          <View style={styles.businessGrid}>
+            <View style={styles.businessRow}>
+              <BusinessFeature
+                icon="cube"
+                title={t("web_feature_stock")}
+                desc={t("web_feature_stock_desc")}
+              />
+              <BusinessFeature
+                icon="trending-up"
+                title={t("web_feature_reports")}
+                desc={t("web_feature_reports_desc")}
+              />
+            </View>
+            <View style={styles.businessRow}>
+              <BusinessFeature
+                icon="people"
+                title={t("web_feature_personnel")}
+                desc={t("web_feature_personnel_desc")}
+              />
+              <BusinessFeature
+                icon="shield-checkmark"
+                title={t("web_feature_security")}
+                desc={t("web_feature_security_desc")}
+              />
+            </View>
+          </View>
+
+          <View style={styles.trustContainer}>
+            <TrustStat stat={t("web_trust_stat_1")} desc={t("web_trust_desc_1")} />
+            <View style={styles.trustDivider} />
+            <TrustStat stat={t("web_trust_stat_2")} desc={t("web_trust_desc_2")} />
+            <View style={styles.trustDivider} />
+            <TrustStat stat={t("web_trust_stat_3")} desc={t("web_trust_desc_3")} />
           </View>
         </View>
 
         <View style={styles.webFooter}>
-          <Text style={styles.webFooterText}>{t("web_footer_text") || "Hemen ücretsiz hesabınızı oluşturun."}</Text>
+          <Text style={styles.webFooterText}>&copy; 2026 Plantim Kurumsal Yazılım Teknolojileri</Text>
         </View>
       </View>
 
       {/* Sağ Taraf: Giriş Formu */}
       <View style={styles.webRightPanel}>
-        <View style={styles.webFormContainer}>
-          <View style={{ alignItems: 'center', marginBottom: 30 }}>
-            <Ionicons name="leaf-outline" size={60} color={Colors.iosBlue} />
+        <View style={styles.webFormCard}>
+          <View style={{ alignItems: 'center', marginBottom: 40 }}>
+            <View style={styles.formIconContainer}>
+              <Ionicons name={isLoginView ? "lock-open-outline" : "person-add-outline"} size={32} color={Colors.iosBlue} />
+            </View>
             <Text style={styles.formTitle}>{isLoginView ? t("welcome_back") : t("create_account")}</Text>
             <Text style={styles.formSub}>{isLoginView ? t("login_to_continue") : t("signup_to_start")}</Text>
           </View>
@@ -198,6 +230,10 @@ export default function LoginScreen() {
             t={t}
             errorMsg={errorMsg}
           />
+
+          <View style={styles.formFooter}>
+            <Text style={styles.formFooterText}>{t("web_footer_text")}</Text>
+          </View>
         </View>
       </View>
     </View>
@@ -205,12 +241,22 @@ export default function LoginScreen() {
 }
 
 // Yardımcı Bileşenler
-const FeatureItem = ({ icon, text }) => (
-  <View style={styles.featureItem}>
-    <View style={styles.featureIconBg}>
+const BusinessFeature = ({ icon, title, desc }) => (
+  <View style={styles.businessCard}>
+    <View style={styles.businessIconBg}>
       <Ionicons name={icon} size={24} color="#fff" />
     </View>
-    <Text style={styles.featureText}>{text}</Text>
+    <View style={{ flex: 1 }}>
+      <Text style={styles.businessTitle}>{title}</Text>
+      <Text style={styles.businessDesc}>{desc}</Text>
+    </View>
+  </View>
+);
+
+const TrustStat = ({ stat, desc }) => (
+  <View style={styles.trustItem}>
+    <Text style={styles.trustStatText}>{stat}</Text>
+    <Text style={styles.trustDescText}>{desc}</Text>
   </View>
 );
 
@@ -226,66 +272,78 @@ const LoginForm = ({
       </View>
     )}
 
-    <TextInput
-      style={styles.input}
-      placeholder="Email"
-      placeholderTextColor={Colors.secondary}
-      value={email}
-      onChangeText={setEmail}
-      keyboardType="email-address"
-      autoCapitalize="none"
-      selectTextOnFocus={Platform.OS === 'web'}
-    />
-    <TextInput
-      style={styles.input}
-      placeholder={t("password")}
-      placeholderTextColor={Colors.secondary}
-      value={password}
-      onChangeText={setPassword}
-      secureTextEntry
-      selectTextOnFocus={Platform.OS === 'web'}
-    />
+    <View style={styles.inputGroup}>
+      <Text style={styles.inputLabel}>{t("email")}</Text>
+      <View style={styles.inputWrapper}>
+        <Ionicons name="mail-outline" size={20} color={Colors.muted} style={styles.inputIcon} />
+        <TextInput
+          style={styles.webInput}
+          placeholder="email@sirketiniz.com"
+          placeholderTextColor={Colors.muted}
+          value={email}
+          onChangeText={setEmail}
+          keyboardType="email-address"
+          autoCapitalize="none"
+          selectTextOnFocus={Platform.OS === 'web'}
+        />
+      </View>
+    </View>
+
+    <View style={styles.inputGroup}>
+      <Text style={styles.inputLabel}>{t("password")}</Text>
+      <View style={styles.inputWrapper}>
+        <Ionicons name="lock-closed-outline" size={20} color={Colors.muted} style={styles.inputIcon} />
+        <TextInput
+          style={styles.webInput}
+          placeholder="••••••••"
+          placeholderTextColor={Colors.muted}
+          value={password}
+          onChangeText={setPassword}
+          secureTextEntry
+          selectTextOnFocus={Platform.OS === 'web'}
+        />
+      </View>
+    </View>
 
     {!isLoginView && (
-      <TextInput
-        style={styles.input}
-        placeholder={t("password_confirm")}
-        placeholderTextColor={Colors.secondary}
-        value={confirmPassword}
-        onChangeText={setConfirmPassword}
-        secureTextEntry
-        selectTextOnFocus={Platform.OS === 'web'}
-      />
+      <View style={styles.inputGroup}>
+        <Text style={styles.inputLabel}>{t("password_confirm")}</Text>
+        <View style={styles.inputWrapper}>
+          <Ionicons name="shield-outline" size={20} color={Colors.muted} style={styles.inputIcon} />
+          <TextInput
+            style={styles.webInput}
+            placeholder="••••••••"
+            placeholderTextColor={Colors.muted}
+            value={confirmPassword}
+            onChangeText={setConfirmPassword}
+            secureTextEntry
+            selectTextOnFocus={Platform.OS === 'web'}
+          />
+        </View>
+      </View>
     )}
 
-    {isLoginView ? (
-      <>
-        <TouchableOpacity
-          style={[styles.button, styles.buttonSolid, loading && styles.buttonDisabled]}
-          onPress={handleLogin}
-          disabled={loading}
-        >
-          <Text style={styles.buttonSolidText}>{loading ? t("logging_in") : t("login")}</Text>
-        </TouchableOpacity>
-
-        <TouchableOpacity style={styles.forgotPassword} onPress={handlePasswordReset} disabled={loading}>
-          <Text style={styles.forgotPasswordText}>{t("forgot_password")}</Text>
-        </TouchableOpacity>
-      </>
-    ) : (
-      <TouchableOpacity
-        style={[styles.button, styles.buttonSolid, loading && styles.buttonDisabled]}
-        onPress={handleSignUp}
-        disabled={loading}
-      >
-        <Text style={styles.buttonSolidText}>{loading ? t("signing_up") : t("register")}</Text>
+    {isLoginView && (
+      <TouchableOpacity style={styles.forgotPasswordLink} onPress={handlePasswordReset} disabled={loading}>
+        <Text style={styles.forgotPasswordText}>{t("forgot_password")}</Text>
       </TouchableOpacity>
     )}
 
-    <TouchableOpacity style={styles.toggleButton} onPress={toggleView} disabled={loading}>
-      <Text style={styles.toggleButtonText}>
+    <TouchableOpacity
+      style={[styles.mainButton, loading && styles.buttonDisabled]}
+      onPress={isLoginView ? handleLogin : handleSignUp}
+      disabled={loading}
+    >
+      <Text style={styles.mainButtonText}>
+        {loading ? t("processing") || "..." : (isLoginView ? t("login") : t("register"))}
+      </Text>
+      <Ionicons name="arrow-forward" size={20} color="#fff" />
+    </TouchableOpacity>
+
+    <TouchableOpacity style={styles.toggleViewButton} onPress={toggleView} disabled={loading}>
+      <Text style={styles.toggleText}>
         {isLoginView ? t("no_account") : t("has_account")}
-        <Text style={styles.toggleButtonTextBold}> {isLoginView ? t("register") : t("login")}</Text>
+        <Text style={styles.toggleTextBold}> {isLoginView ? t("register") : t("login")}</Text>
       </Text>
     </TouchableOpacity>
   </View>
@@ -366,8 +424,8 @@ const styles = StyleSheet.create({
   },
   forgotPasswordText: {
     color: Colors.iosBlue,
-    fontSize: 15,
-    fontWeight: '500',
+    fontSize: 14,
+    fontWeight: '600',
   },
   toggleButton: {
     marginTop: 20,
@@ -387,108 +445,267 @@ const styles = StyleSheet.create({
     fontWeight: 'bold',
   },
 
-  // WEB STYLES
+  // WEB STYLES (ENHANCED)
   webContainer: {
     flex: 1,
     flexDirection: 'row',
-    height: '100%',
+    height: '100vh',
     width: '100%',
-    backgroundColor: '#fff',
+    backgroundColor: '#F8FAFC',
   },
   webLeftPanel: {
-    flex: 1.5, // Sol taraf biraz daha geniş olsun
-    backgroundColor: Colors.iosBlue,
-    padding: 60,
+    flex: 1.2,
+    backgroundColor: '#0F172A', // Dark Slate for premium look
+    padding: 80,
     justifyContent: 'center',
-    display: 'flex', // Web için
-    flexDirection: 'column',
+    position: 'relative',
+    overflow: 'hidden',
   },
   webRightPanel: {
-    flex: 1, // Sağ taraf
-    backgroundColor: '#fff',
+    flex: 1,
+    backgroundColor: 'transparent',
     justifyContent: 'center',
     alignItems: 'center',
-    borderLeftWidth: 1,
-    borderLeftColor: '#F1F5F9',
-    minWidth: 400, // Çok küçülmesin
-  },
-  webFormContainer: {
-    width: '100%',
-    maxWidth: 360,
-    padding: 20,
+    padding: 40,
   },
   webBranding: {
-    maxWidth: 600,
+    zIndex: 2,
+    maxWidth: 640,
+  },
+  webLogoIcon: {
+    width: 56,
+    height: 56,
+    borderRadius: 16,
+    backgroundColor: '#fff',
+    alignItems: 'center',
+    justifyContent: 'center',
+    shadowColor: Colors.iosBlue,
+    shadowOffset: { width: 0, height: 8 },
+    shadowOpacity: 0.3,
+    shadowRadius: 12,
   },
   webLogoText: {
     color: '#fff',
-    fontSize: 28,
-    fontWeight: 'bold',
-    marginLeft: 15,
-    letterSpacing: 1,
+    fontSize: 32,
+    fontWeight: '800',
+    marginLeft: 20,
+    letterSpacing: -0.5,
   },
   webHeroTitle: {
     fontSize: 48,
-    fontWeight: '800',
+    fontWeight: '900',
     color: '#fff',
-    marginBottom: 20,
-    lineHeight: 56,
+    marginBottom: 24,
+    lineHeight: 58,
+    letterSpacing: -1,
   },
   webHeroSub: {
     fontSize: 20,
-    color: 'rgba(255,255,255,0.9)',
-    marginBottom: 40,
-    lineHeight: 30,
+    color: '#94A3B8',
+    marginBottom: 48,
+    lineHeight: 32,
+    fontWeight: '400',
   },
-  featureList: {
-    marginTop: 20,
+  businessGrid: {
+    marginBottom: 60,
   },
-  featureItem: {
+  businessRow: {
     flexDirection: 'row',
-    alignItems: 'center',
     marginBottom: 24,
+    gap: 24,
   },
-  featureIconBg: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
-    backgroundColor: 'rgba(255,255,255,0.2)',
+  businessCard: {
+    flex: 1,
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    backgroundColor: 'rgba(30, 41, 59, 0.5)',
+    padding: 20,
+    borderRadius: 16,
+    borderWidth: 1,
+    borderColor: 'rgba(255,255,255,0.05)',
+  },
+  businessIconBg: {
+    width: 44,
+    height: 44,
+    borderRadius: 12,
+    backgroundColor: Colors.iosBlue,
     alignItems: 'center',
     justifyContent: 'center',
-    marginRight: 15,
+    marginRight: 16,
   },
-  featureText: {
+  businessTitle: {
     color: '#fff',
-    fontSize: 18,
-    fontWeight: '500',
+    fontSize: 17,
+    fontWeight: '700',
+    marginBottom: 4,
+  },
+  businessDesc: {
+    color: '#94A3B8',
+    fontSize: 14,
+    lineHeight: 20,
+  },
+  trustContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: 'rgba(255,255,255,0.03)',
+    padding: 24,
+    borderRadius: 20,
+    borderWidth: 1,
+    borderColor: 'rgba(255,255,255,0.05)',
+  },
+  trustItem: {
+    flex: 1,
+    alignItems: 'center',
+  },
+  trustDivider: {
+    width: 1,
+    height: 40,
+    backgroundColor: 'rgba(255,255,255,0.1)',
+  },
+  trustStatText: {
+    color: Colors.iosBlue,
+    fontSize: 24,
+    fontWeight: '900',
+    marginBottom: 2,
+  },
+  trustDescText: {
+    color: '#64748B',
+    fontSize: 13,
+    fontWeight: '600',
+    textTransform: 'uppercase',
+    letterSpacing: 0.5,
   },
   webFooter: {
     position: 'absolute',
     bottom: 40,
-    left: 60,
+    left: 80,
   },
   webFooterText: {
-    color: 'rgba(255,255,255,0.6)',
+    color: '#475569',
     fontSize: 14,
   },
+  webFormCard: {
+    width: '100%',
+    maxWidth: 480,
+    backgroundColor: '#fff',
+    padding: 48,
+    borderRadius: 24,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 20 },
+    shadowOpacity: 0.08,
+    shadowRadius: 32,
+    elevation: 10,
+  },
+  formIconContainer: {
+    width: 64,
+    height: 64,
+    borderRadius: 20,
+    backgroundColor: '#F0F7FF',
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginBottom: 16,
+  },
   formTitle: {
-    fontSize: 28,
-    fontWeight: 'bold',
-    color: '#1E293B',
-    marginTop: 10,
+    fontSize: 32,
+    fontWeight: '800',
+    color: '#0F172A',
+    textAlign: 'center',
+    letterSpacing: -0.5,
   },
   formSub: {
     fontSize: 16,
     color: '#64748B',
     marginTop: 8,
+    textAlign: 'center',
+  },
+  inputGroup: {
+    marginBottom: 20,
+  },
+  inputLabel: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: '#475569',
+    marginBottom: 8,
+    marginLeft: 4,
+  },
+  inputWrapper: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#F8FAFC',
+    borderRadius: 14,
+    borderWidth: 1,
+    borderColor: '#E2E8F0',
+    paddingHorizontal: 16,
+  },
+  inputIcon: {
+    marginRight: 12,
+  },
+  webInput: {
+    flex: 1,
+    height: 52,
+    fontSize: 16,
+    color: '#0F172A',
+    ...Platform.select({
+      web: { outlineStyle: 'none' }
+    })
+  },
+  forgotPasswordLink: {
+    alignSelf: 'flex-end',
+    marginBottom: 24,
+  },
+  mainButton: {
+    flexDirection: 'row',
+    backgroundColor: '#0F172A',
+    height: 56,
+    borderRadius: 14,
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 12,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.2,
+    shadowRadius: 8,
+    ...Platform.select({
+      web: { cursor: 'pointer', transition: 'all 0.2s' }
+    })
+  },
+  mainButtonText: {
+    color: '#fff',
+    fontSize: 17,
+    fontWeight: '700',
+  },
+  toggleViewButton: {
+    marginTop: 24,
+    alignItems: 'center',
+  },
+  toggleText: {
+    color: '#64748B',
+    fontSize: 15,
+  },
+  toggleTextBold: {
+    color: Colors.iosBlue,
+    fontWeight: '700',
+  },
+  formFooter: {
+    marginTop: 32,
+    paddingTop: 24,
+    borderTopWidth: 1,
+    borderTopColor: '#F1F5F9',
+    alignItems: 'center',
+  },
+  formFooterText: {
+    fontSize: 13,
+    color: '#94A3B8',
+    textAlign: 'center',
+    lineHeight: 18,
   },
   errorContainer: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: Colors.critical, // Kırmızı hata rengi
+    backgroundColor: '#EF4444',
     padding: 12,
-    borderRadius: 8,
-    marginBottom: 16,
+    borderRadius: 12,
+    marginBottom: 20,
   },
   errorText: {
     color: '#fff',

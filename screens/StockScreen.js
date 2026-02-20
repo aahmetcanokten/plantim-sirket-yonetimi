@@ -59,14 +59,20 @@ export default function StockScreen({ navigation }) {
 
   const openCustomerSelection = (product) => {
     if (!isPremium && sales.length >= 20) {
-      Alert.alert(
-        t('limit_exceeded'),
-        t('sales_limit_message'),
-        [
-          { text: t('cancel'), style: "cancel" },
-          { text: t('get_premium'), onPress: () => navigation.navigate("Paywall") }
-        ]
-      );
+      if (Platform.OS === 'web') {
+        if (window.confirm(t('sales_limit_message'))) {
+          navigation.navigate("Paywall");
+        }
+      } else {
+        Alert.alert(
+          t('limit_exceeded'),
+          t('sales_limit_message'),
+          [
+            { text: t('cancel'), style: "cancel" },
+            { text: t('get_premium'), onPress: () => navigation.navigate("Paywall") }
+          ]
+        );
+      }
       return;
     }
 
@@ -85,14 +91,20 @@ export default function StockScreen({ navigation }) {
     }
 
     // Premium değilse reklam izlet
-    Alert.alert(
-      t('premium_feature'),
-      t('edit_stock_premium_message'),
-      [
-        { text: t('cancel'), style: "cancel" },
-        { text: t('get_premium'), onPress: () => navigation.navigate("Paywall") }
-      ]
-    );
+    if (Platform.OS === 'web') {
+      if (window.confirm(t('edit_stock_premium_message'))) {
+        navigation.navigate("Paywall");
+      }
+    } else {
+      Alert.alert(
+        t('premium_feature'),
+        t('edit_stock_premium_message'),
+        [
+          { text: t('cancel'), style: "cancel" },
+          { text: t('get_premium'), onPress: () => navigation.navigate("Paywall") }
+        ]
+      );
+    }
   };
   const handleUpdateProduct = () => {
     if (!editProduct || !editProduct.name || !editProduct.name.trim()) { Alert.alert(t('error'), t('product_name_required')); return; }
@@ -105,16 +117,23 @@ export default function StockScreen({ navigation }) {
   };
   const confirmDelete = (id, name) => {
     triggerHaptic(HapticType.WARNING);
-    Alert.alert(t('delete_confirmation'), `${name} ${t('delete_product_confirmation')}`, [
-      { text: t('cancel'), style: "cancel" },
-      {
-        text: t('delete'), style: "destructive", onPress: () => {
-          deleteProduct(id);
-          toast.showToast && toast.showToast(t('product_deleted'));
-          triggerHaptic(HapticType.IMPACT_MEDIUM);
-        }
+    if (Platform.OS === 'web') {
+      if (window.confirm(`${name} ${t('delete_product_confirmation')}`)) {
+        deleteProduct(id);
+        toast.showToast && toast.showToast(t('product_deleted'));
       }
-    ]);
+    } else {
+      Alert.alert(t('delete_confirmation'), `${name} ${t('delete_product_confirmation')}`, [
+        { text: t('cancel'), style: "cancel" },
+        {
+          text: t('delete'), style: "destructive", onPress: () => {
+            deleteProduct(id);
+            toast.showToast && toast.showToast(t('product_deleted'));
+            triggerHaptic(HapticType.IMPACT_MEDIUM);
+          }
+        }
+      ]);
+    }
   };
   const proceedToInvoice = (product, customer, quantity, price) => {
     const q = parseInt(quantity, 10) || 1; const p = parseFloat(price) || 0;
@@ -215,26 +234,28 @@ export default function StockScreen({ navigation }) {
 
   const renderHeader = () => (
     <View style={styles.headerContainer}>
-      {/* Ana Aksiyon Butonları */}
-      <View style={styles.topActionsRow}>
-        <TouchableOpacity
-          style={[styles.headerActionBtn, { backgroundColor: Colors.iosGreen }]}
-          onPress={navigateToAddProduct}
-          activeOpacity={0.8}
-        >
-          <Ionicons name="add-circle" size={20} color="#fff" />
-          <Text style={styles.headerActionText}>{t('add_new_product')}</Text>
-        </TouchableOpacity>
+      {/* Ana Aksiyon Butonları (Mobilde Göster, Web'de Gizle - Sidebar'da var) */}
+      {Platform.OS !== 'web' && (
+        <View style={styles.topActionsRow}>
+          <TouchableOpacity
+            style={[styles.headerActionBtn, { backgroundColor: Colors.iosGreen }]}
+            onPress={navigateToAddProduct}
+            activeOpacity={0.8}
+          >
+            <Ionicons name="add-circle" size={20} color="#fff" />
+            <Text style={styles.headerActionText}>{t('add_new_product')}</Text>
+          </TouchableOpacity>
 
-        <TouchableOpacity
-          style={[styles.headerActionBtn, { backgroundColor: Colors.warning, marginLeft: 10 }]}
-          onPress={handleAssemblyPress}
-          activeOpacity={0.8}
-        >
-          <Ionicons name="construct" size={20} color="#000" />
-          <Text style={[styles.headerActionText, { color: '#000' }]}>{t('assembly_production')}</Text>
-        </TouchableOpacity>
-      </View>
+          <TouchableOpacity
+            style={[styles.headerActionBtn, { backgroundColor: Colors.warning, marginLeft: 10 }]}
+            onPress={handleAssemblyPress}
+            activeOpacity={0.8}
+          >
+            <Ionicons name="construct" size={20} color="#000" />
+            <Text style={[styles.headerActionText, { color: '#000' }]}>{t('assembly_production')}</Text>
+          </TouchableOpacity>
+        </View>
+      )}
 
       <TouchableOpacity
         style={styles.analysisButton}

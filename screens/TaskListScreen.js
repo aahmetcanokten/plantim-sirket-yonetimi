@@ -191,26 +191,44 @@ export default function TaskListScreen({ navigation }) {
     if (skipAlert) {
       doDelete();
     } else {
-      Alert.alert(t("delete_task"), t("delete_task_confirmation"), [
-        { text: t("cancel"), style: "cancel" },
-        { text: t("delete"), style: "destructive", onPress: doDelete }
-      ]);
+      if (Platform.OS === 'web') {
+        if (window.confirm(t("delete_task_confirmation"))) {
+          doDelete();
+        }
+      } else {
+        Alert.alert(t("delete_task"), t("delete_task_confirmation"), [
+          { text: t("cancel"), style: "cancel" },
+          { text: t("delete"), style: "destructive", onPress: doDelete }
+        ]);
+      }
     }
   };
 
   const toggleTaskStatus = (task) => {
     if (task.isCompleted) {
       // Zaten tamamlanmışsa geri al
-      Alert.alert(t("undo_task"), t("undo_task_confirmation"), [
-        { text: t("no"), style: "cancel" },
-        { text: t("yes"), onPress: () => updateStatus(task, false) }
-      ]);
+      if (Platform.OS === 'web') {
+        if (window.confirm(t("undo_task_confirmation"))) {
+          updateStatus(task, false);
+        }
+      } else {
+        Alert.alert(t("undo_task"), t("undo_task_confirmation"), [
+          { text: t("no"), style: "cancel" },
+          { text: t("yes"), onPress: () => updateStatus(task, false) }
+        ]);
+      }
     } else {
       // Tamamlanmamışsa onayla
-      Alert.alert(t("complete_task"), t("complete_task_confirmation"), [
-        { text: t("cancel"), style: "cancel" },
-        { text: t("yes_complete"), onPress: () => updateStatus(task, true) }
-      ]);
+      if (Platform.OS === 'web') {
+        if (window.confirm(t("complete_task_confirmation"))) {
+          updateStatus(task, true);
+        }
+      } else {
+        Alert.alert(t("complete_task"), t("complete_task_confirmation"), [
+          { text: t("cancel"), style: "cancel" },
+          { text: t("yes_complete"), onPress: () => updateStatus(task, true) }
+        ]);
+      }
     }
   };
 

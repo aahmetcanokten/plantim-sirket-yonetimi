@@ -6,7 +6,9 @@ import { Colors } from '../Theme';
 import { useAuth } from '../AuthContext';
 
 const MENU_ITEMS = [
-    { name: 'MainTabs', params: { screen: 'Stok' }, label: 'Stok', icon: 'cube-outline' },
+    { name: 'MainTabs', params: { screen: 'Stok' }, label: 'Stok Listesi', icon: 'list-outline' },
+    { name: 'AddProductScreen', label: 'Yeni Ürün Ekle', icon: 'add-circle-outline' },
+    { name: 'AssemblyScreen', label: 'Montaj / Üretim', icon: 'construct-outline' },
     { name: 'MainTabs', params: { screen: 'Satışlar' }, label: 'Satışlar', icon: 'cash-outline' },
     { name: 'MainTabs', params: { screen: 'Satın Alma' }, label: 'Satın Alma', icon: 'cart-outline' },
     { name: 'MainTabs', params: { screen: 'Müşteriler' }, label: 'Müşteriler', icon: 'people-outline' },
@@ -42,6 +44,7 @@ export default function WebContainer({ children, activeRoute }) {
             case 'TaskListScreen': return 'Görev Takibi';
             case 'DetailedStockScreen': return 'Ürün Detayı';
             case 'AddProductScreen': return 'Yeni Ürün Ekle';
+            case 'AssemblyScreen': return 'Montaj ve Üretim';
             case 'Login': return 'Giriş Yap';
             case 'Onboarding': return 'Hoşgeldiniz';
             case 'Paywall': return 'Premium';
