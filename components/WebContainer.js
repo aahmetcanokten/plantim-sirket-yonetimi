@@ -12,6 +12,8 @@ const MENU_ITEMS = [
     { name: 'MainTabs', params: { screen: 'Satışlar' }, label: 'Satışlar', icon: 'cash-outline' },
     { name: 'MainTabs', params: { screen: 'Satın Alma' }, label: 'Satın Alma', icon: 'cart-outline' },
     { name: 'MainTabs', params: { screen: 'Müşteriler' }, label: 'Müşteriler', icon: 'people-outline' },
+    { name: 'WorkOrderScreen', label: 'İş Emirleri', icon: 'construct-outline' },
+    { name: 'WorkOrderArchiveScreen', label: 'İş Emri Arşivi', icon: 'archive-outline' },
     { name: 'AssetManagementScreen', label: 'Zimmet Yönetimi', icon: 'briefcase-outline' },
     { name: 'TaskListScreen', label: 'Görev Takibi', icon: 'checkbox-outline' },
     { name: 'PersonnelScreen', label: 'Personel', icon: 'person-outline' },
@@ -22,6 +24,52 @@ const MENU_ITEMS = [
 export default function WebContainer({ children, activeRoute }) {
     const navigation = useNavigation();
     const { session } = useAuth();
+
+    // Inject Google Fonts and Global Styles for Web
+    useEffect(() => {
+        if (Platform.OS === 'web') {
+            const style = document.createElement('style');
+            style.textContent = `
+                @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
+                
+                /* Set base font for the whole document */
+                body, input, button, select, textarea {
+                    font-family: 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+                    -webkit-font-smoothing: antialiased;
+                    -moz-osx-font-smoothing: grayscale;
+                }
+
+                body {
+                    margin: 0;
+                    padding: 0;
+                    background-color: ${Colors.webBackground};
+                    color: ${Colors.webText};
+                }
+
+                /* Ensure React Native Web text components inherit from body if no explicit font is set */
+                [dir="auto"] {
+                    font-family: inherit;
+                }
+                
+                /* Custom Scrollbar for a premium look */
+                ::-webkit-scrollbar {
+                    width: 8px;
+                    height: 8px;
+                }
+                ::-webkit-scrollbar-track {
+                    background: transparent;
+                }
+                ::-webkit-scrollbar-thumb {
+                    background: #CBD5E1;
+                    border-radius: 4px;
+                }
+                ::-webkit-scrollbar-thumb:hover {
+                    background: #94A3B8;
+                }
+            `;
+            document.head.appendChild(style);
+        }
+    }, []);
 
     // Aktif rotayı props'dan al (App.js'den gelir)
     const currentRouteInfo = activeRoute;
@@ -45,6 +93,8 @@ export default function WebContainer({ children, activeRoute }) {
             case 'DetailedStockScreen': return 'Ürün Detayı';
             case 'AddProductScreen': return 'Yeni Ürün Ekle';
             case 'AssemblyScreen': return 'Montaj ve Üretim';
+            case 'WorkOrderScreen': return 'İş Emri Takibi';
+            case 'WorkOrderArchiveScreen': return 'İş Emri Arşivi';
             case 'Login': return 'Giriş Yap';
             case 'Onboarding': return 'Hoşgeldiniz';
             case 'Paywall': return 'Premium';
@@ -74,7 +124,7 @@ export default function WebContainer({ children, activeRoute }) {
 
     if (!session) {
         return (
-            <View style={{ flex: 1, height: '100vh', width: '100%' }}>
+            <View style={{ flex: 1, height: '100vh', width: '100%', backgroundColor: Colors.webBackground }}>
                 {children}
             </View>
         )
@@ -91,11 +141,14 @@ export default function WebContainer({ children, activeRoute }) {
                     style={styles.logoContainer}
                     onPress={() => navigation.navigate('MainTabs', { screen: 'Stok' })}
                 >
-                    <Ionicons name="leaf" size={32} color={Colors.iosBlue} />
-                    <Text style={styles.logoText}>PLANTİM ERP</Text>
+                    <View style={styles.logoIconBg}>
+                        <Ionicons name="leaf" size={20} color="#fff" />
+                    </View>
+                    <Text style={styles.logoText}>PLANTİM <Text style={{ fontWeight: '300', opacity: 0.7 }}>ERP</Text></Text>
                 </TouchableOpacity>
 
-                <ScrollView style={styles.menuContainer}>
+                <ScrollView style={styles.menuContainer} showsVerticalScrollIndicator={false}>
+                    <Text style={styles.menuSectionHeader}>ANA MENÜ</Text>
                     {MENU_ITEMS.map((item, index) => {
                         const active = isMenuSelected(item);
                         return (
@@ -112,18 +165,21 @@ export default function WebContainer({ children, activeRoute }) {
                             >
                                 <Ionicons
                                     name={item.icon}
-                                    size={20}
-                                    color={active ? Colors.iosBlue : "#64748B"}
+                                    size={18}
+                                    color={active ? "#fff" : "#94A3B8"}
                                     style={{ marginRight: 12 }}
                                 />
                                 <Text style={[styles.menuItemText, active && styles.menuItemTextActive]}>{item.label}</Text>
+                                {active && <View style={styles.activeIndicator} />}
                             </TouchableOpacity>
                         );
                     })}
                 </ScrollView>
 
                 <View style={styles.sidebarFooter}>
-                    <Text style={styles.footerText}>v1.0.1 Web</Text>
+                    <View style={styles.versionBadge}>
+                        <Text style={styles.footerText}>VERSION 1.0.1</Text>
+                    </View>
                 </View>
             </View>
 
@@ -134,21 +190,26 @@ export default function WebContainer({ children, activeRoute }) {
                     <View style={{ flexDirection: 'row', alignItems: 'center' }}>
                         {canGoBack && (
                             <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backButton}>
-                                <Ionicons name="arrow-back" size={24} color="#334155" />
+                                <Ionicons name="chevron-back" size={20} color="#64748B" />
                             </TouchableOpacity>
                         )}
                         <Text style={styles.headerTitle}>{getPageTitle()}</Text>
                     </View>
 
                     <View style={styles.headerRight}>
-                        <View style={styles.headerRight}>
-                            <TouchableOpacity style={styles.userBadge} onPress={() => navigation.navigate('Ayarlar')}>
-                                <View style={styles.avatar}>
-                                    <Text style={{ color: '#fff', fontWeight: 'bold' }}>U</Text>
-                                </View>
-                                <Text style={styles.userName}>Kullanıcı</Text>
-                            </TouchableOpacity>
-                        </View>
+                        <TouchableOpacity style={styles.notificationBtn}>
+                            <Ionicons name="notifications-outline" size={22} color="#64748B" />
+                        </TouchableOpacity>
+                        <TouchableOpacity style={styles.userBadge} onPress={() => navigation.navigate('Ayarlar')}>
+                            <View style={styles.avatar}>
+                                <Text style={{ color: '#fff', fontWeight: 'bold', fontSize: 12 }}>AC</Text>
+                            </View>
+                            <View style={styles.userInfo}>
+                                <Text style={styles.userName}>Ahmet Can</Text>
+                                <Text style={styles.userRole}>Yönetici</Text>
+                            </View>
+                            <Ionicons name="chevron-down" size={14} color="#94A3B8" style={{ marginLeft: 8 }} />
+                        </TouchableOpacity>
                     </View>
                 </View>
 
@@ -165,32 +226,49 @@ const styles = StyleSheet.create({
     container: {
         flex: 1,
         flexDirection: 'row',
-        backgroundColor: '#F1F5F9',
+        backgroundColor: Colors.webBackground,
         height: '100vh',
         overflow: 'hidden'
     },
     // SIDEBAR
     sidebar: {
-        width: 260,
-        backgroundColor: '#FFFFFF',
-        borderRightWidth: 1,
-        borderRightColor: '#E2E8F0',
-        paddingVertical: 24,
+        width: 280,
+        backgroundColor: Colors.webSidebar,
+        paddingVertical: 32,
         display: 'flex',
         flexDirection: 'column',
+        boxShadow: '10px 0 30px rgba(0,0,0,0.05)',
+        zIndex: 10,
     },
     logoContainer: {
         flexDirection: 'row',
         alignItems: 'center',
-        paddingHorizontal: 24,
-        marginBottom: 32,
+        paddingHorizontal: 28,
+        marginBottom: 40,
+    },
+    logoIconBg: {
+        width: 36,
+        height: 36,
+        borderRadius: 10,
+        backgroundColor: Colors.primary,
+        alignItems: 'center',
+        justifyContent: 'center',
+        marginRight: 12,
+        boxShadow: '0 4px 12px rgba(37, 99, 235, 0.3)',
     },
     logoText: {
-        fontSize: 20,
-        fontWeight: 'bold',
-        color: '#0F172A',
-        marginLeft: 12,
-        letterSpacing: 0.5,
+        fontSize: 18,
+        fontWeight: '800',
+        color: '#FFFFFF',
+        letterSpacing: 1.5,
+    },
+    menuSectionHeader: {
+        paddingHorizontal: 28,
+        fontSize: 11,
+        fontWeight: '700',
+        color: '#4B5563',
+        marginBottom: 16,
+        letterSpacing: 1,
     },
     menuContainer: {
         flex: 1,
@@ -201,29 +279,45 @@ const styles = StyleSheet.create({
         alignItems: 'center',
         paddingVertical: 12,
         paddingHorizontal: 16,
-        borderRadius: 8,
-        marginBottom: 4,
+        borderRadius: 12,
+        marginBottom: 6,
+        position: 'relative',
     },
     menuItemActive: {
-        backgroundColor: '#F0F9FF',
+        backgroundColor: 'rgba(255, 255, 255, 0.08)',
     },
     menuItemText: {
-        fontSize: 15,
+        fontSize: 14,
         fontWeight: '500',
-        color: '#64748B', // Muted color by default
+        color: '#94A3B8',
     },
     menuItemTextActive: {
-        color: Colors.iosBlue,
-        fontWeight: '700',
+        color: '#FFFFFF',
+        fontWeight: '600',
+    },
+    activeIndicator: {
+        position: 'absolute',
+        left: 0,
+        width: 3,
+        height: 20,
+        backgroundColor: Colors.primary,
+        borderRadius: 2,
     },
     sidebarFooter: {
         padding: 24,
-        borderTopWidth: 1,
-        borderTopColor: '#F1F5F9',
+        alignItems: 'center',
+    },
+    versionBadge: {
+        paddingHorizontal: 12,
+        paddingVertical: 4,
+        borderRadius: 20,
+        backgroundColor: 'rgba(255,255,255,0.05)',
     },
     footerText: {
-        color: '#94A3B8',
-        fontSize: 12,
+        color: '#4B5563',
+        fontSize: 10,
+        fontWeight: '700',
+        letterSpacing: 0.5,
     },
 
     // MAIN CONTENT
@@ -234,53 +328,75 @@ const styles = StyleSheet.create({
         height: '100%',
     },
     header: {
-        height: 64,
+        height: 72,
         backgroundColor: '#FFFFFF',
         borderBottomWidth: 1,
-        borderBottomColor: '#E2E8F0',
+        borderBottomColor: '#F1F5F9',
         flexDirection: 'row',
         alignItems: 'center',
         justifyContent: 'space-between',
-        paddingHorizontal: 24,
+        paddingHorizontal: 32,
     },
     backButton: {
-        flexDirection: 'row',
-        alignItems: 'center',
         marginRight: 16,
         padding: 8,
-        borderRadius: 6,
-        backgroundColor: '#F1F5F9',
+        borderRadius: 10,
+        backgroundColor: '#F8FAFC',
+        borderWidth: 1,
+        borderColor: '#F1F5F9',
     },
     headerTitle: {
-        fontSize: 20,
+        fontSize: 22,
         fontWeight: '700',
         color: '#0F172A',
+        letterSpacing: -0.5,
     },
     headerRight: {
         flexDirection: 'row',
         alignItems: 'center',
     },
+    notificationBtn: {
+        marginRight: 20,
+        padding: 8,
+        borderRadius: 10,
+        backgroundColor: '#F8FAFC',
+        borderWidth: 1,
+        borderColor: '#F1F5F9',
+    },
     userBadge: {
         flexDirection: 'row',
         alignItems: 'center',
+        padding: 6,
+        borderRadius: 12,
+        backgroundColor: '#F8FAFC',
+        borderWidth: 1,
+        borderColor: '#F1F5F9',
     },
     avatar: {
-        width: 32,
-        height: 32,
-        borderRadius: 16,
-        backgroundColor: Colors.iosBlue,
+        width: 36,
+        height: 36,
+        borderRadius: 10,
+        backgroundColor: Colors.primary,
         alignItems: 'center',
         justifyContent: 'center',
-        marginRight: 10,
+        marginRight: 12,
+    },
+    userInfo: {
+        marginRight: 4,
     },
     userName: {
         fontSize: 14,
+        fontWeight: '600',
+        color: '#1E293B',
+    },
+    userRole: {
+        fontSize: 11,
+        color: '#64748B',
         fontWeight: '500',
-        color: '#334155',
     },
     pageContent: {
         flex: 1,
-        // padding: 24, // REMOVED padding to let ImmersiveLayout handle it
         overflow: 'hidden',
     },
 });
+

@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { View, Text, TextInput, StyleSheet, Alert, TouchableOpacity, ScrollView, KeyboardAvoidingView, Platform } from 'react-native';
+import { View, Text, TextInput, StyleSheet, Alert, TouchableOpacity, ScrollView, KeyboardAvoidingView, Platform, useWindowDimensions } from 'react-native';
 import { useAuth } from '../AuthContext'; // useAuth hook'unu import et
 import { Colors } from '../Theme';
 import { Ionicons } from '@expo/vector-icons'; // İkon kütüphanesi
@@ -123,7 +123,11 @@ export default function LoginScreen() {
   };
 
 
-  // Mobil Arayüz
+  const { width } = useWindowDimensions();
+  const isMobileWeb = Platform.OS === 'web' && width < 1024;
+  const isVerySmall = width < 600;
+
+  // Mobil Arayüz (Native App)
   if (Platform.OS !== 'web') {
     return (
       <KeyboardAvoidingView
@@ -152,72 +156,98 @@ export default function LoginScreen() {
     );
   }
 
-  // Web Arayüzü (Split Screen)
+  // Web Arayüzü (Responsive Design)
   return (
-    <View style={styles.webContainer}>
-      {/* Sol Taraf: Pazarlama / Tanıtım */}
-      <View style={styles.webLeftPanel}>
+    <ScrollView
+      style={styles.webContainer}
+      contentContainerStyle={{ flexGrow: 1, flexDirection: isMobileWeb ? 'column' : 'row' }}
+      showsVerticalScrollIndicator={false}
+    >
+      {/* Sol Taraf: Pazarlama / Tanıtım (Mobilde Üst Kısma Geçer veya Küçülür) */}
+      <View style={[
+        styles.webLeftPanel,
+        isMobileWeb && { flex: 0, padding: isVerySmall ? 24 : 40, paddingTop: 60 }
+      ]}>
         <View style={styles.webBranding}>
-          <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 40 }}>
+          <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: isMobileWeb ? 24 : 40 }}>
             <View style={styles.webLogoIcon}>
-              <Ionicons name="leaf" size={32} color={Colors.iosBlue} />
+              <Ionicons name="leaf" size={isVerySmall ? 24 : 32} color={Colors.iosBlue} />
             </View>
-            <Text style={styles.webLogoText}>PLANTİM <Text style={{ fontWeight: '400', opacity: 0.8 }}>ERP</Text></Text>
+            <Text style={[styles.webLogoText, isVerySmall && { fontSize: 24 }]}>PLANTİM <Text style={{ fontWeight: '400', opacity: 0.8 }}>ERP</Text></Text>
           </View>
 
-          <Text style={styles.webHeroTitle}>{t("web_hero_title")}</Text>
-          <Text style={styles.webHeroSub}>{t("web_hero_sub")}</Text>
+          <Text style={[styles.webHeroTitle, isMobileWeb && { fontSize: isVerySmall ? 28 : 36, lineHeight: isVerySmall ? 34 : 42, marginBottom: 16 }]}>
+            {t("web_hero_title")}
+          </Text>
 
-          <View style={styles.businessGrid}>
-            <View style={styles.businessRow}>
-              <BusinessFeature
-                icon="cube"
-                title={t("web_feature_stock")}
-                desc={t("web_feature_stock_desc")}
-              />
-              <BusinessFeature
-                icon="trending-up"
-                title={t("web_feature_reports")}
-                desc={t("web_feature_reports_desc")}
-              />
-            </View>
-            <View style={styles.businessRow}>
-              <BusinessFeature
-                icon="people"
-                title={t("web_feature_personnel")}
-                desc={t("web_feature_personnel_desc")}
-              />
-              <BusinessFeature
-                icon="shield-checkmark"
-                title={t("web_feature_security")}
-                desc={t("web_feature_security_desc")}
-              />
-            </View>
-          </View>
+          {!isVerySmall && (
+            <Text style={[styles.webHeroSub, isMobileWeb && { fontSize: 16, lineHeight: 24, marginBottom: 32 }]}>
+              {t("web_hero_sub")}
+            </Text>
+          )}
 
-          <View style={styles.trustContainer}>
-            <TrustStat stat={t("web_trust_stat_1")} desc={t("web_trust_desc_1")} />
-            <View style={styles.trustDivider} />
-            <TrustStat stat={t("web_trust_stat_2")} desc={t("web_trust_desc_2")} />
-            <View style={styles.trustDivider} />
-            <TrustStat stat={t("web_trust_stat_3")} desc={t("web_trust_desc_3")} />
-          </View>
+          {!isMobileWeb && (
+            <>
+              <View style={styles.businessGrid}>
+                <View style={styles.businessRow}>
+                  <BusinessFeature
+                    icon="cube"
+                    title={t("web_feature_stock")}
+                    desc={t("web_feature_stock_desc")}
+                  />
+                  <BusinessFeature
+                    icon="trending-up"
+                    title={t("web_feature_reports")}
+                    desc={t("web_feature_reports_desc")}
+                  />
+                </View>
+                <View style={styles.businessRow}>
+                  <BusinessFeature
+                    icon="people"
+                    title={t("web_feature_personnel")}
+                    desc={t("web_feature_personnel_desc")}
+                  />
+                  <BusinessFeature
+                    icon="shield-checkmark"
+                    title={t("web_feature_security")}
+                    desc={t("web_feature_security_desc")}
+                  />
+                </View>
+              </View>
+
+              <View style={styles.trustContainer}>
+                <TrustStat stat={t("web_trust_stat_1")} desc={t("web_trust_desc_1")} />
+                <View style={styles.trustDivider} />
+                <TrustStat stat={t("web_trust_stat_2")} desc={t("web_trust_desc_2")} />
+                <View style={styles.trustDivider} />
+                <TrustStat stat={t("web_trust_stat_3")} desc={t("web_trust_desc_3")} />
+              </View>
+            </>
+          )}
         </View>
 
-        <View style={styles.webFooter}>
-          <Text style={styles.webFooterText}>&copy; 2026 Plantim Kurumsal Yazılım Teknolojileri</Text>
-        </View>
+        {!isMobileWeb && (
+          <View style={styles.webFooter}>
+            <Text style={styles.webFooterText}>&copy; 2026 Plantim Kurumsal Yazılım Teknolojileri</Text>
+          </View>
+        )}
       </View>
 
       {/* Sağ Taraf: Giriş Formu */}
-      <View style={styles.webRightPanel}>
-        <View style={styles.webFormCard}>
-          <View style={{ alignItems: 'center', marginBottom: 40 }}>
-            <View style={styles.formIconContainer}>
-              <Ionicons name={isLoginView ? "lock-open-outline" : "person-add-outline"} size={32} color={Colors.iosBlue} />
+      <View style={[
+        styles.webRightPanel,
+        isMobileWeb && { flex: 1, padding: isVerySmall ? 16 : 40, paddingBottom: 60 }
+      ]}>
+        <View style={[
+          styles.webFormCard,
+          isMobileWeb && { padding: isVerySmall ? 24 : 32, shadowOpacity: 0.05, elevation: 2 }
+        ]}>
+          <View style={{ alignItems: 'center', marginBottom: isVerySmall ? 24 : 40 }}>
+            <View style={[styles.formIconContainer, isVerySmall && { width: 48, height: 48, borderRadius: 14 }]}>
+              <Ionicons name={isLoginView ? "lock-open-outline" : "person-add-outline"} size={isVerySmall ? 24 : 32} color={Colors.iosBlue} />
             </View>
-            <Text style={styles.formTitle}>{isLoginView ? t("welcome_back") : t("create_account")}</Text>
-            <Text style={styles.formSub}>{isLoginView ? t("login_to_continue") : t("signup_to_start")}</Text>
+            <Text style={[styles.formTitle, isVerySmall && { fontSize: 24 }]}>{isLoginView ? t("welcome_back") : t("create_account")}</Text>
+            <Text style={[styles.formSub, isVerySmall && { fontSize: 14 }]}>{isLoginView ? t("login_to_continue") : t("signup_to_start")}</Text>
           </View>
 
           <LoginForm
@@ -231,12 +261,12 @@ export default function LoginScreen() {
             errorMsg={errorMsg}
           />
 
-          <View style={styles.formFooter}>
+          <View style={[styles.formFooter, isVerySmall && { marginTop: 24, paddingTop: 16 }]}>
             <Text style={styles.formFooterText}>{t("web_footer_text")}</Text>
           </View>
         </View>
       </View>
-    </View>
+    </ScrollView>
   );
 }
 

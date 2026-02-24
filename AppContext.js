@@ -44,6 +44,8 @@ export function AppProvider({ children }) {
   const [vehicles, setVehicles] = useState([]);
   const [purchases, setPurchases] = useState([]);
   const [assets, setAssets] = useState([]);
+  const [workOrders, setWorkOrders] = useState([]);
+  const [processTemplates, setProcessTemplates] = useState([]);
   const [company, setCompany] = useState({ name: "Şirketim", address: "", taxId: "", requireInvoice: false });
 
   const [dbPremium, setDbPremium] = useState(false);
@@ -103,7 +105,9 @@ export function AppProvider({ children }) {
             vehicleRes,
             purchasesRes,
             userRes,
-            companyRes
+            companyRes,
+            workOrdersRes,
+            processTemplatesRes
           ] = await Promise.all([
             supabase.from('customers').select('*').eq('user_id', userId).order('created_at', { ascending: false }),
             supabase.from('products').select('*').eq('user_id', userId).order('name', { ascending: true }),
@@ -112,7 +116,9 @@ export function AppProvider({ children }) {
             supabase.from('vehicles').select('*').eq('user_id', userId).order('created_at', { ascending: false }),
             supabase.from('purchases').select('*').eq('user_id', userId).order('created_at', { ascending: false }),
             supabase.from('user_profiles').select('is_premium').eq('user_id', userId).maybeSingle(),
-            supabase.from('companies').select('*').eq('user_id', userId).maybeSingle()
+            supabase.from('companies').select('*').eq('user_id', userId).maybeSingle(),
+            supabase.from('work_orders').select('*').eq('user_id', userId).order('created_at', { ascending: false }),
+            supabase.from('process_templates').select('*').eq('user_id', userId).order('created_at', { ascending: false })
           ]);
 
           if (userRes.data && userRes.data.is_premium) {
@@ -127,6 +133,14 @@ export function AppProvider({ children }) {
           setSales(salesRes.data || []);
           setVehicles(vehicleRes.data || []);
           setPurchases(purchasesRes.data || []);
+          setWorkOrders((workOrdersRes?.data || []).map(wo => ({
+            ...wo,
+            processes: typeof wo.processes === 'string' ? JSON.parse(wo.processes) : (wo.processes || [])
+          })));
+          setProcessTemplates((processTemplatesRes?.data || []).map(pt => ({
+            ...pt,
+            processes: typeof pt.processes === 'string' ? JSON.parse(pt.processes) : (pt.processes || [])
+          })));
 
           // Personel Görevlerini Parse Et
           const parsedPersonnel = (personnelRes.data || []).map(p => {
@@ -187,6 +201,8 @@ export function AppProvider({ children }) {
         setVehicles([]);
         setPurchases([]);
         setAssets([]);
+        setWorkOrders([]);
+        setProcessTemplates([]);
         setDbPremium(false);
         setRcPremium(false);
         setAppDataLoading(false);
@@ -455,6 +471,117 @@ export function AppProvider({ children }) {
     else setAssets((prev) => prev.map(a => a.id === assetId ? data[0] : a));
   };
 
+  // --- İŞ EMİRLERİ (WORK ORDERS) ---
+  const addWorkOrder = async (wo) => {
+    if (!session || !supabase) return;
+    const toInsert = {
+      ...wo,
+      user_id: session.user.id,
+      status: wo.status || 'OPEN',
+      processes: JSON.stringify(wo.processes || [])
+    };
+    const { data, error } = await supabase.from('work_orders').insert(toInsert).select();
+    if (error) Alert.alert("Hata", error.message);
+    else {
+      const newWo = { ...data[0], processes: wo.processes || [] };
+      setWorkOrders((prev) => [newWo, ...prev]);
+      return newWo;
+    }
+  };
+
+  const updateWorkOrder = async (u) => {
+    if (!session || !supabase) return;
+    const updateData = {
+      ...u,
+      processes: JSON.stringify(u.processes || [])
+    };
+    const { data, error } = await supabase.from('work_orders').update(updateData).eq('id', u.id).select();
+    if (error) Alert.alert("Hata", error.message);
+    else {
+      const updatedWo = { ...data[0], processes: u.processes || [] };
+      setWorkOrders((prev) => prev.map(wo => wo.id === u.id ? updatedWo : wo));
+    }
+  };
+
+  const closeWorkOrder = async (id, closingData) => {
+    if (!session || !supabase) return;
+    const wo = workOrders.find(w => w.id === id);
+    if (!wo) return;
+
+    // Kullanılan prosesleri belirle (gelen veri varsa onu yoksa mevcut olanı kullan)
+    const activeProcesses = closingData.processes || wo.processes || [];
+
+    // Proseslerden toplam süreyi hesapla
+    const totalDuration = activeProcesses.reduce((acc, curr) => acc + (parseFloat(curr.spent_time) || 0), 0);
+
+    const updateData = {
+      ...closingData,
+      processes: JSON.stringify(activeProcesses),
+      status: 'CLOSED',
+      closed_at: new Date().toISOString(),
+      total_duration: totalDuration
+    };
+
+    const { data: woData, error: woError } = await supabase.from('work_orders').update(updateData).eq('id', id).select();
+    if (woError) {
+      Alert.alert("Hata", woError.message);
+      return;
+    }
+
+    // Stok güncelleme
+    const product = products.find(p => p.id === wo.product_id);
+    if (product) {
+      const finishedQty = closingData.actual_quantity || wo.target_quantity || 0;
+      const newQuantity = (product.quantity || 0) + finishedQty;
+      const { data: productData } = await supabase.from('products').update({ quantity: newQuantity }).eq('id', wo.product_id).select();
+      if (productData) setProducts(prevP => prevP.map(p => p.id === product.id ? productData[0] : p));
+    }
+
+    const closedWo = { ...woData[0], processes: activeProcesses };
+    setWorkOrders(prev => prev.map(w => w.id === id ? closedWo : w));
+
+    // --- YENİ: Hammadde Tüketimi ---
+    if (wo.raw_material_id && wo.raw_material_usage) {
+      const consumedQty = (parseFloat(wo.raw_material_usage) || 0) * (parseFloat(closingData.actual_quantity) || wo.target_quantity || 0);
+      if (consumedQty > 0) {
+        const rawProduct = products.find(p => p.id === wo.raw_material_id);
+        if (rawProduct) {
+          const newRawQty = (rawProduct.quantity || 0) - consumedQty;
+          const { data: rawData } = await supabase.from('products').update({ quantity: newRawQty }).eq('id', wo.raw_material_id).select();
+          if (rawData && rawData[0]) {
+            setProducts(prevP => prevP.map(p => p.id === rawProduct.id ? rawData[0] : p));
+          }
+        }
+      }
+    }
+
+    return true;
+  };
+
+  // --- PROSES ŞABLONLARI ---
+  const addProcessTemplate = async (pt) => {
+    if (!session || !supabase) return;
+    const toInsert = {
+      ...pt,
+      user_id: session.user.id,
+      processes: JSON.stringify(pt.processes || [])
+    };
+    const { data, error } = await supabase.from('process_templates').insert(toInsert).select();
+    if (error) Alert.alert("Hata", error.message);
+    else {
+      const newPt = { ...data[0], processes: pt.processes || [] };
+      setProcessTemplates((prev) => [newPt, ...prev]);
+      return newPt;
+    }
+  };
+
+  const deleteProcessTemplate = async (id) => {
+    if (!session || !supabase) return;
+    const { error } = await supabase.from('process_templates').delete().eq('id', id);
+    if (error) Alert.alert("Hata", error.message);
+    else setProcessTemplates((prev) => prev.filter(pt => pt.id !== id));
+  };
+
   // --- Şirket Bilgileri (Supabase) ---
   const updateCompanyInfo = async (info) => {
     if (!session || !supabase) return;
@@ -560,6 +687,8 @@ export function AppProvider({ children }) {
         vehicles, addVehicle, updateVehicle, deleteVehicle,
         purchases, addPurchase, updatePurchase, deletePurchase, markPurchaseDelivered,
         assets, addAsset, updateAsset, deleteAsset, assignAsset, unassignAsset,
+        workOrders, addWorkOrder, updateWorkOrder, closeWorkOrder,
+        processTemplates, addProcessTemplate, deleteProcessTemplate,
         company, updateCompanyInfo,
         isPremium, setPremiumStatus: setDbPremium, purchasePremium, restorePurchases,
         getPackages: async () => {

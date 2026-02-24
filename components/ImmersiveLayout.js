@@ -176,10 +176,10 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     alignItems: "center",
     justifyContent: 'space-between',
-    paddingHorizontal: 16,
+    paddingHorizontal: 32,
     paddingBottom: 8,
     // Web iyileştirmesi: Başlığı ortala ve çok genişlemesini engelle
-    maxWidth: Platform.OS === 'web' ? 1200 : '100%',
+    maxWidth: Platform.OS === 'web' ? 1440 : '100%',
     alignSelf: 'center',
     width: '100%',
   },
@@ -204,15 +204,15 @@ const styles = StyleSheet.create({
     backgroundColor: "transparent",
   },
   scrollContainerCompact: {
-    paddingTop: Platform.OS === 'web' ? 16 : (Platform.OS === 'ios' ? 96 : 70), // Web'de header gizlendiği için padding azaltıldı
+    paddingTop: Platform.OS === 'web' ? 24 : (Platform.OS === 'ios' ? 96 : 70), // Web'de header gizlendiği için padding azaltıldı
     paddingBottom: 48, // Alt menü (tab bar) için boşluk bırakır
-    backgroundColor: LIGHT_CONTAINER_BG,
+    backgroundColor: '#F8FAFC',
   },
   innerContentCompact: {
-    paddingHorizontal: 16,
+    paddingHorizontal: 32,
     paddingVertical: 10,
     // Web iyileştirmesi: İçeriği ortala ve çok genişlemesini engelle
-    maxWidth: Platform.OS === 'web' ? 1200 : '100%',
+    maxWidth: Platform.OS === 'web' ? 1440 : '100%',
     alignSelf: 'center',
     width: '100%',
   },

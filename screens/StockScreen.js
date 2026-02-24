@@ -84,9 +84,7 @@ export default function StockScreen({ navigation }) {
 
   const onEdit = (prod) => {
     if (isPremium) {
-      // Premium ise direkt aç
-      setEditProduct({ ...prod, quantity: String(prod.quantity ?? 0), cost: String(prod.cost ?? 0), price: String(prod.price ?? 0), criticalStockLimit: String(prod.criticalStockLimit ?? 0) });
-      setEditModalVisible(true);
+      navigation.navigate("AddProductScreen", { product: prod });
       return;
     }
 
@@ -105,15 +103,6 @@ export default function StockScreen({ navigation }) {
         ]
       );
     }
-  };
-  const handleUpdateProduct = () => {
-    if (!editProduct || !editProduct.name || !editProduct.name.trim()) { Alert.alert(t('error'), t('product_name_required')); return; }
-    const updatedProd = { ...editProduct, id: editProduct.id, quantity: parseInt(editProduct.quantity, 10) || 0, cost: parseFloat(editProduct.cost) || 0, price: parseFloat(editProduct.price) || 0, criticalStockLimit: parseInt(editProduct.criticalStockLimit, 10) || 0 };
-    updateProduct(updatedProd);
-    toast.showToast && toast.showToast(`${updatedProd.name} ${t('updated')}`);
-    setEditModalVisible(false);
-    setEditProduct(null);
-    triggerHaptic(HapticType.SUCCESS);
   };
   const confirmDelete = (id, name) => {
     triggerHaptic(HapticType.WARNING);
@@ -165,6 +154,8 @@ export default function StockScreen({ navigation }) {
       serialNumber: product.serialNumber,
       productCode: product.code, // YENİ EKLENDİ
       category: product.category,
+      brand: product.brand || "",
+      unit: product.unit || "uom_pcs",
       invoiceNumber: invoiceNumber ?? null,
       isShipped: false,
       shipmentDate: shipmentDateISO
@@ -328,9 +319,11 @@ export default function StockScreen({ navigation }) {
             <View style={styles.webTableContainer}>
               <View style={styles.webTableHeader}>
                 <Text style={[styles.webHeaderCell, { flex: 2 }]}>{t('product_name')}</Text>
+                <Text style={[styles.webHeaderCell, { flex: 1 }]}>{t('brand')}</Text>
                 <Text style={[styles.webHeaderCell, { flex: 1 }]}>{t('category')}</Text>
                 <Text style={[styles.webHeaderCell, { flex: 1, textAlign: 'center' }]}>{t('stock_quantity')}</Text>
                 <Text style={[styles.webHeaderCell, { flex: 1, textAlign: 'right' }]}>{t('sale_price')}</Text>
+                <Text style={[styles.webHeaderCell, { flex: 1 }]}>{t('warehouse_location')}</Text>
                 <Text style={[styles.webHeaderCell, { flex: 1, textAlign: 'center' }]}>{t('actions')}</Text>
               </View>
               <FlatList
@@ -343,15 +336,21 @@ export default function StockScreen({ navigation }) {
                       {item.code && <Text style={styles.webCellSubText}>{item.code}</Text>}
                     </View>
                     <View style={{ flex: 1, justifyContent: 'center' }}>
+                      <Text style={styles.webCellText}>{item.brand || '-'}</Text>
+                    </View>
+                    <View style={{ flex: 1, justifyContent: 'center' }}>
                       <Text style={styles.webCellText}>{item.category || '-'}</Text>
                     </View>
                     <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}>
                       <View style={[styles.webStatusBadge, item.quantity <= (item.criticalStockLimit || 0) ? styles.webStatusCritical : styles.webStatusNormal]}>
-                        <Text style={[styles.webStatusText, item.quantity <= (item.criticalStockLimit || 0) ? { color: '#B91C1C' } : { color: '#15803D' }]}>{item.quantity}</Text>
+                        <Text style={[styles.webStatusText, item.quantity <= (item.criticalStockLimit || 0) ? { color: '#B91C1C' } : { color: '#15803D' }]}>{item.quantity} {t(item.unit || 'uom_pcs')}</Text>
                       </View>
                     </View>
                     <View style={{ flex: 1, justifyContent: 'center', alignItems: 'flex-end' }}>
                       <Text style={styles.webCellText}>{Number(item.price ?? 0).toLocaleString('tr-TR', { minimumFractionDigits: 2 })} ₺</Text>
+                    </View>
+                    <View style={{ flex: 1, justifyContent: 'center', paddingLeft: 10 }}>
+                      <Text style={styles.webCellText}>{item.warehouseLocation || '-'}</Text>
                     </View>
                     <View style={{ flex: 1, flexDirection: 'row', justifyContent: 'center', alignItems: 'center', gap: 8 }}>
                       <TouchableOpacity onPress={() => onEdit(item)} style={styles.webActionBtn}>
@@ -428,51 +427,6 @@ export default function StockScreen({ navigation }) {
       </Modal>
 
       {/* --- DÜZENLEME MODALI (DÜZELTİLDİ) --- */}
-      <Modal visible={editModalVisible} animationType="slide" transparent onRequestClose={() => setEditModalVisible(false)}>
-        <KeyboardSafeView offsetIOS={0} disableScrollView={true}>
-          <View style={styles.modalOverlay}>
-            <View style={styles.sellModalContent}>
-              <View style={styles.modalHandle} />
-              <Text style={styles.modalTitle}>{t('edit_product')}</Text>
-              <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={{ paddingBottom: 20 }}>
-                <Text style={styles.inputLabel}>{t('product_name')}</Text>
-                <TextInput style={styles.input} value={editProduct?.name} onChangeText={(text) => setEditProduct(prev => ({ ...prev, name: text }))} placeholder={t('product_name')} selectTextOnFocus={Platform.OS === 'web'} />
-
-                <View style={styles.rowInputs}>
-                  <View style={{ flex: 1, marginRight: 10 }}>
-                    <Text style={styles.inputLabel}>{t('stock_quantity')}</Text>
-                    <TextInput style={styles.input} value={editProduct?.quantity} onChangeText={(text) => setEditProduct(prev => ({ ...prev, quantity: text.replace(/[^0-9]/g, '') }))} keyboardType="number-pad" selectTextOnFocus={Platform.OS === 'web'} />
-                  </View>
-                  <View style={{ flex: 1 }}>
-                    <Text style={styles.inputLabel}>{t('critical_limit')}</Text>
-                    <TextInput style={styles.input} value={editProduct?.criticalStockLimit} onChangeText={(text) => setEditProduct(prev => ({ ...prev, criticalStockLimit: text.replace(/[^0-9]/g, '') }))} keyboardType="number-pad" selectTextOnFocus={Platform.OS === 'web'} />
-                  </View>
-                </View>
-
-                <View style={styles.rowInputs}>
-                  <View style={{ flex: 1, marginRight: 10 }}>
-                    <Text style={styles.inputLabel}>{t('purchase_price')} (₺)</Text>
-                    <TextInput style={styles.input} value={editProduct?.cost} onChangeText={(text) => setEditProduct(prev => ({ ...prev, cost: text.replace(/[^0-9.]/g, '') }))} keyboardType="decimal-pad" selectTextOnFocus={Platform.OS === 'web'} />
-                  </View>
-                  <View style={{ flex: 1 }}>
-                    <Text style={styles.inputLabel}>{t('sale_price')} (₺)</Text>
-                    <TextInput style={styles.input} value={editProduct?.price} onChangeText={(text) => setEditProduct(prev => ({ ...prev, price: text.replace(/[^0-9.]/g, '') }))} keyboardType="decimal-pad" selectTextOnFocus={Platform.OS === 'web'} />
-                  </View>
-                </View>
-
-                <TouchableOpacity style={[styles.saveButton, { marginTop: 25 }]} onPress={handleUpdateProduct}>
-                  <Text style={styles.saveButtonText}>{t('save_and_update')}</Text>
-                </TouchableOpacity>
-                <TouchableOpacity style={styles.cancelButton} onPress={() => setEditModalVisible(false)}>
-                  <Text style={styles.cancelButtonText}>{t('cancel')}</Text>
-                </TouchableOpacity>
-              </ScrollView>
-            </View>
-            {/* GÜVENLİ ALAN KAPATICI */}
-            <View style={{ height: Platform.OS === 'ios' ? 34 : 0, backgroundColor: '#fff' }} />
-          </View>
-        </KeyboardSafeView>
-      </Modal>
 
       <InvoiceModal visible={invoiceModalVisible} initialInvoice={""} initialShipmentDate={new Date().toISOString()} onSave={(invoiceNum, shipmentDateISO) => finalizeSaleWithInvoice(invoiceNum, shipmentDateISO)} onCancel={() => { setInvoiceModalVisible(false); setInvoicePayload(null); }} onGenerate={() => generateInvoiceNumber()} productInfo={invoicePayload ? { name: invoicePayload.product.name, quantity: invoicePayload.quantity, totalPrice: (invoicePayload.quantity * invoicePayload.price).toFixed(2) } : null} />
 
@@ -519,8 +473,14 @@ const StockListItem = ({ item, onSell, onEdit, onDelete }) => {
           </View>
           <View style={styles.subTitleRow}>
             <View style={styles.categoryBadge}>
-              <Text style={styles.categoryText}>{item.category || 'Genel'}</Text>
+              <Text style={styles.categoryText}>{item.brand ? `${item.brand} / ` : ''}{item.category || 'Genel'}</Text>
             </View>
+            {item.warehouseLocation && (
+              <View style={[styles.categoryBadge, { backgroundColor: '#F0F9FF' }]}>
+                <Ionicons name="location-outline" size={10} color={Colors.iosBlue} style={{ marginRight: 3 }} />
+                <Text style={[styles.categoryText, { color: Colors.iosBlue }]}>{item.warehouseLocation}</Text>
+              </View>
+            )}
             {item.code && (
               <View style={styles.codeBadge}>
                 <Ionicons name="barcode-outline" size={10} color={Colors.secondary} style={{ marginRight: 3 }} />
@@ -545,7 +505,7 @@ const StockListItem = ({ item, onSell, onEdit, onDelete }) => {
               <Ionicons name="cube-outline" size={12} color={Colors.secondary} />
               <Text style={styles.metricLabel}>{t('stock_label')}</Text>
             </View>
-            <Text style={[styles.metricValue, { color: statusColor }]}>{currentQuantity}</Text>
+            <Text style={[styles.metricValue, { color: statusColor }]}>{currentQuantity} {t(item.unit || 'uom_pcs')}</Text>
           </View>
 
           <View style={styles.metricDivider} />
@@ -619,13 +579,13 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    paddingVertical: 12,
-    borderRadius: 12,
+    paddingVertical: 14,
+    borderRadius: 14,
     shadowColor: "#000",
-    shadowOffset: { width: 0, height: 2 },
+    shadowOffset: { width: 0, height: 4 },
     shadowOpacity: 0.1,
-    shadowRadius: 4,
-    elevation: 2,
+    shadowRadius: 8,
+    elevation: 3,
   },
   headerActionText: {
     color: '#fff',
@@ -638,11 +598,12 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     backgroundColor: '#fff',
-    paddingVertical: 10,
-    borderRadius: 12,
+    paddingVertical: 12,
+    borderRadius: 14,
     marginBottom: 16,
     borderWidth: 1,
     borderColor: '#E2E8F0',
+    boxShadow: '0 1px 2px rgba(0,0,0,0.05)',
   },
   analysisButtonText: {
     color: Colors.iosBlue,
@@ -883,26 +844,28 @@ const styles = StyleSheet.create({
   // --- WEB TABLE STYLES ---
   webTableContainer: {
     backgroundColor: '#fff',
-    borderRadius: 8,
+    borderRadius: 16,
     borderWidth: 1,
     borderColor: '#E2E8F0',
     overflow: 'hidden',
     marginTop: 10,
     marginBottom: 50,
+    boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06)',
   },
   webTableHeader: {
     flexDirection: 'row',
     backgroundColor: '#F8FAFC',
     borderBottomWidth: 1,
     borderBottomColor: '#E2E8F0',
-    paddingVertical: 12,
-    paddingHorizontal: 16,
+    paddingVertical: 16,
+    paddingHorizontal: 20,
   },
   webHeaderCell: {
-    fontSize: 13,
+    fontSize: 12,
     fontWeight: '700',
-    color: '#64748B',
+    color: '#475569',
     textTransform: 'uppercase',
+    letterSpacing: 0.5,
   },
   webTableRow: {
     flexDirection: 'row',

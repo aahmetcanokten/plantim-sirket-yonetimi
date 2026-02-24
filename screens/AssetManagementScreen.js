@@ -9,7 +9,8 @@ import {
     TextInput,
     Alert,
     Platform,
-    ScrollView
+    ScrollView,
+    Dimensions
 } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import ImmersiveLayout from "../components/ImmersiveLayout";
@@ -317,6 +318,13 @@ export default function AssetManagementScreen({ navigation }) {
         }
     };
 
+    const stats = useMemo(() => {
+        const total = assets.length;
+        const assigned = assets.filter(a => a.status === 'ASSIGNED').length;
+        const available = assets.filter(a => a.status === 'AVAILABLE').length;
+        return { total, assigned, available };
+    }, [assets]);
+
     const renderAssetItem = ({ item }) => {
         const assignedPerson = item.assigned_person_id ? personnel.find(p => p.id === item.assigned_person_id) : null;
 
@@ -389,7 +397,23 @@ export default function AssetManagementScreen({ navigation }) {
     };
 
     return (
-        <ImmersiveLayout title={t("asset_management")} subtitle={`${filteredAssets.length} ${t("quantity_short")}`} onGoBack={() => navigation.goBack()}>
+        <ImmersiveLayout title={t("asset_management")} subtitle={`${filteredAssets.length} ${t("quantity_short")}`} onGoBack={() => navigation.goBack()} noScrollView={Platform.OS === 'web'}>
+
+            {/* İSTATİSTİK KARTLARI */}
+            <View style={styles.statsContainer}>
+                <View style={[styles.statCard, { borderLeftColor: Colors.iosBlue }]}>
+                    <Text style={styles.statLabel}>{t("all")}</Text>
+                    <Text style={styles.statValue}>{stats.total}</Text>
+                </View>
+                <View style={[styles.statCard, { borderLeftColor: '#166534' }]}>
+                    <Text style={styles.statLabel}>{t("asset_assigned")}</Text>
+                    <Text style={[styles.statValue, { color: '#166534' }]}>{stats.assigned}</Text>
+                </View>
+                <View style={[styles.statCard, { borderLeftColor: Colors.secondary }]}>
+                    <Text style={styles.statLabel}>{t("asset_available")}</Text>
+                    <Text style={[styles.statValue, { color: Colors.secondary }]}>{stats.available}</Text>
+                </View>
+            </View>
 
             {/* ARAMA ÇUBUĞU */}
             <View style={styles.searchContainer}>
@@ -409,7 +433,6 @@ export default function AssetManagementScreen({ navigation }) {
             </View>
 
             {/* Tabs */}
-            {/* Tabs */}
             <View style={styles.tabContainer}>
                 <TouchableOpacity style={[styles.tab, activeTab === 'all' && styles.activeTab]} onPress={() => setActiveTab('all')}>
                     <Text style={[styles.tabText, activeTab === 'all' && styles.activeTabText]}>{t("all")}</Text>
@@ -422,18 +445,103 @@ export default function AssetManagementScreen({ navigation }) {
                 </TouchableOpacity>
             </View>
 
-            <FlatList
-                data={filteredAssets}
-                keyExtractor={item => item.id}
-                renderItem={renderAssetItem}
-                contentContainerStyle={{ padding: 16, paddingBottom: 100 }}
-                ListEmptyComponent={
-                    <View style={styles.emptyState}>
-                        <Ionicons name="file-tray-outline" size={48} color={Colors.secondary} />
-                        <Text style={styles.emptyText}>{t("no_records_found")}</Text>
+            {Platform.OS === 'web' && Dimensions.get('window').width > 800 ? (
+                <View style={styles.webTableWrapper}>
+                    <View style={styles.webTableContainer}>
+                        <View style={styles.webTableHeader}>
+                            <Text style={[styles.webHeaderCell, { flex: 2 }]}>{t("product_name")}</Text>
+                            <Text style={[styles.webHeaderCell, { flex: 1.5 }]}>{t("serial_number")}</Text>
+                            <Text style={[styles.webHeaderCell, { flex: 1, textAlign: 'center' }]}>{t("status") || "Durum"}</Text>
+                            <Text style={[styles.webHeaderCell, { flex: 2 }]}>{t("personnel")}</Text>
+                            <Text style={[styles.webHeaderCell, { flex: 1 }]}>{t("date")}</Text>
+                            <Text style={[styles.webHeaderCell, { flex: 1.5, textAlign: 'center' }]}>{t("actions")}</Text>
+                        </View>
+                        <FlatList
+                            data={filteredAssets}
+                            keyExtractor={item => item.id}
+                            renderItem={({ item, index }) => {
+                                const assignedPerson = item.assigned_person_id ? personnel.find(p => p.id === item.assigned_person_id) : null;
+                                return (
+                                    <View style={[styles.webTableRow, index % 2 === 0 ? styles.webTableRowEven : styles.webTableRowOdd]}>
+                                        <View style={{ flex: 2 }}>
+                                            <Text style={styles.webCellTextBold}>{item.name}</Text>
+                                            <Text style={styles.webCellSubText}>{item.model}</Text>
+                                        </View>
+                                        <View style={{ flex: 1.5 }}>
+                                            <Text style={styles.webCellText}>{item.serial_number || "-"}</Text>
+                                        </View>
+                                        <View style={{ flex: 1, alignItems: 'center' }}>
+                                            <View style={[styles.webStatusBadge, { backgroundColor: item.status === 'ASSIGNED' ? '#DCFCE7' : '#F3F4F6' }]}>
+                                                <Text style={[styles.webStatusText, { color: item.status === 'ASSIGNED' ? '#166534' : Colors.secondary }]}>
+                                                    {item.status === 'ASSIGNED' ? t("asset_assigned") : t("asset_available")}
+                                                </Text>
+                                            </View>
+                                        </View>
+                                        <View style={{ flex: 2 }}>
+                                            {assignedPerson ? (
+                                                <View style={styles.webPersonCell}>
+                                                    <View style={styles.webAvatarSmall}>
+                                                        <Text style={styles.webAvatarTextSmall}>{assignedPerson.name.charAt(0)}</Text>
+                                                    </View>
+                                                    <Text style={styles.webCellText}>{assignedPerson.name}</Text>
+                                                </View>
+                                            ) : (
+                                                <Text style={[styles.webCellText, { color: Colors.muted }]}>-</Text>
+                                            )}
+                                        </View>
+                                        <View style={{ flex: 1 }}>
+                                            <Text style={styles.webCellText}>
+                                                {item.assigned_date ? new Date(item.assigned_date).toLocaleDateString() : "-"}
+                                            </Text>
+                                        </View>
+                                        <View style={{ flex: 1.5, flexDirection: 'row', justifyContent: 'center', gap: 6 }}>
+                                            {item.status === 'AVAILABLE' ? (
+                                                <TouchableOpacity title={t("asset_assign")} style={styles.webActionBtn} onPress={() => openAssignModal(item)}>
+                                                    <Ionicons name="person-add" size={16} color={Colors.iosBlue} />
+                                                </TouchableOpacity>
+                                            ) : (
+                                                <>
+                                                    <TouchableOpacity title="Form" style={[styles.webActionBtn, { backgroundColor: '#F0F9FF' }]} onPress={() => handlePrintZimmetForm(item)}>
+                                                        <Ionicons name="print-outline" size={16} color={Colors.iosBlue} />
+                                                    </TouchableOpacity>
+                                                    <TouchableOpacity title={t("asset_return")} style={[styles.webActionBtn, { backgroundColor: '#FFF7ED' }]} onPress={() => handleReturn(item)}>
+                                                        <Ionicons name="arrow-undo" size={16} color={Colors.warning} />
+                                                    </TouchableOpacity>
+                                                </>
+                                            )}
+                                            <TouchableOpacity style={styles.webActionBtn} onPress={() => handleEditAsset(item)}>
+                                                <Ionicons name="create-outline" size={16} color={Colors.secondary} />
+                                            </TouchableOpacity>
+                                            <TouchableOpacity style={[styles.webActionBtn, { backgroundColor: '#FEF2F2' }]} onPress={() => handleDeleteAsset(item.id)}>
+                                                <Ionicons name="trash-outline" size={16} color={Colors.error} />
+                                            </TouchableOpacity>
+                                        </View>
+                                    </View>
+                                );
+                            }}
+                            ListEmptyComponent={
+                                <View style={styles.emptyState}>
+                                    <Ionicons name="file-tray-outline" size={48} color={Colors.secondary} />
+                                    <Text style={styles.emptyText}>{t("no_records_found")}</Text>
+                                </View>
+                            }
+                        />
                     </View>
-                }
-            />
+                </View>
+            ) : (
+                <FlatList
+                    data={filteredAssets}
+                    keyExtractor={item => item.id}
+                    renderItem={renderAssetItem}
+                    contentContainerStyle={{ padding: 16, paddingBottom: 100 }}
+                    ListEmptyComponent={
+                        <View style={styles.emptyState}>
+                            <Ionicons name="file-tray-outline" size={48} color={Colors.secondary} />
+                            <Text style={styles.emptyText}>{t("no_records_found")}</Text>
+                        </View>
+                    }
+                />
+            )}
 
             <TouchableOpacity style={styles.fab} onPress={handleOpenAddModal}>
                 <Ionicons name="add" size={30} color="#fff" />
@@ -792,4 +900,119 @@ const styles = StyleSheet.create({
         alignItems: 'center',
         justifyContent: 'center',
     },
+    // Web Table Styles
+    webTableWrapper: {
+        flex: 1,
+        paddingHorizontal: 16,
+        paddingBottom: 20,
+    },
+    webTableContainer: {
+        backgroundColor: '#fff',
+        borderRadius: 12,
+        borderWidth: 1,
+        borderColor: '#E2E8F0',
+        overflow: 'hidden',
+        minHeight: 400,
+    },
+    webTableHeader: {
+        flexDirection: 'row',
+        backgroundColor: '#F8FAFC',
+        borderBottomWidth: 1,
+        borderBottomColor: '#E2E8F0',
+        paddingVertical: 12,
+        paddingHorizontal: 16,
+    },
+    webHeaderCell: {
+        fontSize: 12,
+        fontWeight: '700',
+        color: '#64748B',
+        textTransform: 'uppercase',
+    },
+    webTableRow: {
+        flexDirection: 'row',
+        paddingVertical: 12,
+        paddingHorizontal: 16,
+        borderBottomWidth: 1,
+        borderBottomColor: '#F1F5F9',
+        alignItems: 'center',
+    },
+    webTableRowEven: {
+        backgroundColor: '#fff',
+    },
+    webTableRowOdd: {
+        backgroundColor: '#FAFBFC',
+    },
+    webCellText: {
+        fontSize: 14,
+        color: Colors.textPrimary,
+    },
+    webCellTextBold: {
+        fontSize: 14,
+        fontWeight: '600',
+        color: Colors.textPrimary,
+    },
+    webCellSubText: {
+        fontSize: 12,
+        color: Colors.secondary,
+    },
+    webStatusBadge: {
+        paddingHorizontal: 8,
+        paddingVertical: 4,
+        borderRadius: 6,
+    },
+    webStatusText: {
+        fontSize: 11,
+        fontWeight: '700',
+    },
+    webPersonCell: {
+        flexDirection: 'row',
+        alignItems: 'center',
+    },
+    webAvatarSmall: {
+        width: 24,
+        height: 24,
+        borderRadius: 12,
+        backgroundColor: '#EFF6FF',
+        alignItems: 'center',
+        justifyContent: 'center',
+        marginRight: 8,
+    },
+    webAvatarTextSmall: {
+        fontSize: 12,
+        color: Colors.iosBlue,
+        fontWeight: '700',
+    },
+    webActionBtn: {
+        padding: 6,
+        borderRadius: 6,
+        backgroundColor: '#F1F5F9',
+    },
+    // Stats Styles
+    statsContainer: {
+        flexDirection: 'row',
+        paddingHorizontal: 16,
+        gap: 12,
+        marginBottom: 16,
+    },
+    statCard: {
+        flex: 1,
+        backgroundColor: '#fff',
+        padding: 12,
+        borderRadius: 12,
+        borderLeftWidth: 4,
+        ...IOSShadow,
+    },
+    statLabel: {
+        fontSize: 11,
+        color: Colors.secondary,
+        fontWeight: '600',
+        textTransform: 'uppercase',
+    },
+    statValue: {
+        fontSize: 20,
+        fontWeight: '700',
+        color: Colors.textPrimary,
+        marginTop: 2,
+    },
 });
+

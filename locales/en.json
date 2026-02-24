@@ -504,7 +504,7 @@
     "web_feature_personnel_desc": "Increase efficiency with task assignments and personnel performance tracking.",
     "web_feature_security": "Secure Cloud Infrastructure",
     "web_feature_security_desc": "Your data is encrypted and backed up with the highest security standards.",
-    "web_trust_stat_1": "1000+",
+    "web_trust_stat_1": "200+",
     "web_trust_desc_1": "Active Companies",
     "web_trust_stat_2": "99.9%",
     "web_trust_desc_2": "Uptime Guarantee",
@@ -514,5 +514,16 @@
     "welcome_back": "Welcome Back",
     "login_to_continue": "Login to continue",
     "create_account": "Create Account",
-    "signup_to_start": "Enter your details to get started"
+    "signup_to_start": "Enter your details to get started",
+    "brand": "Brand",
+    "unit": "Unit",
+    "tax_rate": "Tax Rate (%)",
+    "warehouse_location": "Warehouse / Location",
+    "supplier": "Supplier",
+    "description": "Description",
+    "uom_pcs": "Pcs",
+    "uom_kg": "Kg",
+    "uom_m": "Meter",
+    "uom_lt": "Liter",
+    "uom_box": "Box"
 }

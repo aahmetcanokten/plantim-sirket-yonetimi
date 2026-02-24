@@ -28,6 +28,8 @@ import TaskListScreen from "./screens/TaskListScreen";
 import AssetManagementScreen from "./screens/AssetManagementScreen"; // YENİ
 import AssemblyScreen from "./screens/AssemblyScreen";
 import ResetPasswordScreen from "./screens/ResetPasswordScreen";
+import WorkOrderScreen from "./screens/WorkOrderScreen";
+import WorkOrderArchiveScreen from "./screens/WorkOrderArchiveScreen";
 import LoginScreen from "./screens/LoginScreen";
 import PaywallScreen from "./screens/PaywallScreen";
 import OnboardingScreen from "./screens/OnboardingScreen";
@@ -64,6 +66,7 @@ function MainTabs() {
         tabBarActiveTintColor: Colors.primary,
         tabBarInactiveTintColor: Colors.secondary,
         tabBarStyle: {
+          display: Platform.OS === 'web' ? 'none' : 'flex',
           height: Platform.OS === "ios" ? 90 : (Platform.OS === 'web' ? 70 : 60),
           borderTopWidth: 0,
           backgroundColor: "#fff",
@@ -133,6 +136,8 @@ function RootNavigator() {
             <Stack.Screen name="TaskListScreen" component={TaskListScreen} />
             <Stack.Screen name="AssetManagementScreen" component={AssetManagementScreen} />
             <Stack.Screen name="AssemblyScreen" component={AssemblyScreen} />
+            <Stack.Screen name="WorkOrderScreen" component={WorkOrderScreen} />
+            <Stack.Screen name="WorkOrderArchiveScreen" component={WorkOrderArchiveScreen} />
             <Stack.Screen name="Paywall" component={PaywallScreen} options={{ presentation: 'modal' }} />
           </>
         )

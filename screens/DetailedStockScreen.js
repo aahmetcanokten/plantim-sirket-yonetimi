@@ -105,15 +105,17 @@ export default function DetailedStockScreen({ navigation }) {
             <View style={styles.detailedItem}>
                 {/* Ürün Adı ve Kategori */}
                 <View style={styles.itemHeader}>
-                    <Text style={styles.itemName}>{item.name}</Text>
-                    <Text style={styles.itemCategory}>{item.category || t("unspecified")}</Text>
+                    <View style={{ flex: 1 }}>
+                        <Text style={styles.itemName}>{item.name}</Text>
+                        <Text style={styles.itemCategory}>{item.brand ? `${item.brand} / ` : ''}{item.category || t("unspecified")}</Text>
+                    </View>
                 </View>
 
                 {/* Detay Satırları */}
                 <View style={styles.detailRow}>
                     <Text style={styles.detailLabel}>{t("stock_quantity_label")}:</Text>
                     <Text style={[styles.detailValue, item.isCritical && { color: Colors.warning, fontWeight: '800' }]}>
-                        {item.quantity || 0} {item.isCritical && `(${t("critical_limit")}: ${item.criticalLimit})`}
+                        {item.quantity || 0} {t(item.unit || 'uom_pcs')} {item.isCritical && `(${t("critical_limit")}: ${item.criticalLimit})`}
                     </Text>
                 </View>
                 <View style={styles.detailRow}>

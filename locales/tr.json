@@ -515,5 +515,16 @@
     "welcome_back": "Tekrar Hoşgeldiniz",
     "login_to_continue": "Devam etmek için giriş yapın",
     "create_account": "Hesap Oluştur",
-    "signup_to_start": "Başlamak için bilgilerinizi girin"
+    "signup_to_start": "Başlamak için bilgilerinizi girin",
+    "brand": "Marka",
+    "unit": "Birim",
+    "tax_rate": "KDV Oranı (%)",
+    "warehouse_location": "Depo Konumu / Raf",
+    "supplier": "Tedarikçi",
+    "description": "Açıklama",
+    "uom_pcs": "Adet",
+    "uom_kg": "Kg",
+    "uom_m": "Metre",
+    "uom_lt": "Litre",
+    "uom_box": "Koli"
 }
