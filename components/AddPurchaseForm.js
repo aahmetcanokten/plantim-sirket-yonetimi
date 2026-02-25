@@ -16,6 +16,7 @@ import { Colors, CardRadius, ButtonRadius } from "../Theme";
 import DatePickerButton from "./DatePickerButton";
 import KeyboardSafeView from "./KeyboardSafeView";
 import { useTranslation } from "react-i18next";
+import { Ionicons } from "@expo/vector-icons";
 
 
 /*
@@ -156,10 +157,12 @@ export default function AddPurchaseForm({ onAdd, onCancel, initial = null }) {
 
   return (
     <View style={{ flex: 1, backgroundColor: "#fff", borderRadius: CardRadius }}>
-      <ScrollView contentContainerStyle={styles.scrollContent}>
-        <View style={styles.card}>
+      <ScrollView contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
+        {/* ÜRÜN BİLGİLERİ SECTION */}
+        <View style={styles.formSection}>
+          <Text style={styles.sectionTitle}>{t("product_info")}</Text>
           <View style={styles.headerRow}>
-            <Text style={styles.label}>{t("product_info")} <Text style={{ color: Colors.critical }}>*</Text></Text>
+            <Text style={styles.label}>{t("product_name")} <Text style={{ color: Colors.critical }}>*</Text></Text>
             {productId ? (
               <TouchableOpacity onPress={clearSelection}>
                 <Text style={styles.disconnectLink}>{t("clear_selection")}</Text>
@@ -167,7 +170,7 @@ export default function AddPurchaseForm({ onAdd, onCancel, initial = null }) {
             ) : null}
           </View>
 
-          <TouchableOpacity activeOpacity={1} onPress={() => !productId && Alert.alert(t("info"), t("select_product_prompt"))}>
+          <TouchableOpacity activeOpacity={1} onPress={() => !productId && openProductSelector()}>
             <View style={[styles.readOnlyInputContainer, !productId && styles.placeholderContainer]}>
               <Text style={[styles.readOnlyText, !productId && styles.placeholderText]}>
                 {productName || t("product_selection_waiting")}
@@ -175,44 +178,57 @@ export default function AddPurchaseForm({ onAdd, onCancel, initial = null }) {
             </View>
           </TouchableOpacity>
 
-          <View style={{ marginTop: 8 }}>
-            <Text style={styles.label}>{t("model_category")}</Text>
-            <View style={[styles.readOnlyInputContainer, styles.readOnlyGray]}>
-              <Text style={[styles.readOnlyText, !model && styles.placeholderText]}>
-                {model || "-"}
-              </Text>
-            </View>
-          </View>
-
           {!productId && (
             <View style={styles.actionButtonsContainer}>
               <TouchableOpacity style={[styles.actionBtn, styles.selectBtn]} onPress={openProductSelector}>
+                <Ionicons name="search" size={16} color="#fff" style={{ marginRight: 6 }} />
                 <Text style={styles.actionBtnText}>{t("select_existing_product")}</Text>
               </TouchableOpacity>
               <View style={{ width: 10 }} />
               <TouchableOpacity style={[styles.actionBtn, styles.createBtn]} onPress={openQuickAddModal}>
+                <Ionicons name="add-circle" size={16} color="#fff" style={{ marginRight: 6 }} />
                 <Text style={styles.actionBtnText}>{t("define_new_product")}</Text>
               </TouchableOpacity>
             </View>
           )}
 
-          <View style={{ flexDirection: "row", marginTop: 12 }}>
-            <View style={{ flex: 1 }}>
-              <Text style={styles.label}>{t("order_quantity")}</Text>
+          {productId ? (
+            <View style={{ marginTop: 12 }}>
+              <Text style={styles.label}>{t("model_category")}</Text>
+              <View style={[styles.readOnlyInputContainer, styles.readOnlyGray]}>
+                <Text style={[styles.readOnlyText, !model && styles.placeholderText]}>
+                  {model || "-"}
+                </Text>
+              </View>
+            </View>
+          ) : null}
+        </View>
+
+        {/* SİPARİŞ DETAYLARI SECTION */}
+        <View style={styles.formSection}>
+          <Text style={styles.sectionTitle}>{t("order_details") || "Sipariş Detayları"}</Text>
+          <View style={styles.inputRow}>
+            <View style={{ flex: 1, marginRight: 8 }}>
+              <Text style={styles.label}>{t("order_quantity")} <Text style={{ color: Colors.critical }}>*</Text></Text>
               <TextInput style={styles.input} value={quantity} onChangeText={setQuantity} keyboardType="number-pad" placeholder="1" selectTextOnFocus={Platform.OS === 'web'} />
             </View>
-            <View style={{ width: 12 }} />
             <View style={{ flex: 1 }}>
               <Text style={styles.label}>{t("unit_cost_currency")}</Text>
               <TextInput style={styles.input} value={unitCost} onChangeText={setUnitCost} keyboardType="decimal-pad" placeholder="0.00" selectTextOnFocus={Platform.OS === 'web'} />
             </View>
           </View>
+        </View>
 
-          <Text style={[styles.label, { marginTop: 8 }]}>{t("supplier_company")}</Text>
+        {/* LOJİSTİK VE TARİH SECTION */}
+        <View style={styles.formSection}>
+          <Text style={styles.sectionTitle}>{t("logistics_and_date") || "Lojistik ve Tarih"}</Text>
+          <Text style={styles.label}>{t("supplier_company")}</Text>
           <TextInput style={styles.input} value={supplier} onChangeText={setSupplier} placeholder={t("supplier_placeholder")} selectTextOnFocus={Platform.OS === 'web'} />
 
-          <Text style={[styles.label, { marginTop: 8 }]}>{t("expected_delivery_date")}</Text>
-          <DatePickerButton value={expectedDate} onChange={setExpectedDate} placeholder={t("date_not_specified")} />
+          <View style={{ marginTop: 12 }}>
+            <Text style={styles.label}>{t("expected_delivery_date")}</Text>
+            <DatePickerButton value={expectedDate} onChange={setExpectedDate} placeholder={t("date_not_specified")} />
+          </View>
         </View>
       </ScrollView>
 
@@ -403,10 +419,15 @@ const styles = StyleSheet.create({
   },
   // DÜZELTME BURADA:
   addButton: {
-    backgroundColor: Colors.iosBlue, // Colors.primary yerine kesin bir renk kullanıldı
+    backgroundColor: Colors.iosBlue,
     paddingVertical: 14,
-    borderRadius: ButtonRadius,
+    borderRadius: 12,
     alignItems: "center",
+    ...Platform.select({
+      web: {
+        cursor: 'pointer'
+      }
+    })
   },
   disabledButton: {
     backgroundColor: "#9CA3AF",
@@ -429,44 +450,45 @@ const styles = StyleSheet.create({
   },
   modalOverlay: {
     flex: 1,
-    justifyContent: "flex-end",
-    backgroundColor: "rgba(0,0,0,0.4)",
+    justifyContent: "center",
+    alignItems: 'center',
+    backgroundColor: "rgba(0,0,0,0.5)",
   },
   modalCard: {
     backgroundColor: "#fff",
-    padding: 20,
-    borderTopLeftRadius: 24,
-    borderTopRightRadius: 24,
+    padding: 24,
+    borderRadius: 20,
+    width: Platform.OS === 'web' ? 500 : '90%',
     maxHeight: "90%",
     shadowColor: "#000",
-    shadowOffset: { width: 0, height: -2 },
+    shadowOffset: { width: 0, height: 10 },
     shadowOpacity: 0.1,
-    shadowRadius: 10,
-    elevation: 5,
+    shadowRadius: 20,
+    elevation: 10,
   },
   modalHeader: {
     flexDirection: "row",
     justifyContent: "space-between",
     alignItems: "center",
-    marginBottom: 15,
+    marginBottom: 20,
   },
   modalTitle: {
     fontWeight: "800",
-    fontSize: 18,
+    fontSize: 20,
     color: Colors.textPrimary,
   },
   modalSubtitle: {
     fontSize: 14,
     color: Colors.secondary,
-    marginBottom: 15,
+    marginBottom: 20,
   },
   closeText: {
     color: Colors.iosBlue,
     fontSize: 16,
-    fontWeight: "600",
+    fontWeight: "700",
   },
   prodRow: {
-    paddingVertical: 12,
+    paddingVertical: 14,
     borderBottomWidth: 1,
     borderBottomColor: "#F1F5F9",
     flexDirection: "row",
@@ -475,11 +497,31 @@ const styles = StyleSheet.create({
   prodRowTitle: {
     fontWeight: "700",
     fontSize: 15,
-    color: "#333",
+    color: "#1e293b",
   },
   prodRowSubtitle: {
     color: Colors.secondary,
     fontSize: 13,
     marginTop: 2,
-  }
+  },
+  formSection: {
+    marginBottom: 20,
+    backgroundColor: '#F8FAFC',
+    padding: 16,
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: '#E2E8F0',
+  },
+  sectionTitle: {
+    fontSize: 14,
+    fontWeight: '800',
+    color: Colors.iosBlue,
+    marginBottom: 12,
+    textTransform: 'uppercase',
+    letterSpacing: 0.5,
+  },
+  inputRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
 });
