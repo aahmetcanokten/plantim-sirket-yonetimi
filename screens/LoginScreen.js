@@ -15,6 +15,9 @@ export default function LoginScreen() {
   // YENİ: Ekranın "giriş" mi yoksa "kayıt" modunda mı olduğunu tutan state
   const [isLoginView, setIsLoginView] = useState(true);
 
+  // YENİ: Web sayfasındaki aktif sekme (login, about, solutions, pricing)
+  const [activeTab, setActiveTab] = useState('login');
+
   const [loading, setLoading] = useState(false);
 
 
@@ -122,6 +125,44 @@ export default function LoginScreen() {
     setConfirmPassword('');
   };
 
+  // Sekme değiştirici
+  const renderTabContent = () => {
+    switch (activeTab) {
+      case 'about':
+        return <AboutSection t={t} isMobileWeb={isMobileWeb} />;
+      case 'solutions':
+        return <SolutionsSection t={t} isMobileWeb={isMobileWeb} />;
+      case 'pricing':
+        return <PricingSection t={t} isMobileWeb={isMobileWeb} />;
+      default:
+        return (
+          <View style={[styles.webFormCard, isMobileWeb && { padding: isVerySmall ? 24 : 32, shadowOpacity: 0.05, elevation: 2 }]}>
+            <View style={{ alignItems: 'center', marginBottom: isVerySmall ? 24 : 40 }}>
+              <View style={[styles.formIconContainer, isVerySmall && { width: 48, height: 48, borderRadius: 14 }]}>
+                <Ionicons name={isLoginView ? "lock-open-outline" : "person-add-outline"} size={isVerySmall ? 24 : 32} color={Colors.iosBlue} />
+              </View>
+              <Text style={[styles.formTitle, isVerySmall && { fontSize: 24 }]}>{isLoginView ? t("welcome_back") || "Tekrar Hoş Geldiniz" : t("create_account") || "Hesap Oluşturun"}</Text>
+              <Text style={[styles.formSub, isVerySmall && { fontSize: 14 }]}>{isLoginView ? t("login_to_continue") || "Devam etmek için giriş yapın" : t("signup_to_start") || "Başlamak için ücretsiz kayıt olun"}</Text>
+            </View>
+
+            <LoginForm
+              email={email} setEmail={setEmail}
+              password={password} setPassword={setPassword}
+              confirmPassword={confirmPassword} setConfirmPassword={setConfirmPassword}
+              isLoginView={isLoginView} setIsLoginView={setIsLoginView}
+              loading={loading} handleLogin={handleLogin} handleSignUp={handleSignUp}
+              handlePasswordReset={handlePasswordReset} toggleView={toggleView}
+              t={t}
+              errorMsg={errorMsg}
+            />
+
+            <View style={[styles.formFooter, isVerySmall && { marginTop: 24, paddingTop: 16 }]}>
+              <Text style={styles.formFooterText}>{t("web_footer_text")}</Text>
+            </View>
+          </View>
+        );
+    }
+  };
 
   const { width } = useWindowDimensions();
   const isMobileWeb = Platform.OS === 'web' && width < 1024;
@@ -166,15 +207,36 @@ export default function LoginScreen() {
       {/* Sol Taraf: Pazarlama / Tanıtım (Mobilde Üst Kısma Geçer veya Küçülür) */}
       <View style={[
         styles.webLeftPanel,
-        isMobileWeb && { flex: 0, padding: isVerySmall ? 24 : 40, paddingTop: 60 }
+        isMobileWeb && { flex: 0, padding: isVerySmall ? 24 : 40, paddingTop: 60, minHeight: isMobileWeb ? 'auto' : '100vh' }
       ]}>
-        <View style={styles.webBranding}>
-          <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: isMobileWeb ? 24 : 40 }}>
-            <View style={styles.webLogoIcon}>
-              <Ionicons name="leaf" size={isVerySmall ? 24 : 32} color={Colors.iosBlue} />
+
+        {/* YENİ: Web Navigasyon Bar Ekleniyor */}
+        {!isMobileWeb && (
+          <View style={styles.webNavBar}>
+            <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+              <View style={[styles.webLogoIcon, { width: 40, height: 40, borderRadius: 12 }]}>
+                <Ionicons name="leaf" size={20} color={Colors.iosBlue} />
+              </View>
+              <Text style={[styles.webLogoText, { fontSize: 22, marginLeft: 12 }]}>PLANTİM</Text>
             </View>
-            <Text style={[styles.webLogoText, isVerySmall && { fontSize: 24 }]}>PLANTİM <Text style={{ fontWeight: '400', opacity: 0.8 }}>ERP</Text></Text>
+            <View style={styles.navLinks}>
+              <TouchableOpacity onPress={() => setActiveTab('login')}><Text style={[styles.navLink, activeTab === 'login' && styles.navLinkActive]}>{t('nav_login') || "Giriş / Kayıt"}</Text></TouchableOpacity>
+              <TouchableOpacity onPress={() => setActiveTab('about')}><Text style={[styles.navLink, activeTab === 'about' && styles.navLinkActive]}>{t('nav_about') || "Hakkımızda"}</Text></TouchableOpacity>
+              <TouchableOpacity onPress={() => setActiveTab('solutions')}><Text style={[styles.navLink, activeTab === 'solutions' && styles.navLinkActive]}>{t('nav_solutions') || "Çözümlerimiz"}</Text></TouchableOpacity>
+              <TouchableOpacity onPress={() => setActiveTab('pricing')}><Text style={[styles.navLink, activeTab === 'pricing' && styles.navLinkActive]}>{t('nav_pricing') || "Ücretlendirme"}</Text></TouchableOpacity>
+            </View>
           </View>
+        )}
+
+        <View style={styles.webBranding}>
+          {isMobileWeb && (
+            <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 24 }}>
+              <View style={styles.webLogoIcon}>
+                <Ionicons name="leaf" size={isVerySmall ? 24 : 32} color={Colors.iosBlue} />
+              </View>
+              <Text style={[styles.webLogoText, isVerySmall && { fontSize: 24 }]}>PLANTİM <Text style={{ fontWeight: '400', opacity: 0.8 }}>ERP</Text></Text>
+            </View>
+          )}
 
           <Text style={[styles.webHeroTitle, isMobileWeb && { fontSize: isVerySmall ? 28 : 36, lineHeight: isVerySmall ? 34 : 42, marginBottom: 16 }]}>
             {t("web_hero_title")}
@@ -233,42 +295,99 @@ export default function LoginScreen() {
         )}
       </View>
 
-      {/* Sağ Taraf: Giriş Formu */}
+      {/* Sağ Taraf: Değişen Panel (Form, About, vb.) */}
       <View style={[
         styles.webRightPanel,
         isMobileWeb && { flex: 1, padding: isVerySmall ? 16 : 40, paddingBottom: 60 }
       ]}>
-        <View style={[
-          styles.webFormCard,
-          isMobileWeb && { padding: isVerySmall ? 24 : 32, shadowOpacity: 0.05, elevation: 2 }
-        ]}>
-          <View style={{ alignItems: 'center', marginBottom: isVerySmall ? 24 : 40 }}>
-            <View style={[styles.formIconContainer, isVerySmall && { width: 48, height: 48, borderRadius: 14 }]}>
-              <Ionicons name={isLoginView ? "lock-open-outline" : "person-add-outline"} size={isVerySmall ? 24 : 32} color={Colors.iosBlue} />
-            </View>
-            <Text style={[styles.formTitle, isVerySmall && { fontSize: 24 }]}>{isLoginView ? t("welcome_back") : t("create_account")}</Text>
-            <Text style={[styles.formSub, isVerySmall && { fontSize: 14 }]}>{isLoginView ? t("login_to_continue") : t("signup_to_start")}</Text>
-          </View>
-
-          <LoginForm
-            email={email} setEmail={setEmail}
-            password={password} setPassword={setPassword}
-            confirmPassword={confirmPassword} setConfirmPassword={setConfirmPassword}
-            isLoginView={isLoginView} setIsLoginView={setIsLoginView}
-            loading={loading} handleLogin={handleLogin} handleSignUp={handleSignUp}
-            handlePasswordReset={handlePasswordReset} toggleView={toggleView}
-            t={t}
-            errorMsg={errorMsg}
-          />
-
-          <View style={[styles.formFooter, isVerySmall && { marginTop: 24, paddingTop: 16 }]}>
-            <Text style={styles.formFooterText}>{t("web_footer_text")}</Text>
-          </View>
-        </View>
+        {renderTabContent()}
       </View>
     </ScrollView>
   );
 }
+
+// YENİ EKLENEN SEKMELER (About, Solutions, Pricing)
+const AboutSection = ({ t }) => (
+  <ScrollView style={styles.scrollSection} showsVerticalScrollIndicator={false}>
+    <View style={styles.sectionCard}>
+      <Text style={styles.sectionTitle}>{t('about_title') || "Hakkımızda"}</Text>
+      <Text style={styles.sectionDesc}>{t('about_desc')}</Text>
+
+      <View style={styles.featureBox}>
+        <Ionicons name="rocket" size={32} color={Colors.iosBlue} />
+        <Text style={styles.featureTitle}>{t('about_mission')}</Text>
+        <Text style={styles.featureDesc}>{t('about_mission_desc')}</Text>
+      </View>
+
+      <View style={styles.featureBox}>
+        <Ionicons name="eye" size={32} color={Colors.iosGreen} />
+        <Text style={styles.featureTitle}>{t('about_vision')}</Text>
+        <Text style={styles.featureDesc}>{t('about_vision_desc')}</Text>
+      </View>
+      <Text style={styles.sectionDesc}>{t('about_contact')}</Text>
+    </View>
+  </ScrollView>
+);
+
+const SolutionsSection = ({ t }) => (
+  <ScrollView style={styles.scrollSection} showsVerticalScrollIndicator={false}>
+    <View style={styles.sectionCard}>
+      <Text style={styles.sectionTitle}>{t('nav_solutions') || "Çözümlerimiz"}</Text>
+      <Text style={styles.sectionDesc}>{t('solutions_desc')}</Text>
+
+      <View style={styles.solutionList}>
+        <View style={styles.solutionItem}>
+          <Ionicons name="cube" size={24} color="#6366F1" />
+          <Text style={styles.solutionItemTitle}>{t('sol_stock')}</Text>
+        </View>
+        <View style={styles.solutionItem}>
+          <Ionicons name="people" size={24} color="#10B981" />
+          <Text style={styles.solutionItemTitle}>{t('sol_hr')}</Text>
+        </View>
+        <View style={styles.solutionItem}>
+          <Ionicons name="stats-chart" size={24} color="#F59E0B" />
+          <Text style={styles.solutionItemTitle}>{t('sol_finance')}</Text>
+        </View>
+        <View style={styles.solutionItem}>
+          <Ionicons name="hammer" size={24} color="#EF4444" />
+          <Text style={styles.solutionItemTitle}>{t('sol_prod')}</Text>
+        </View>
+        <View style={styles.solutionItem}>
+          <Ionicons name="business" size={24} color="#8B5CF6" />
+          <Text style={styles.solutionItemTitle}>{t('sol_asset')}</Text>
+        </View>
+      </View>
+    </View>
+  </ScrollView>
+);
+
+const PricingSection = ({ t }) => (
+  <ScrollView style={styles.scrollSection} showsVerticalScrollIndicator={false}>
+    <View style={styles.sectionCard}>
+      <Text style={styles.sectionTitle}>{t('nav_pricing') || "Ücretlendirme"}</Text>
+      <Text style={styles.sectionDesc}>{t('pricing_desc')}</Text>
+
+      <View style={styles.pricingCardContainer}>
+        <View style={[styles.pricingCard, { borderColor: '#E2E8F0' }]}>
+          <Text style={styles.pricingPlan}>{t('pricing_starter')}</Text>
+          <Text style={styles.pricingPrice}>{t('pricing_free')}</Text>
+          <Text style={styles.pricingDetail}>{t('pricing_s_1')}</Text>
+          <Text style={styles.pricingDetail}>{t('pricing_s_2')}</Text>
+          <Text style={styles.pricingDetail}>{t('pricing_s_3')}</Text>
+        </View>
+
+        <View style={[styles.pricingCard, { borderColor: Colors.iosBlue, backgroundColor: '#F0F7FF' }]}>
+          <Text style={[styles.pricingPlan, { color: Colors.iosBlue }]}>{t('pricing_pro')}</Text>
+          <Text style={styles.pricingPrice}>299 ₺ <Text style={{ fontSize: 14, color: '#64748B' }}>{t('pricing_mo')}</Text></Text>
+          <Text style={styles.pricingDetail}>{t('pricing_p_1')}</Text>
+          <Text style={styles.pricingDetail}>{t('pricing_p_2')}</Text>
+          <Text style={styles.pricingDetail}>{t('pricing_p_3')}</Text>
+          <View style={styles.popularBadge}><Text style={{ color: '#fff', fontSize: 10, fontWeight: 'bold' }}>{t('pricing_popular')}</Text></View>
+        </View>
+      </View>
+    </View>
+  </ScrollView>
+);
 
 // Yardımcı Bileşenler
 const BusinessFeature = ({ icon, title, desc }) => (
@@ -743,4 +862,137 @@ const styles = StyleSheet.create({
     fontSize: 14,
     fontWeight: '600',
   },
+
+  // YENI STYLES FOR SECTIONS
+  webNavBar: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 60,
+    width: '100%',
+  },
+  navLinks: {
+    flexDirection: 'row',
+    gap: 30,
+  },
+  navLink: {
+    color: '#94A3B8',
+    fontSize: 16,
+    fontWeight: '500',
+    transition: 'all 0.2s',
+    ...Platform.select({ web: { cursor: 'pointer' } })
+  },
+  navLinkActive: {
+    color: '#fff',
+    fontWeight: '700',
+    borderBottomWidth: 2,
+    borderBottomColor: Colors.iosBlue,
+    paddingBottom: 4,
+  },
+  scrollSection: {
+    width: '100%',
+    flex: 1,
+  },
+  sectionCard: {
+    backgroundColor: '#fff',
+    borderRadius: 24,
+    padding: 48,
+    shadowColor: '#000',
+    shadowOpacity: 0.05,
+    shadowOffset: { width: 0, height: 20 },
+    shadowRadius: 30,
+    elevation: 8,
+    maxWidth: 600,
+    alignSelf: 'center',
+    width: '100%'
+  },
+  sectionTitle: {
+    fontSize: 36,
+    fontWeight: '800',
+    color: '#0F172A',
+    marginBottom: 16,
+    letterSpacing: -1,
+  },
+  sectionDesc: {
+    fontSize: 16,
+    color: '#64748B',
+    lineHeight: 24,
+    marginBottom: 30,
+  },
+  featureBox: {
+    backgroundColor: '#F8FAFC',
+    padding: 24,
+    borderRadius: 16,
+    marginBottom: 20,
+    borderWidth: 1,
+    borderColor: '#E2E8F0',
+  },
+  featureTitle: {
+    fontSize: 20,
+    fontWeight: '700',
+    marginTop: 12,
+    marginBottom: 8,
+    color: '#1E293B',
+  },
+  featureDesc: {
+    fontSize: 15,
+    color: '#475569',
+    lineHeight: 22,
+  },
+  solutionList: {
+    marginTop: 10,
+  },
+  solutionItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#F8FAFC',
+    padding: 16,
+    borderRadius: 12,
+    marginBottom: 12,
+    borderWidth: 1,
+    borderColor: '#E2E8F0',
+  },
+  solutionItemTitle: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: '#334155',
+    marginLeft: 16,
+  },
+  pricingCardContainer: {
+    flexDirection: 'column',
+    gap: 20,
+  },
+  pricingCard: {
+    padding: 30,
+    borderRadius: 20,
+    borderWidth: 2,
+    position: 'relative',
+    overflow: 'hidden',
+  },
+  pricingPlan: {
+    fontSize: 20,
+    fontWeight: '700',
+    color: '#475569',
+    marginBottom: 10,
+  },
+  pricingPrice: {
+    fontSize: 36,
+    fontWeight: '900',
+    color: '#0F172A',
+    marginBottom: 20,
+  },
+  pricingDetail: {
+    fontSize: 15,
+    color: '#64748B',
+    marginBottom: 8,
+  },
+  popularBadge: {
+    position: 'absolute',
+    top: 16,
+    right: 16,
+    backgroundColor: Colors.iosBlue,
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: 20,
+  }
 });

@@ -31,7 +31,7 @@ import { createAndPrintSalesForm } from "../utils/SalesPdfHelper";
 export default function SalesScreen() {
   // AppContext'ten gerekli işlevleri ve verileri al
   // products eklendi
-  const { sales, removeSale, recreateProductFromSale, updateSale, isPremium, products, customers, company, appDataLoading } = useContext(AppContext);
+  const { sales, removeSale, recreateProductFromSale, updateSale, isPremium, products, customers, company, appDataLoading, workOrders, addWorkOrder } = useContext(AppContext);
   const { t } = useTranslation();
   const [productFilterInput, setProductFilterInput] = useState("");
   const [customerFilterInput, setCustomerFilterInput] = useState("");
@@ -186,6 +186,67 @@ export default function SalesScreen() {
         },
       ]
     );
+  };
+
+  const handleCreateWorkOrder = (sale) => {
+    triggerHaptic(HapticType.IMPACT_LIGHT);
+
+    const proceed = async () => {
+      try {
+        const today = new Date();
+        const dateStr = today.getFullYear().toString() +
+          (today.getMonth() + 1).toString().padStart(2, '0') +
+          today.getDate().toString().padStart(2, '0');
+
+        const todaysOrders = workOrders.filter(wo => {
+          const woDate = new Date(wo.created_at);
+          return woDate.toDateString() === today.toDateString();
+        });
+
+        const nextNum = (todaysOrders.length + 1).toString().padStart(3, '0');
+        const woNumber = `${dateStr}-${nextNum}`;
+
+        const woData = {
+          product_id: sale.productId,
+          target_quantity: sale.quantity,
+          notes: `Satıştan otomatik oluşturuldu. Müşteri: ${sale.customerName}`,
+          processes: [],
+          raw_material_id: null,
+          raw_material_usage: null,
+          wo_number: woNumber,
+          created_at: new Date().toISOString()
+        };
+
+        await addWorkOrder(woData);
+        triggerHaptic(HapticType.SUCCESS);
+        if (Platform.OS === 'web') {
+          window.alert(t('success') ? t('success') + ": İş emri başarıyla oluşturuldu." : "İş emri başarıyla oluşturuldu.");
+        } else {
+          Alert.alert(t('success') || "Başarılı", "İş emri başarıyla oluşturuldu.");
+        }
+      } catch (e) {
+        if (Platform.OS === 'web') {
+          window.alert(t('error') ? t('error') + ": İş emri oluşturulurken hata." : "İş emri oluşturulurken hata.");
+        } else {
+          Alert.alert(t('error') || "Hata", "İş emri oluşturulurken hata oluştu.");
+        }
+      }
+    };
+
+    if (Platform.OS === 'web') {
+      if (window.confirm("Bu sipariş için iş emri oluşturmak istediğinize emin misiniz?")) {
+        proceed();
+      }
+    } else {
+      Alert.alert(
+        "İş Emri Oluştur",
+        "Bu sipariş için iş emri oluşturmak istediğinize emin misiniz?",
+        [
+          { text: t('no') || "Hayır", style: "cancel" },
+          { text: t('yes') || "Evet", onPress: proceed }
+        ]
+      );
+    }
   };
 
   const [invoiceModalVisible, setInvoiceModalVisible] = useState(false);
@@ -408,6 +469,14 @@ export default function SalesScreen() {
                       <TouchableOpacity style={styles.iconButton} onPress={() => markAsShipped(item)}>
                         <View style={[styles.iconButtonBg, { backgroundColor: '#E8F5E9' }]}>
                           <Ionicons name="checkmark" size={18} color={Colors.iosGreen} />
+                        </View>
+                      </TouchableOpacity>
+                    )}
+
+                    {activeTab === 'active' && Platform.OS === 'web' && (
+                      <TouchableOpacity style={styles.iconButton} onPress={() => handleCreateWorkOrder(item)}>
+                        <View style={[styles.iconButtonBg, { backgroundColor: '#FFF3E0' }]}>
+                          <Ionicons name="construct-outline" size={18} color="#FF9800" />
                         </View>
                       </TouchableOpacity>
                     )}
