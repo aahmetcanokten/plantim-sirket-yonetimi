@@ -1,5 +1,5 @@
 import React, { useState, useContext } from 'react';
-import { View, Text, StyleSheet, FlatList, TouchableOpacity, Modal, TextInput, ScrollView, Alert, Platform } from 'react-native';
+import { View, Text, StyleSheet, FlatList, TouchableOpacity, Modal, TextInput, ScrollView, Alert, Platform, useWindowDimensions } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { AppContext } from '../AppContext';
 import { Colors } from '../Theme';
@@ -34,7 +34,23 @@ export default function WorkOrderScreen() {
     const [closureNotes, setClosureNotes] = useState('');
     const [closingProcesses, setClosingProcesses] = useState([]);
 
-    const activeWorkOrders = workOrders.filter(wo => wo.status === 'OPEN');
+    // Filter State
+    const [searchQuery, setSearchQuery] = useState('');
+
+    const activeWorkOrders = workOrders.filter(wo => {
+        if (wo.status !== 'OPEN') return false;
+        if (searchQuery) {
+            const product = products.find(p => p.id === wo.product_id);
+            const productName = product?.name || '';
+            const woNumber = wo.wo_number || '';
+            const searchLower = searchQuery.toLowerCase();
+            return productName.toLowerCase().includes(searchLower) || woNumber.toLowerCase().includes(searchLower);
+        }
+        return true;
+    });
+
+    const { width } = useWindowDimensions();
+    const isWebTable = Platform.OS === 'web' && width > 768;
 
     const resetForm = () => {
         setProductId('');
@@ -224,18 +240,89 @@ export default function WorkOrderScreen() {
                 </TouchableOpacity>
             </View>
 
-            <FlatList
-                data={activeWorkOrders}
-                renderItem={renderWoItem}
-                keyExtractor={item => item.id.toString()}
-                contentContainerStyle={styles.list}
-                ListEmptyComponent={
-                    <View style={styles.emptyContainer}>
-                        <Ionicons name="construct-outline" size={64} color="#CBD5E1" />
-                        <Text style={styles.emptyText}>Aktif iş emri bulunamadı.</Text>
+            <View style={styles.filterContainer}>
+                <Ionicons name="search" size={20} color="#94A3B8" />
+                <TextInput
+                    style={styles.filterInput}
+                    placeholder="İş Emri No veya Ürün Adı Ara..."
+                    value={searchQuery}
+                    onChangeText={setSearchQuery}
+                    placeholderTextColor="#94A3B8"
+                />
+                {searchQuery !== '' && (
+                    <TouchableOpacity onPress={() => setSearchQuery('')}>
+                        <Ionicons name="close-circle" size={20} color="#94A3B8" />
+                    </TouchableOpacity>
+                )}
+            </View>
+
+            {isWebTable ? (
+                <View style={styles.webTableContainer}>
+                    <View style={styles.webTableHeader}>
+                        <Text style={[styles.webHeaderCell, { flex: 1.5 }]}>İş Emri No</Text>
+                        <Text style={[styles.webHeaderCell, { flex: 2 }]}>Ürün Adı</Text>
+                        <Text style={[styles.webHeaderCell, { flex: 1, textAlign: 'center' }]}>Hedef</Text>
+                        <Text style={[styles.webHeaderCell, { flex: 1, textAlign: 'center' }]}>Tarih</Text>
+                        <Text style={[styles.webHeaderCell, { flex: 1, textAlign: 'center' }]}>Durum</Text>
+                        <Text style={[styles.webHeaderCell, { flex: 1, textAlign: 'center' }]}>İşlemler</Text>
                     </View>
-                }
-            />
+                    <FlatList
+                        data={activeWorkOrders}
+                        keyExtractor={item => item.id.toString()}
+                        renderItem={({ item, index }) => {
+                            const product = products.find(p => p.id === item.product_id);
+                            return (
+                                <View style={[styles.webTableRow, index % 2 === 0 ? styles.webTableRowEven : styles.webTableRowOdd]}>
+                                    <View style={{ flex: 1.5, justifyContent: 'center' }}>
+                                        <Text style={styles.webCellTextBold}>{item.wo_number || 'No-#'}</Text>
+                                    </View>
+                                    <View style={{ flex: 2, justifyContent: 'center' }}>
+                                        <Text style={styles.webCellTextBold}>{product?.name || 'Bilinmeyen Ürün'}</Text>
+                                    </View>
+                                    <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}>
+                                        <Text style={styles.webCellText}>{item.target_quantity} Adet</Text>
+                                    </View>
+                                    <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}>
+                                        <Text style={styles.webCellText}>{new Date(item.created_at).toLocaleDateString('tr-TR')}</Text>
+                                    </View>
+                                    <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}>
+                                        <View style={[styles.webStatusBadge, { backgroundColor: Colors.primary + '20' }]}>
+                                            <Text style={[styles.webStatusText, { color: Colors.primary }]}>AÇIK</Text>
+                                        </View>
+                                    </View>
+                                    <View style={{ flex: 1, flexDirection: 'row', justifyContent: 'center', alignItems: 'center', gap: 8 }}>
+                                        <TouchableOpacity onPress={() => handleOpenModal(item)} style={styles.webActionBtn}>
+                                            <Ionicons name="create-outline" size={18} color={Colors.primary} />
+                                        </TouchableOpacity>
+                                        <TouchableOpacity onPress={() => handleOpenCloseModal(item)} style={[styles.webActionBtn, { backgroundColor: Colors.primary }]}>
+                                            <Ionicons name="checkmark-done" size={18} color="#fff" />
+                                        </TouchableOpacity>
+                                    </View>
+                                </View>
+                            );
+                        }}
+                        ListEmptyComponent={
+                            <View style={[styles.emptyContainer, { width: '100%', paddingVertical: 40 }]}>
+                                <Ionicons name="construct-outline" size={48} color="#CBD5E1" />
+                                <Text style={styles.emptyText}>Aktif iş emri bulunamadı.</Text>
+                            </View>
+                        }
+                    />
+                </View>
+            ) : (
+                <FlatList
+                    data={activeWorkOrders}
+                    renderItem={renderWoItem}
+                    keyExtractor={item => item.id.toString()}
+                    contentContainerStyle={styles.list}
+                    ListEmptyComponent={
+                        <View style={styles.emptyContainer}>
+                            <Ionicons name="construct-outline" size={64} color="#CBD5E1" />
+                            <Text style={styles.emptyText}>Aktif iş emri bulunamadı.</Text>
+                        </View>
+                    }
+                />
+            )}
 
             {/* Work Order Modal */}
             <Modal visible={modalVisible} animationType="slide" transparent={true}>
@@ -580,7 +667,24 @@ const styles = StyleSheet.create({
     addBtn: { flexDirection: 'row', alignItems: 'center', backgroundColor: Colors.primary, paddingHorizontal: 16, paddingVertical: 10, borderRadius: 10 },
     addBtnText: { color: '#fff', fontWeight: 'bold', marginLeft: 8 },
     list: { padding: 16 },
-    card: { backgroundColor: '#fff', borderRadius: 16, padding: 20, marginBottom: 16, borderWeight: 1, borderColor: '#F1F5F9', boxShadow: '0 4px 6px -1px rgba(0,0,0,0.1)' },
+    card: { backgroundColor: '#fff', borderRadius: 16, padding: 20, marginBottom: 16, borderWidth: 1, borderColor: '#E2E8F0', ...Platform.select({ web: { boxShadow: '0 4px 6px -1px rgba(0,0,0,0.1)' }, default: { elevation: 3, shadowColor: '#000', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.1, shadowRadius: 4 } }) },
+    filterContainer: { flexDirection: 'row', alignItems: 'center', backgroundColor: '#fff', marginHorizontal: 24, marginBottom: 16, paddingHorizontal: 16, paddingVertical: 12, borderRadius: 12, borderWidth: 1, borderColor: '#E2E8F0' },
+    filterInput: { flex: 1, marginLeft: 12, fontSize: 15, color: '#1E293B', outlineStyle: 'none' },
+
+    // Web Table Styles
+    webTableContainer: { backgroundColor: '#fff', borderRadius: 16, borderWidth: 1, borderColor: '#E2E8F0', overflow: 'hidden', marginTop: 10, marginHorizontal: 24, marginBottom: 50, ...Platform.select({ web: { boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1)' }, default: {} }) },
+    webTableHeader: { flexDirection: 'row', backgroundColor: '#F8FAFC', borderBottomWidth: 1, borderBottomColor: '#E2E8F0', paddingVertical: 16, paddingHorizontal: 20 },
+    webHeaderCell: { fontSize: 12, fontWeight: '700', color: '#475569', textTransform: 'uppercase', letterSpacing: 0.5 },
+    webTableRow: { flexDirection: 'row', paddingVertical: 12, paddingHorizontal: 16, borderBottomWidth: 1, borderBottomColor: '#F1F5F9' },
+    webTableRowEven: { backgroundColor: '#FFFFFF' },
+    webTableRowOdd: { backgroundColor: '#F9FAFB' },
+    webCellText: { fontSize: 14, color: '#334155' },
+    webCellTextBold: { fontSize: 14, fontWeight: '600', color: '#0F172A' },
+    webCellSubText: { fontSize: 12, color: '#94A3B8' },
+    webStatusBadge: { paddingHorizontal: 8, paddingVertical: 4, borderRadius: 12, backgroundColor: '#E2E8F0' },
+    webStatusText: { fontSize: 12, fontWeight: '700' },
+    webActionBtn: { width: 32, height: 32, borderRadius: 6, borderWidth: 1, borderColor: '#E2E8F0', alignItems: 'center', justifyContent: 'center', backgroundColor: '#fff', ...Platform.select({ web: { cursor: 'pointer', userSelect: 'none' }, default: {} }) },
+
     cardHeader: { flexDirection: 'row', justifyContent: 'space-between', marginBottom: 12 },
     cardWoNumber: { fontSize: 12, fontWeight: '800', color: Colors.primary, marginBottom: 4 },
     cardTitle: { fontSize: 18, fontWeight: '700', color: '#1E293B' },

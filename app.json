@@ -33,7 +33,9 @@
       ]
     },
     "web": {
-      "favicon": "./assets/favicon.png"
+      "name": "Plantim ERP",
+      "shortName": "Plantim ERP",
+      "favicon": "./assets/icon.png"
     },
     "plugins": [
       [

@@ -202,6 +202,9 @@ export default function App() {
           <AppProvider>
             <ToastProvider>
               <NavigationContainer
+                documentTitle={{
+                  formatter: (options, route) => 'Plantim ERP',
+                }}
                 onStateChange={(state) => {
                   const routeInfo = getActiveRouteName(state);
                   setActiveRoute(routeInfo);

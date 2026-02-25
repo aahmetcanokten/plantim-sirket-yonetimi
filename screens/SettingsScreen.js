@@ -20,7 +20,7 @@ import ImmersiveLayout from "../components/ImmersiveLayout";
 import { Colors } from "../Theme";
 import { AppContext } from "../AppContext";
 import { useAuth } from "../AuthContext";
-import { exportToPDF } from "../utils/ExportHelper";
+import { exportToPDF, exportToExcel } from "../utils/ExportHelper";
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
 export default function SettingsScreen({ navigation }) {
@@ -62,6 +62,7 @@ export default function SettingsScreen({ navigation }) {
   // Export Modalı
   const [exportModal, setExportModal] = useState(false);
   const [exportType, setExportType] = useState("sales"); // sales, stock, customers, personnel
+  const [exportFormat, setExportFormat] = useState("excel"); // excel, pdf
   const [languageModal, setLanguageModal] = useState(false);
 
   const changeLanguage = async (lang) => {
@@ -365,9 +366,11 @@ export default function SettingsScreen({ navigation }) {
     }
 
     try {
-      // Sadece PDF export
-      await exportToPDF(title, dataToExport, columns);
-      setExportModal(false);
+      if (exportFormat === 'pdf') {
+        await exportToPDF(title, dataToExport, columns);
+      } else {
+        await exportToExcel(fileName, dataToExport, columns);
+      }
       setExportModal(false);
     } catch (e) {
       Alert.alert(t('error'), "Dışa aktarma sırasında bir sorun oluştu: " + e.message);
@@ -689,45 +692,113 @@ export default function SettingsScreen({ navigation }) {
 
       {/* EXPORT MODALI */}
       <Modal visible={exportModal} animationType="fade" transparent={true} onRequestClose={() => setExportModal(false)}>
-        <View style={styles.modalContainer}>
-          <View style={[styles.modalContent, { padding: 0 }]}>
-            <View style={{ padding: 20, borderBottomWidth: 1, borderBottomColor: '#eee', flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
-              <Text style={styles.modalTitle}>{t('create_report')}</Text>
-              <TouchableOpacity onPress={() => setExportModal(false)}>
-                <Ionicons name="close" size={24} color="#999" />
+        <KeyboardAvoidingView behavior={Platform.OS === "ios" ? "padding" : "height"} style={styles.modalContainer}>
+          <View style={[styles.modalContent, { padding: 0, maxWidth: Platform.OS === 'web' ? 550 : '90%', borderRadius: 16, overflow: 'hidden' }]}>
+            {/* Modal Header */}
+            <View style={styles.exportModalHeader}>
+              <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+                <View style={styles.exportHeaderIcon}>
+                  <Ionicons name="cloud-download" size={24} color="#0ea5e9" />
+                </View>
+                <View>
+                  <Text style={styles.exportHeaderTitle}>{t('create_report') || "Rapor Oluştur ve İndir"}</Text>
+                  <Text style={styles.exportHeaderSubtitle}>Formatı seçip verilerinizi güvenle dışa aktarın</Text>
+                </View>
+              </View>
+              <TouchableOpacity onPress={() => setExportModal(false)} style={{ padding: 4 }}>
+                <Ionicons name="close" size={24} color="#94a3b8" />
               </TouchableOpacity>
             </View>
 
-            <View style={{ padding: 20 }}>
-              <Text style={styles.inputLabel}>{t('data_type')}</Text>
-              <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 10, marginBottom: 20 }}>
-                {['sales', 'stock', 'customers', 'personnel'].map((type) => (
+            <View style={{ padding: 24 }}>
+              <Text style={styles.exportSectionLabel}>{t('data_type')}</Text>
+              <View style={styles.exportOptionsGrid}>
+                {[
+                  { id: 'sales', icon: 'cart-outline', label: t('sales'), color: '#ec4899', bg: '#fdf2f8' },
+                  { id: 'stock', icon: 'cube-outline', label: t('stock'), color: '#3b82f6', bg: '#eff6ff' },
+                  { id: 'customers', icon: 'people-outline', label: t('customers'), color: '#10b981', bg: '#ecfdf5' },
+                  { id: 'personnel', icon: 'briefcase-outline', label: t('personnel'), color: '#f59e0b', bg: '#fffbeb' },
+                ].map((type) => (
                   <TouchableOpacity
-                    key={type}
+                    key={type.id}
                     style={[
-                      styles.optionBtn,
-                      exportType === type && styles.optionBtnSelected
+                      styles.exportOptionCard,
+                      exportType === type.id && styles.exportOptionCardSelected
                     ]}
-                    onPress={() => setExportType(type)}
+                    onPress={() => setExportType(type.id)}
+                    activeOpacity={0.7}
                   >
+                    <View style={[styles.exportOptionIconBox, { backgroundColor: type.bg }]}>
+                      <Ionicons name={type.icon} size={20} color={type.color} />
+                    </View>
                     <Text style={[
-                      styles.optionBtnText,
-                      exportType === type && styles.optionBtnTextSelected
+                      styles.exportOptionText,
+                      exportType === type.id && styles.exportOptionTextSelected
                     ]}>
-                      {type === 'sales' ? t('sales') : type === 'stock' ? t('stock') : type === 'customers' ? t('customers') : t('personnel')}
+                      {type.label}
                     </Text>
+                    {exportType === type.id && (
+                      <View style={styles.exportOptionCheck}>
+                        <Ionicons name="checkmark-circle" size={18} color="#0ea5e9" />
+                      </View>
+                    )}
                   </TouchableOpacity>
                 ))}
               </View>
 
-              <View style={{ marginBottom: 20 }} />
+              <Text style={[styles.exportSectionLabel, { marginTop: 8 }]}>{t('format') || 'Format'}</Text>
+              <View style={styles.exportFormatRow}>
+                <TouchableOpacity
+                  style={[
+                    styles.exportFormatBtn,
+                    exportFormat === 'excel' && styles.exportFormatBtnSelected
+                  ]}
+                  onPress={() => setExportFormat('excel')}
+                  activeOpacity={0.8}
+                >
+                  <View style={[styles.exportFormatIcon, exportFormat === 'excel' && { backgroundColor: '#10b981' }]}>
+                    <Ionicons name="document-text" size={18} color={exportFormat === 'excel' ? '#fff' : '#10b981'} />
+                  </View>
+                  <View>
+                    <Text style={[styles.exportFormatText, exportFormat === 'excel' && styles.exportFormatTextSelected]}>
+                      Microsoft Excel
+                    </Text>
+                    <Text style={[styles.exportFormatDesc, exportFormat === 'excel' && { color: '#f0fdf4' }]}>.xlsx formatında tablo</Text>
+                  </View>
+                </TouchableOpacity>
 
-              <TouchableOpacity style={[styles.modalBtn, styles.saveBtn, { flex: 0, width: '100%' }]} onPress={performExport}>
-                <Text style={styles.saveBtnText}>{t('download_share')}</Text>
-              </TouchableOpacity>
+                <TouchableOpacity
+                  style={[
+                    styles.exportFormatBtn,
+                    exportFormat === 'pdf' && styles.exportFormatBtnSelected
+                  ]}
+                  onPress={() => setExportFormat('pdf')}
+                  activeOpacity={0.8}
+                >
+                  <View style={[styles.exportFormatIcon, exportFormat === 'pdf' && { backgroundColor: '#ef4444' }]}>
+                    <Ionicons name="document" size={18} color={exportFormat === 'pdf' ? '#fff' : '#ef4444'} />
+                  </View>
+                  <View>
+                    <Text style={[styles.exportFormatText, exportFormat === 'pdf' && styles.exportFormatTextSelected]}>
+                      PDF Dokümanı
+                    </Text>
+                    <Text style={[styles.exportFormatDesc, exportFormat === 'pdf' && { color: '#fef2f2' }]}>Yazdırılabilir format</Text>
+                  </View>
+                </TouchableOpacity>
+              </View>
+
+              <View style={styles.exportActionContainer}>
+                <TouchableOpacity style={styles.exportCancelBtn} onPress={() => setExportModal(false)}>
+                  <Text style={styles.exportCancelText}>{t('cancel')}</Text>
+                </TouchableOpacity>
+                <TouchableOpacity style={styles.exportPrimaryBtn} onPress={performExport}>
+                  <Ionicons name="download-outline" size={20} color="#fff" style={{ marginRight: 8 }} />
+                  <Text style={styles.exportPrimaryText}>{t('download_share') || "Oluştur ve İndir"}</Text>
+                </TouchableOpacity>
+              </View>
             </View>
           </View>
-        </View>
+        </KeyboardAvoidingView>
       </Modal>
 
       {/* LANGUAGE MODAL */}
@@ -818,5 +889,29 @@ const styles = StyleSheet.create({
   footerLinkDivider: {
     marginHorizontal: 10,
     color: '#ccc'
-  }
+  },
+  exportModalHeader: { backgroundColor: '#f8fafc', padding: 20, borderBottomWidth: 1, borderBottomColor: '#f1f5f9', flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
+  exportHeaderIcon: { backgroundColor: '#e0f2fe', padding: 8, borderRadius: 10, marginRight: 12 },
+  exportHeaderTitle: { fontSize: 18, fontWeight: '700', color: '#0f172a' },
+  exportHeaderSubtitle: { fontSize: 13, color: '#64748b', marginTop: 2 },
+  exportSectionLabel: { fontSize: 14, fontWeight: '600', color: '#475569', marginBottom: 12 },
+  exportOptionsGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: 12, marginBottom: 20 },
+  exportOptionCard: { width: '48%', backgroundColor: '#fff', borderWidth: 1, borderColor: '#e2e8f0', borderRadius: 12, padding: 12, flexDirection: 'row', alignItems: 'center' },
+  exportOptionCardSelected: { borderColor: '#0ea5e9', backgroundColor: '#f0f9ff' },
+  exportOptionIconBox: { width: 36, height: 36, borderRadius: 8, alignItems: 'center', justifyContent: 'center', marginRight: 10 },
+  exportOptionText: { fontSize: 15, fontWeight: '600', color: '#334155', flex: 1 },
+  exportOptionTextSelected: { color: '#0ea5e9' },
+  exportOptionCheck: { position: 'absolute', right: 12 },
+  exportFormatRow: { flexDirection: 'row', gap: 12, marginBottom: 28 },
+  exportFormatBtn: { flex: 1, backgroundColor: '#fff', borderWidth: 1, borderColor: '#e2e8f0', borderRadius: 12, padding: 12, flexDirection: 'row', alignItems: 'center' },
+  exportFormatBtnSelected: { borderColor: '#0f172a', backgroundColor: '#0f172a' },
+  exportFormatIcon: { width: 32, height: 32, borderRadius: 6, alignItems: 'center', justifyContent: 'center', backgroundColor: '#f1f5f9', marginRight: 10 },
+  exportFormatText: { fontSize: 14, fontWeight: '600', color: '#334155' },
+  exportFormatTextSelected: { color: '#fff' },
+  exportFormatDesc: { fontSize: 11, color: '#64748b', marginTop: 2 },
+  exportActionContainer: { flexDirection: 'row', gap: 12 },
+  exportCancelBtn: { flex: 1, paddingVertical: 14, borderRadius: 10, backgroundColor: '#f1f5f9', alignItems: 'center', justifyContent: 'center' },
+  exportCancelText: { fontSize: 15, fontWeight: '600', color: '#475569' },
+  exportPrimaryBtn: { flex: 2, paddingVertical: 14, borderRadius: 10, backgroundColor: '#0ea5e9', flexDirection: 'row', alignItems: 'center', justifyContent: 'center' },
+  exportPrimaryText: { fontSize: 15, fontWeight: '700', color: '#fff' }
 });
