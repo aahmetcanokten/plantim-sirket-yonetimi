@@ -33,6 +33,7 @@ import WorkOrderArchiveScreen from "./screens/WorkOrderArchiveScreen";
 import MaintenanceScreen from "./screens/MaintenanceScreen";
 import MaintenanceArchiveScreen from "./screens/MaintenanceArchiveScreen";
 import QuotationScreen from "./screens/QuotationScreen";
+import WarehouseScreen from "./screens/WarehouseScreen";
 import LoginScreen from "./screens/LoginScreen";
 import PaywallScreen from "./screens/PaywallScreen";
 import OnboardingScreen from "./screens/OnboardingScreen";
@@ -144,6 +145,7 @@ function RootNavigator() {
             <Stack.Screen name="MaintenanceScreen" component={MaintenanceScreen} />
             <Stack.Screen name="MaintenanceArchiveScreen" component={MaintenanceArchiveScreen} />
             <Stack.Screen name="QuotationScreen" component={QuotationScreen} />
+            <Stack.Screen name="WarehouseScreen" component={WarehouseScreen} />
             <Stack.Screen name="Paywall" component={PaywallScreen} options={{ presentation: 'modal' }} />
           </>
         )

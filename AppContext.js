@@ -48,6 +48,7 @@ export function AppProvider({ children }) {
   const [processTemplates, setProcessTemplates] = useState([]);
   const [maintenanceRequests, setMaintenanceRequests] = useState([]);
   const [quotations, setQuotations] = useState([]);
+  const [warehouseTransfers, setWarehouseTransfers] = useState([]);
   const [company, setCompany] = useState({ name: "Şirketim", address: "", taxId: "", requireInvoice: false });
 
   const [dbPremium, setDbPremium] = useState(false);
@@ -111,7 +112,8 @@ export function AppProvider({ children }) {
             workOrdersRes,
             processTemplatesRes,
             maintenanceRes,
-            quotationsRes
+            quotationsRes,
+            warehouseTransfersRes
           ] = await Promise.all([
             supabase.from('customers').select('*').eq('user_id', userId).order('created_at', { ascending: false }),
             supabase.from('products').select('*').eq('user_id', userId).order('name', { ascending: true }),
@@ -124,7 +126,8 @@ export function AppProvider({ children }) {
             supabase.from('work_orders').select('*').eq('user_id', userId).order('created_at', { ascending: false }),
             supabase.from('process_templates').select('*').eq('user_id', userId).order('created_at', { ascending: false }),
             supabase.from('maintenance_requests').select('*').eq('user_id', userId).order('created_at', { ascending: false }),
-            supabase.from('quotations').select('*').eq('user_id', userId).order('created_at', { ascending: false })
+            supabase.from('quotations').select('*').eq('user_id', userId).order('created_at', { ascending: false }),
+            supabase.from('warehouse_transfers').select('*').eq('user_id', userId).order('transferred_at', { ascending: false })
           ]);
 
           if (userRes.data && userRes.data.is_premium) {
@@ -155,6 +158,7 @@ export function AppProvider({ children }) {
             ...q,
             items: typeof q.items === 'string' ? JSON.parse(q.items) : (q.items || [])
           })));
+          setWarehouseTransfers(warehouseTransfersRes?.data || []);
 
           // Personel Görevlerini Parse Et
           const parsedPersonnel = (personnelRes.data || []).map(p => {
@@ -219,6 +223,7 @@ export function AppProvider({ children }) {
         setProcessTemplates([]);
         setMaintenanceRequests([]);
         setQuotations([]);
+        setWarehouseTransfers([]);
         setDbPremium(false);
         setRcPremium(false);
         setAppDataLoading(false);
@@ -788,6 +793,67 @@ export function AppProvider({ children }) {
     else setQuotations(prev => prev.filter(q => q.id !== id));
   };
 
+  // --- DEPO TRANSFERLERİ ---
+  const addWarehouseTransfer = async (transfer) => {
+    if (!session || !supabase) return false;
+    const { product_id, from_warehouse, to_warehouse, quantity, note } = transfer;
+
+    // Ürünü bul
+    const product = products.find(p => p.id === product_id);
+    if (!product) {
+      Alert.alert('Hata', 'Ürün bulunamadı.');
+      return false;
+    }
+    if ((product.quantity || 0) < quantity) {
+      Alert.alert('Hata', `Yeterli stok yok. Mevcut: ${product.quantity}`);
+      return false;
+    }
+
+    try {
+      // Transfer kaydı ekle
+      const toInsert = {
+        user_id: session.user.id,
+        product_id,
+        product_name: product.name,
+        quantity,
+        from_warehouse,
+        to_warehouse,
+        note: note || '',
+        transferred_at: new Date().toISOString(),
+        created_at: new Date().toISOString()
+      };
+      const { data: transferData, error: transferError } = await supabase
+        .from('warehouse_transfers')
+        .insert(toInsert)
+        .select();
+      if (transferError) {
+        Alert.alert('Hata', transferError.message);
+        return false;
+      }
+
+      // Ürünün depo konumunu hedef depoya güncelle (tam transfer)
+      const { data: productData, error: productError } = await supabase
+        .from('products')
+        .update({ warehouseLocation: to_warehouse })
+        .eq('id', product_id)
+        .select();
+      if (productError) {
+        Alert.alert('Hata', productError.message);
+        return false;
+      }
+      if (productData && productData[0]) {
+        setProducts(prev => prev.map(p => p.id === product_id ? productData[0] : p));
+      }
+
+      setWarehouseTransfers(prev => [transferData[0], ...prev]);
+      return true;
+    } catch (e) {
+      console.error('Transfer hatası:', e);
+      Alert.alert('Hata', 'Transfer gerçekleştirilemedi.');
+      return false;
+    }
+  };
+
   // --- PROSES ŞABLONLARI ---
   const addProcessTemplate = async (pt) => {
     if (!session || !supabase) return;
@@ -921,6 +987,7 @@ export function AppProvider({ children }) {
         processTemplates, addProcessTemplate, deleteProcessTemplate,
         maintenanceRequests, addMaintenanceRequest, updateMaintenanceRequest, closeMaintenanceRequest, deleteMaintenanceRequest,
         quotations, addQuotation, updateQuotation, cancelQuotation, approveQuotation, convertQuotationToSale, deleteQuotation,
+        warehouseTransfers, addWarehouseTransfer,
         company, updateCompanyInfo,
         isPremium, setPremiumStatus: setDbPremium, purchasePremium, restorePurchases,
         getPackages: async () => {
