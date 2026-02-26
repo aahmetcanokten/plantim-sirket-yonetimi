@@ -46,6 +46,8 @@ export function AppProvider({ children }) {
   const [assets, setAssets] = useState([]);
   const [workOrders, setWorkOrders] = useState([]);
   const [processTemplates, setProcessTemplates] = useState([]);
+  const [maintenanceRequests, setMaintenanceRequests] = useState([]);
+  const [quotations, setQuotations] = useState([]);
   const [company, setCompany] = useState({ name: "Şirketim", address: "", taxId: "", requireInvoice: false });
 
   const [dbPremium, setDbPremium] = useState(false);
@@ -107,7 +109,9 @@ export function AppProvider({ children }) {
             userRes,
             companyRes,
             workOrdersRes,
-            processTemplatesRes
+            processTemplatesRes,
+            maintenanceRes,
+            quotationsRes
           ] = await Promise.all([
             supabase.from('customers').select('*').eq('user_id', userId).order('created_at', { ascending: false }),
             supabase.from('products').select('*').eq('user_id', userId).order('name', { ascending: true }),
@@ -118,7 +122,9 @@ export function AppProvider({ children }) {
             supabase.from('user_profiles').select('is_premium').eq('user_id', userId).maybeSingle(),
             supabase.from('companies').select('*').eq('user_id', userId).maybeSingle(),
             supabase.from('work_orders').select('*').eq('user_id', userId).order('created_at', { ascending: false }),
-            supabase.from('process_templates').select('*').eq('user_id', userId).order('created_at', { ascending: false })
+            supabase.from('process_templates').select('*').eq('user_id', userId).order('created_at', { ascending: false }),
+            supabase.from('maintenance_requests').select('*').eq('user_id', userId).order('created_at', { ascending: false }),
+            supabase.from('quotations').select('*').eq('user_id', userId).order('created_at', { ascending: false })
           ]);
 
           if (userRes.data && userRes.data.is_premium) {
@@ -140,6 +146,14 @@ export function AppProvider({ children }) {
           setProcessTemplates((processTemplatesRes?.data || []).map(pt => ({
             ...pt,
             processes: typeof pt.processes === 'string' ? JSON.parse(pt.processes) : (pt.processes || [])
+          })));
+          setMaintenanceRequests((maintenanceRes?.data || []).map(mr => ({
+            ...mr,
+            tasks: typeof mr.tasks === 'string' ? JSON.parse(mr.tasks) : (mr.tasks || [])
+          })));
+          setQuotations((quotationsRes?.data || []).map(q => ({
+            ...q,
+            items: typeof q.items === 'string' ? JSON.parse(q.items) : (q.items || [])
           })));
 
           // Personel Görevlerini Parse Et
@@ -203,6 +217,8 @@ export function AppProvider({ children }) {
         setAssets([]);
         setWorkOrders([]);
         setProcessTemplates([]);
+        setMaintenanceRequests([]);
+        setQuotations([]);
         setDbPremium(false);
         setRcPremium(false);
         setAppDataLoading(false);
@@ -558,6 +574,220 @@ export function AppProvider({ children }) {
     return true;
   };
 
+  // --- BAKIM VE SERVİS YÖNETİMİ ---
+  const generateMrNumber = () => {
+    const today = new Date();
+    const dateStr = today.getFullYear().toString() + (today.getMonth() + 1).toString().padStart(2, '0') + today.getDate().toString().padStart(2, '0');
+    const todaysEntries = maintenanceRequests.filter(mr => new Date(mr.created_at).toDateString() === today.toDateString());
+    return `MR-${dateStr}-${(todaysEntries.length + 1).toString().padStart(3, '0')}`;
+  };
+
+  const addMaintenanceRequest = async (mr) => {
+    if (!session || !supabase) return;
+    const toInsert = {
+      ...mr,
+      user_id: session.user.id,
+      status: 'OPEN',
+      tasks: JSON.stringify(mr.tasks || []),
+      mr_number: generateMrNumber(),
+      created_at: new Date().toISOString()
+    };
+    const { data, error } = await supabase.from('maintenance_requests').insert(toInsert).select();
+    if (error) Alert.alert('Hata', error.message);
+    else {
+      const newMr = { ...data[0], tasks: mr.tasks || [] };
+      setMaintenanceRequests(prev => [newMr, ...prev]);
+      return newMr;
+    }
+  };
+
+  const updateMaintenanceRequest = async (u) => {
+    if (!session || !supabase) return;
+    const updateData = { ...u, tasks: JSON.stringify(u.tasks || []) };
+    const { data, error } = await supabase.from('maintenance_requests').update(updateData).eq('id', u.id).select();
+    if (error) Alert.alert('Hata', error.message);
+    else {
+      const updatedMr = { ...data[0], tasks: u.tasks || [] };
+      setMaintenanceRequests(prev => prev.map(mr => mr.id === u.id ? updatedMr : mr));
+    }
+  };
+
+  const closeMaintenanceRequest = async (id, closingData) => {
+    if (!session || !supabase) return;
+    const mr = maintenanceRequests.find(m => m.id === id);
+    if (!mr) return;
+    const activeTasks = closingData.tasks || mr.tasks || [];
+    const totalDuration = activeTasks.reduce((acc, t) => acc + (parseFloat(t.spent_time) || 0), 0);
+    const updateData = {
+      ...closingData,
+      tasks: JSON.stringify(activeTasks),
+      status: 'CLOSED',
+      closed_at: new Date().toISOString(),
+      total_duration: totalDuration
+    };
+    const { data, error } = await supabase.from('maintenance_requests').update(updateData).eq('id', id).select();
+    if (error) { Alert.alert('Hata', error.message); return; }
+    const closedMr = { ...data[0], tasks: activeTasks };
+    setMaintenanceRequests(prev => prev.map(m => m.id === id ? closedMr : m));
+    return true;
+  };
+
+  const deleteMaintenanceRequest = async (id) => {
+    if (!session || !supabase) return;
+    const { error } = await supabase.from('maintenance_requests').delete().eq('id', id);
+    if (error) Alert.alert('Hata', error.message);
+    else setMaintenanceRequests(prev => prev.filter(mr => mr.id !== id));
+  };
+
+  // --- TEKLİFLER (QUOTATIONS) ---
+  const generateQuoteNumber = () => {
+    const today = new Date();
+    const dateStr = today.getFullYear().toString() + (today.getMonth() + 1).toString().padStart(2, '0') + today.getDate().toString().padStart(2, '0');
+    const todaysQuotes = quotations.filter(q => new Date(q.created_at).toDateString() === today.toDateString());
+    return `TKL-${dateStr}-${(todaysQuotes.length + 1).toString().padStart(3, '0')}`;
+  };
+
+  const addQuotation = async (q) => {
+    if (!session || !supabase) return;
+    const totalAmount = (q.items || []).reduce((sum, item) => sum + (parseFloat(item.total) || 0), 0);
+    const toInsert = {
+      ...q,
+      user_id: session.user.id,
+      status: 'DRAFT',
+      items: JSON.stringify(q.items || []),
+      quote_number: generateQuoteNumber(),
+      total_amount: totalAmount,
+      created_at: new Date().toISOString(),
+      updated_at: new Date().toISOString()
+    };
+    const { data, error } = await supabase.from('quotations').insert(toInsert).select();
+    if (error) Alert.alert('Hata', error.message);
+    else {
+      const newQ = { ...data[0], items: q.items || [] };
+      setQuotations(prev => [newQ, ...prev]);
+      return newQ;
+    }
+  };
+
+  const updateQuotation = async (u) => {
+    if (!session || !supabase) return;
+    const totalAmount = (u.items || []).reduce((sum, item) => sum + (parseFloat(item.total) || 0), 0);
+    const updateData = {
+      ...u,
+      items: JSON.stringify(u.items || []),
+      total_amount: totalAmount,
+      updated_at: new Date().toISOString()
+    };
+    const { data, error } = await supabase.from('quotations').update(updateData).eq('id', u.id).select();
+    if (error) Alert.alert('Hata', error.message);
+    else {
+      const updatedQ = { ...data[0], items: u.items || [] };
+      setQuotations(prev => prev.map(q => q.id === u.id ? updatedQ : q));
+    }
+  };
+
+  const cancelQuotation = async (id) => {
+    if (!session || !supabase) return;
+    const { data, error } = await supabase.from('quotations').update({ status: 'CANCELLED', updated_at: new Date().toISOString() }).eq('id', id).select();
+    if (error) Alert.alert('Hata', error.message);
+    else {
+      const existing = quotations.find(q => q.id === id);
+      setQuotations(prev => prev.map(q => q.id === id ? { ...data[0], items: existing?.items || [] } : q));
+    }
+  };
+
+  const approveQuotation = async (id) => {
+    if (!session || !supabase) return;
+    const { data, error } = await supabase.from('quotations').update({ status: 'APPROVED', updated_at: new Date().toISOString() }).eq('id', id).select();
+    if (error) Alert.alert('Hata', error.message);
+    else {
+      const existing = quotations.find(q => q.id === id);
+      setQuotations(prev => prev.map(q => q.id === id ? { ...data[0], items: existing?.items || [] } : q));
+    }
+  };
+
+  const convertQuotationToSale = async (id) => {
+    if (!session || !supabase) return;
+    const quotation = quotations.find(q => q.id === id);
+    if (!quotation) return;
+    const items = quotation.items || [];
+    if (items.length === 0) {
+      Alert.alert('Hata', 'Teklifte ürün kalemi bulunmuyor.');
+      return;
+    }
+    try {
+      // Her kalem için satış oluştur
+      const salePromises = items.map(item => {
+        const product = products.find(p => p.id === item.product_id);
+        const saleToAdd = {
+          user_id: session.user.id,
+          productId: item.product_id,
+          productName: item.product_name,
+          productCode: product?.code || '',
+          quantity: item.quantity,
+          price: item.unit_price,
+          cost: product?.cost || 0,
+          customerId: quotation.customer_id || null,
+          customerName: quotation.customer_name || '',
+          description: `Tekliften oluşturuldu: ${quotation.quote_number}`,
+          source_quote_id: id,
+          isShipped: false,
+          date: new Date().toLocaleString(),
+          sale_date: new Date().toISOString(),
+          dateISO: new Date().toISOString()
+        };
+        return supabase.from('sales').insert(saleToAdd).select();
+      });
+
+      const results = await Promise.all(salePromises);
+      const errors = results.filter(r => r.error);
+      if (errors.length > 0) {
+        Alert.alert('Hata', 'Bazı kalemler siparişe dönüştürülürken hata oluştu.');
+        return;
+      }
+
+      // Stok güncelle ve sales state'i güncelle
+      const newSales = [];
+      for (let i = 0; i < results.length; i++) {
+        const saleRow = results[i].data[0];
+        newSales.push(saleRow);
+        const item = items[i];
+        const product = products.find(p => p.id === item.product_id);
+        if (product) {
+          const newQty = (product.quantity || 0) - (item.quantity || 0);
+          const { data: prodData } = await supabase.from('products').update({ quantity: newQty }).eq('id', item.product_id).select();
+          if (prodData) setProducts(prev => prev.map(p => p.id === item.product_id ? prodData[0] : p));
+        }
+      }
+      setSales(prev => [...newSales, ...prev]);
+
+      // Teklif durumunu CONVERTED yap
+      const { data: qData, error: qError } = await supabase.from('quotations')
+        .update({ status: 'CONVERTED', updated_at: new Date().toISOString() })
+        .eq('id', id).select();
+      if (!qError && qData) {
+        setQuotations(prev => prev.map(q => q.id === id ? { ...qData[0], items: quotation.items } : q));
+      }
+      return true;
+    } catch (e) {
+      Alert.alert('Hata', 'Siparişe dönüştürme sırasında beklenmedik bir hata oluştu.');
+      return false;
+    }
+  };
+
+  const deleteQuotation = async (id) => {
+    if (!session || !supabase) return;
+    const quotation = quotations.find(q => q.id === id);
+    if (!quotation) return;
+    if (quotation.status !== 'DRAFT' && quotation.status !== 'CANCELLED') {
+      Alert.alert('Hata', 'Yalnızca taslak veya iptal edilmiş teklifler silinebilir.');
+      return;
+    }
+    const { error } = await supabase.from('quotations').delete().eq('id', id);
+    if (error) Alert.alert('Hata', error.message);
+    else setQuotations(prev => prev.filter(q => q.id !== id));
+  };
+
   // --- PROSES ŞABLONLARI ---
   const addProcessTemplate = async (pt) => {
     if (!session || !supabase) return;
@@ -689,6 +919,8 @@ export function AppProvider({ children }) {
         assets, addAsset, updateAsset, deleteAsset, assignAsset, unassignAsset,
         workOrders, addWorkOrder, updateWorkOrder, closeWorkOrder,
         processTemplates, addProcessTemplate, deleteProcessTemplate,
+        maintenanceRequests, addMaintenanceRequest, updateMaintenanceRequest, closeMaintenanceRequest, deleteMaintenanceRequest,
+        quotations, addQuotation, updateQuotation, cancelQuotation, approveQuotation, convertQuotationToSale, deleteQuotation,
         company, updateCompanyInfo,
         isPremium, setPremiumStatus: setDbPremium, purchasePremium, restorePurchases,
         getPackages: async () => {

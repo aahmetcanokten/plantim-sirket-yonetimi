@@ -9,11 +9,14 @@ const MENU_ITEMS = [
     { name: 'MainTabs', params: { screen: 'Stok' }, label: 'Stok Listesi', icon: 'list-outline' },
     { name: 'AddProductScreen', label: 'Yeni Ürün Ekle', icon: 'add-circle-outline' },
     { name: 'AssemblyScreen', label: 'Montaj / Üretim', icon: 'construct-outline' },
+    { name: 'QuotationScreen', label: 'Teklifler', icon: 'document-text-outline' },
     { name: 'MainTabs', params: { screen: 'Satışlar' }, label: 'Satışlar', icon: 'cash-outline' },
     { name: 'MainTabs', params: { screen: 'Satın Alma' }, label: 'Satın Alma', icon: 'cart-outline' },
     { name: 'MainTabs', params: { screen: 'Müşteriler' }, label: 'Müşteriler', icon: 'people-outline' },
     { name: 'WorkOrderScreen', label: 'İş Emirleri', icon: 'construct-outline' },
     { name: 'WorkOrderArchiveScreen', label: 'İş Emri Arşivi', icon: 'archive-outline' },
+    { name: 'MaintenanceScreen', label: 'Bakım ve Servis', icon: 'build-outline' },
+    { name: 'MaintenanceArchiveScreen', label: 'Bakım Arşivi', icon: 'filing-outline' },
     { name: 'AssetManagementScreen', label: 'Zimmet Yönetimi', icon: 'briefcase-outline' },
     { name: 'TaskListScreen', label: 'Görev Takibi', icon: 'checkbox-outline' },
     { name: 'PersonnelScreen', label: 'Personel', icon: 'person-outline' },
@@ -95,6 +98,9 @@ export default function WebContainer({ children, activeRoute }) {
             case 'AssemblyScreen': return 'Montaj ve Üretim';
             case 'WorkOrderScreen': return 'İş Emri Takibi';
             case 'WorkOrderArchiveScreen': return 'İş Emri Arşivi';
+            case 'MaintenanceScreen': return 'Bakım ve Servis Yönetimi';
+            case 'MaintenanceArchiveScreen': return 'Bakım ve Servis Arşivi';
+            case 'QuotationScreen': return 'Teklif Yönetimi';
             case 'Login': return 'Giriş Yap';
             case 'Onboarding': return 'Hoşgeldiniz';
             case 'Paywall': return 'Premium';

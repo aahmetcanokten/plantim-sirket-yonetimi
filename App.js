@@ -30,6 +30,9 @@ import AssemblyScreen from "./screens/AssemblyScreen";
 import ResetPasswordScreen from "./screens/ResetPasswordScreen";
 import WorkOrderScreen from "./screens/WorkOrderScreen";
 import WorkOrderArchiveScreen from "./screens/WorkOrderArchiveScreen";
+import MaintenanceScreen from "./screens/MaintenanceScreen";
+import MaintenanceArchiveScreen from "./screens/MaintenanceArchiveScreen";
+import QuotationScreen from "./screens/QuotationScreen";
 import LoginScreen from "./screens/LoginScreen";
 import PaywallScreen from "./screens/PaywallScreen";
 import OnboardingScreen from "./screens/OnboardingScreen";
@@ -138,6 +141,9 @@ function RootNavigator() {
             <Stack.Screen name="AssemblyScreen" component={AssemblyScreen} />
             <Stack.Screen name="WorkOrderScreen" component={WorkOrderScreen} />
             <Stack.Screen name="WorkOrderArchiveScreen" component={WorkOrderArchiveScreen} />
+            <Stack.Screen name="MaintenanceScreen" component={MaintenanceScreen} />
+            <Stack.Screen name="MaintenanceArchiveScreen" component={MaintenanceArchiveScreen} />
+            <Stack.Screen name="QuotationScreen" component={QuotationScreen} />
             <Stack.Screen name="Paywall" component={PaywallScreen} options={{ presentation: 'modal' }} />
           </>
         )

@@ -515,6 +515,11 @@ export default function SalesScreen() {
                             <Text style={[styles.webSmallBadgeText, { color: Colors.muted }]}>{t('no_invoice')}</Text>
                           </View>
                         )}
+                        {item.source_quote_id && (
+                          <View style={[styles.webSmallBadge, { backgroundColor: '#FFFBEB', borderColor: '#FDE68A', marginTop: 4 }]}>
+                            <Text style={[styles.webSmallBadgeText, { color: '#D97706' }]}>📋 Tekliften</Text>
+                          </View>
+                        )}
                         {activeTab === 'active' && item.shipmentDate && (
                           <View style={[styles.webSmallBadge, isCriticalShipment ? { backgroundColor: Colors.critical, borderColor: '#B91C1C' } : { backgroundColor: '#E3F2FD', borderColor: '#BBDEFB' }, { marginTop: 4 }]}>
                             <Text style={[styles.webSmallBadgeText, isCriticalShipment ? { color: '#fff' } : { color: Colors.iosBlue }]}>
@@ -619,6 +624,13 @@ export default function SalesScreen() {
                         <View style={styles.detailRow}>
                           <Ionicons name="receipt-outline" size={14} color={Colors.muted} style={styles.detailIcon} />
                           <Text style={[styles.detailText, { color: Colors.muted }]}>{t('no_invoice')}</Text>
+                        </View>
+                      )}
+
+                      {item.source_quote_id && (
+                        <View style={[styles.detailRow, { backgroundColor: '#FFFBEB', borderRadius: 8, padding: 6, marginTop: 2 }]}>
+                          <Ionicons name="document-text-outline" size={14} color="#D97706" style={styles.detailIcon} />
+                          <Text style={[styles.detailText, { color: '#D97706', fontWeight: '700' }]}>Tekliften Oluşturuldu</Text>
                         </View>
                       )}
 
