@@ -11,6 +11,7 @@ const MENU_ITEMS = [
     { name: 'AssemblyScreen', label: 'Montaj / Üretim', icon: 'construct-outline' },
     { name: 'QuotationScreen', label: 'Teklifler', icon: 'document-text-outline' },
     { name: 'WarehouseScreen', label: 'Depo ve Transfer', icon: 'swap-horizontal-outline' },
+    { name: 'MrpScreen', label: 'Malzeme İhtiyaç', icon: 'layers-outline' },
     { name: 'MainTabs', params: { screen: 'Satışlar' }, label: 'Satışlar', icon: 'cash-outline' },
     { name: 'MainTabs', params: { screen: 'Satın Alma' }, label: 'Satın Alma', icon: 'cart-outline' },
     { name: 'MainTabs', params: { screen: 'Müşteriler' }, label: 'Müşteriler', icon: 'people-outline' },
@@ -103,6 +104,7 @@ export default function WebContainer({ children, activeRoute }) {
             case 'MaintenanceArchiveScreen': return 'Bakım ve Servis Arşivi';
             case 'QuotationScreen': return 'Teklif Yönetimi';
             case 'WarehouseScreen': return 'Depo ve Transfer';
+            case 'MrpScreen': return 'Malzeme İhtiyaç Analizi';
             case 'Login': return 'Giriş Yap';
             case 'Onboarding': return 'Hoşgeldiniz';
             case 'Paywall': return 'Premium';

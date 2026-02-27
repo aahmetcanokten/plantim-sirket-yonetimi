@@ -11,6 +11,7 @@ import {
   ActivityIndicator,
   Platform,
   Dimensions,
+  ScrollView,
 } from "react-native";
 import { useTranslation } from "react-i18next";
 import ImmersiveLayout from "../components/ImmersiveLayout";
@@ -26,13 +27,14 @@ import InvoiceModal from "../components/InvoiceModal";
 import { triggerHaptic, HapticType, requestStoreReview } from "../utils/FeedbackHelper";
 import { SkeletonProductItem } from "../components/Skeleton";
 import CompositeSaleModal from "../components/CompositeSaleModal";
+import DatePickerButton from "../components/DatePickerButton";
 import { createAndPrintSalesForm } from "../utils/SalesPdfHelper";
 
 
 export default function SalesScreen() {
   // AppContext'ten gerekli işlevleri ve verileri al
   // products eklendi
-  const { sales, removeSale, recreateProductFromSale, updateSale, isPremium, products, customers, company, appDataLoading, workOrders, addWorkOrder } = useContext(AppContext);
+  const { sales, removeSale, recreateProductFromSale, updateSale, isPremium, products, customers, company, appDataLoading, workOrders, addWorkOrder, boms, addSale, addWorkOrderFromBom } = useContext(AppContext);
   const { t } = useTranslation();
   const [productFilterInput, setProductFilterInput] = useState("");
   const [customerFilterInput, setCustomerFilterInput] = useState("");
@@ -173,24 +175,35 @@ export default function SalesScreen() {
 
   // YENİ INVOICEMODAL İÇE AKTARILDI
   const [compositeModalVisible, setCompositeModalVisible] = useState(false);
+  const [bomSaleModalVisible, setBomSaleModalVisible] = useState(false);
 
   // Satış Ekleme Menüsü
   // Satış Ekleme Menüsü - GÜNCELLENDİ: Direkt Kompozit/Sipariş Ekranı Açılıyor
   const handleNewSalePress = () => {
     // Limit kontrolü (Kompozit satış için)
     if (!isPremium && sales.length >= 20) {
-      Alert.alert(
-        t('limit_exceeded'),
-        t('sales_limit_message'),
-        [
-          { text: t('cancel'), style: "cancel" },
-          { text: t('get_premium'), onPress: () => navigation.navigate("Paywall") }
-        ]
-      );
+      if (Platform.OS === 'web') {
+        if (window.confirm(t('sales_limit_message'))) {
+          navigation.navigate("Paywall");
+        }
+      } else {
+        Alert.alert(
+          t('limit_exceeded'),
+          t('sales_limit_message'),
+          [
+            { text: t('cancel'), style: "cancel" },
+            { text: t('get_premium'), onPress: () => navigation.navigate("Paywall") }
+          ]
+        );
+      }
       return;
     }
     // Direkt modalı aç
     setCompositeModalVisible(true);
+  };
+
+  const handleBomSalePress = () => {
+    setBomSaleModalVisible(true);
   };
 
 
@@ -230,38 +243,51 @@ export default function SalesScreen() {
 
     const proceed = async () => {
       try {
-        const today = new Date();
-        const dateStr = today.getFullYear().toString() +
-          (today.getMonth() + 1).toString().padStart(2, '0') +
-          today.getDate().toString().padStart(2, '0');
-
-        const todaysOrders = workOrders.filter(wo => {
-          const woDate = new Date(wo.created_at);
-          return woDate.toDateString() === today.toDateString();
-        });
-
-        const nextNum = (todaysOrders.length + 1).toString().padStart(3, '0');
-        const woNumber = `${dateStr}-${nextNum}`;
-
-        const woData = {
-          product_id: sale.productId,
-          target_quantity: sale.quantity,
-          notes: `Satıştan otomatik oluşturuldu. Müşteri: ${sale.customerName}`,
-          processes: [],
-          raw_material_id: null,
-          raw_material_usage: null,
-          wo_number: woNumber,
-          created_at: new Date().toISOString()
-        };
-
-        await addWorkOrder(woData);
-        triggerHaptic(HapticType.SUCCESS);
-        if (Platform.OS === 'web') {
-          window.alert(t('success') ? t('success') + ": İş emri başarıyla oluşturuldu." : "İş emri başarıyla oluşturuldu.");
+        let wo;
+        if (sale.bom_id || sale.is_bom_product) {
+          // BOM Ürünü ise özel fonksiyonu kullan
+          wo = await addWorkOrderFromBom(sale.bom_id, sale.quantity, {
+            notes: `Satıştan otomatik oluşturuldu. Müşteri: ${sale.customerName}. Satış ID: ${sale.id}`,
+            product_id: sale.productId
+          });
         } else {
-          Alert.alert(t('success') || "Başarılı", "İş emri başarıyla oluşturuldu.");
+          // Standart İş Emri
+          const today = new Date();
+          const dateStr = today.getFullYear().toString() +
+            (today.getMonth() + 1).toString().padStart(2, '0') +
+            today.getDate().toString().padStart(2, '0');
+
+          const todaysOrders = workOrders.filter(wo => {
+            const woDate = new Date(wo.created_at);
+            return woDate.toDateString() === today.toDateString();
+          });
+
+          const nextNum = (todaysOrders.length + 1).toString().padStart(3, '0');
+          const woNumber = `${dateStr}-${nextNum}`;
+
+          const woData = {
+            product_id: sale.productId,
+            target_quantity: sale.quantity,
+            notes: `Satıştan otomatik oluşturuldu. Müşteri: ${sale.customerName}`,
+            processes: [],
+            raw_material_id: null,
+            raw_material_usage: null,
+            wo_number: woNumber,
+            created_at: new Date().toISOString()
+          };
+          wo = await addWorkOrder(woData);
+        }
+
+        if (wo) {
+          triggerHaptic(HapticType.SUCCESS);
+          if (Platform.OS === 'web') {
+            window.alert(t('success') ? t('success') + ": İş emri başarıyla oluşturuldu." : "İş emri başarıyla oluşturuldu.");
+          } else {
+            Alert.alert(t('success') || "Başarılı", "İş emri başarıyla oluşturuldu.");
+          }
         }
       } catch (e) {
+        console.error("Work order creation error:", e);
         if (Platform.OS === 'web') {
           window.alert(t('error') ? t('error') + ": İş emri oluşturulurken hata." : "İş emri oluşturulurken hata.");
         } else {
@@ -343,16 +369,29 @@ export default function SalesScreen() {
       {/* 1. Üst Alan: Analiz ve Sekmeler */}
       <View style={styles.headerContainer}>
         {/* YENİ SATIŞ BUTONU */}
-        <TouchableOpacity
-          style={styles.newSaleButton}
-          onPress={handleNewSalePress}
-          activeOpacity={0.8}
-        >
-          <View style={styles.newSaleIconWrapper}>
-            <Ionicons name="add" size={24} color="#fff" />
-          </View>
-          <Text style={styles.newSaleButtonText}>{t('create_new_sale')}</Text>
-        </TouchableOpacity>
+        <View style={{ flexDirection: 'row', gap: 8, marginBottom: 0 }}>
+          <TouchableOpacity
+            style={[styles.newSaleButton, { flex: 1 }]}
+            onPress={handleNewSalePress}
+            activeOpacity={0.8}
+          >
+            <View style={styles.newSaleIconWrapper}>
+              <Ionicons name="add" size={24} color="#fff" />
+            </View>
+            <Text style={styles.newSaleButtonText}>{t('create_new_sale')}</Text>
+          </TouchableOpacity>
+
+          <TouchableOpacity
+            style={[styles.newSaleButton, { flex: 1, backgroundColor: '#6366F1' }]}
+            onPress={handleBomSalePress}
+            activeOpacity={0.8}
+          >
+            <View style={[styles.newSaleIconWrapper, { backgroundColor: 'rgba(255,255,255,0.2)' }]}>
+              <Ionicons name="construct" size={20} color="#fff" />
+            </View>
+            <Text style={styles.newSaleButtonText}>BOM Sipariş Aç</Text>
+          </TouchableOpacity>
+        </View>
 
         <TouchableOpacity
           style={styles.analyzeButton}
@@ -735,8 +774,19 @@ export default function SalesScreen() {
         onClose={() => setCompositeModalVisible(false)}
         onComplete={() => {
           triggerHaptic(HapticType.SUCCESS);
-          // Liste otomatik güncellenir çünkü AppContext sales değişti
         }}
+      />
+
+      {/* BOM Siparişi Modal */}
+      <BomSaleModal
+        visible={bomSaleModalVisible}
+        onClose={() => setBomSaleModalVisible(false)}
+        boms={boms}
+        products={products}
+        customers={customers}
+        addSale={addSale}
+        addWorkOrderFromBom={addWorkOrderFromBom}
+        navigation={navigation}
       />
 
       {/* REKLAM ALANI */}
@@ -1152,5 +1202,459 @@ const styles = StyleSheet.create({
         userSelect: 'none',
       }
     }),
+  },
+});
+
+// ─── BOM SİPARİŞ MODALI ─────────────────────────────────────────────────────
+
+function BomSaleModal({ visible, onClose, boms, products, customers, addSale, addWorkOrderFromBom, navigation }) {
+  const [step, setStep] = useState(0); // 0: BOM seç, 1: Detaylar
+  const [selectedBom, setSelectedBom] = useState(null);
+  const [quantity, setQuantity] = useState('1');
+  const [selectedCustomer, setSelectedCustomer] = useState(null);
+  const [salePrice, setSalePrice] = useState('');
+  const [shipmentDate, setShipmentDate] = useState(new Date());
+  const [notes, setNotes] = useState('');
+  const [customerSearch, setCustomerSearch] = useState('');
+  const [bomSearch, setBomSearch] = useState('');
+  const [isSubmitting, setIsSubmitting] = useState(false);
+
+  useEffect(() => {
+    if (visible) {
+      setStep(0); setSelectedBom(null); setQuantity('1');
+      setSelectedCustomer(null); setSalePrice(''); setCustomerSearch(''); setBomSearch('');
+      setShipmentDate(new Date()); setNotes('');
+    }
+  }, [visible]);
+
+  const filteredBoms = useMemo(() => {
+    if (!boms) return [];
+    if (!bomSearch) return boms;
+    const q = bomSearch.toLowerCase();
+    return boms.filter(b => (b.product_name || '').toLowerCase().includes(q) || (b.bom_number || '').toLowerCase().includes(q));
+  }, [boms, bomSearch]);
+
+  const filteredCustomers = useMemo(() => {
+    if (!customers) return [];
+    if (!customerSearch) return customers;
+    const q = customerSearch.toLowerCase();
+    return customers.filter(c => c.name.toLowerCase().includes(q));
+  }, [customers, customerSearch]);
+
+  const getMainProductStock = () => {
+    if (!selectedBom) return null;
+    const prod = products.find(p =>
+      p.name?.toLowerCase() === selectedBom.product_name?.toLowerCase() ||
+      p.code?.toLowerCase() === selectedBom.product_code?.toLowerCase()
+    );
+    return prod;
+  };
+
+  const mainProduct = selectedBom ? getMainProductStock() : null;
+  const neededQty = parseFloat(quantity) || 1;
+  const hasEnoughStock = mainProduct && (mainProduct.quantity || 0) >= neededQty;
+
+  const handleSave = async () => {
+    if (!selectedBom || !selectedCustomer || !quantity) return;
+    setIsSubmitting(true);
+    try {
+      const saleDate = new Date();
+      const newSale = {
+        productId: mainProduct?.id || null,
+        productName: selectedBom.product_name,
+        price: parseFloat(salePrice) || 0,
+        quantity: neededQty,
+        cost: 0,
+        dateISO: saleDate.toISOString(),
+        date: saleDate.toLocaleString(),
+        sale_date: saleDate.toISOString(), // DB uyumluluğu için
+        customerId: selectedCustomer.id,
+        customerName: selectedCustomer.name,
+        customer_id: selectedCustomer.id, // DB uyumluluğu için
+        customer_name: selectedCustomer.name, // DB uyumluluğu için
+        isShipped: false,
+        is_shipped: false, // DB uyumluluğu için
+        productCode: selectedBom.bom_number || 'BOM',
+        product_code: selectedBom.bom_number || 'BOM', // DB uyumluluğu için
+        category: 'BOM Ürünü',
+        description: notes || `BOM Reçetesi: ${selectedBom.bom_number}`,
+        bom_id: selectedBom.id,
+        is_bom_product: true,
+        shipmentDate: shipmentDate ? shipmentDate.toISOString() : null,
+        shipment_date: shipmentDate ? shipmentDate.toISOString() : null, // DB uyumluluğu için
+      };
+      await addSale(newSale);
+      if (shipmentDate) {
+        try {
+          const { scheduleShipmentNotification } = require("../utils/NotificationHelper");
+          scheduleShipmentNotification(selectedBom.product_name, shipmentDate.toISOString());
+        } catch (err) { console.log("Notification helper not found"); }
+      }
+      if (Platform.OS === 'web') window.alert('Sipariş başarıyla oluşturuldu ve Satışlar listesine eklendi.');
+      else Alert.alert('Başarılı', 'Sipariş oluşturuldu.');
+      onClose();
+    } catch (e) {
+      console.error(e);
+      Alert.alert('Hata', 'Sipariş kaydedilirken bir sorun oluştu.');
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
+  const handleCreateWorkOrder = async () => {
+    if (!selectedBom || !selectedCustomer) return;
+    setIsSubmitting(true);
+    try {
+      // 1. Önce Satış Kaydını Oluştur (ki listede görünsün)
+      const saleDate = new Date();
+      const newSale = {
+        productId: mainProduct?.id || null,
+        productName: selectedBom.product_name,
+        price: parseFloat(salePrice) || 0,
+        quantity: neededQty,
+        cost: 0,
+        dateISO: saleDate.toISOString(),
+        date: saleDate.toLocaleString(),
+        sale_date: saleDate.toISOString(),
+        customerId: selectedCustomer.id,
+        customerName: selectedCustomer.name,
+        customer_id: selectedCustomer.id,
+        customer_name: selectedCustomer.name,
+        isShipped: false,
+        is_shipped: false,
+        productCode: selectedBom.bom_number || 'BOM',
+        product_code: selectedBom.bom_number || 'BOM',
+        category: 'BOM Ürünü',
+        description: `BOM Reçetesi: ${selectedBom.bom_number} (Üretim Bekliyor)`,
+        bom_id: selectedBom.id,
+        is_bom_product: true,
+        shipmentDate: shipmentDate ? shipmentDate.toISOString() : null,
+        shipment_date: shipmentDate ? shipmentDate.toISOString() : null,
+      };
+
+      // addSale'den dönen veriyi almak için AppContext'i kontrol etmeliyim
+      // addSale şu an bir şey dönmüyor ama Supabase insert'ten sonra state'e ekliyor.
+      // Linkleme için sale_id lazım. addSale'i async yapıp return ettirebiliriz.
+      const createdSale = await addSale(newSale);
+
+      // 2. İş Emrini Oluştur ve Satışa Bağla
+      const wo = await addWorkOrderFromBom(selectedBom.id, neededQty, {
+        notes: notes || `BOM Siparişi üzerinden oluşturuldu. Müşteri: ${selectedCustomer.name}`,
+        sale_id: createdSale?.id || null, // Linkleme burada yapılıyor
+        product_id: mainProduct?.id || null
+      });
+
+      if (wo) {
+        if (Platform.OS === 'web') window.alert('Sipariş ve İş Emri başarıyla oluşturuldu. Üretim ekranına yönlendiriliyorsunuz.');
+        onClose();
+        navigation.navigate('AssemblyScreen');
+      }
+    } catch (e) {
+      console.error("BOM Wo Error:", e);
+      Alert.alert('Hata', 'İşlem sırasında bir hata oluştu.');
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
+  if (!visible) return null;
+
+  return (
+    <View style={bomStyles.backdrop}>
+      <View style={bomStyles.panel}>
+        {/* Header */}
+        <View style={bomStyles.header}>
+          <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+            {step === 1 && (
+              <TouchableOpacity onPress={() => setStep(0)} style={{ marginRight: 12 }}>
+                <Ionicons name="arrow-back" size={20} color="#64748B" />
+              </TouchableOpacity>
+            )}
+            <View style={bomStyles.headerIcon}>
+              <Ionicons name="construct" size={18} color="#fff" />
+            </View>
+            <View style={{ marginLeft: 12 }}>
+              <Text style={bomStyles.headerTitle}>BOM Ürünü Sipariş</Text>
+              <Text style={bomStyles.headerSub}>{step === 0 ? 'Reçete Seçin' : 'Sipariş Detayları'}</Text>
+            </View>
+          </View>
+          <TouchableOpacity onPress={onClose} style={bomStyles.closeBtn}>
+            <Ionicons name="close" size={20} color="#64748B" />
+          </TouchableOpacity>
+        </View>
+
+        <ScrollView style={{ flex: 1 }} contentContainerStyle={{ padding: 24 }}>
+          {step === 0 ? (
+            <>
+              {/* BOM Arama */}
+              <View style={bomStyles.searchBox}>
+                <Ionicons name="search" size={16} color="#94A3B8" />
+                <TextInput
+                  style={bomStyles.searchInput}
+                  placeholder="Reçete veya ürün adı ara..."
+                  placeholderTextColor="#94A3B8"
+                  value={bomSearch}
+                  onChangeText={setBomSearch}
+                />
+              </View>
+
+              {filteredBoms.length === 0 ? (
+                <View style={{ alignItems: 'center', paddingVertical: 40 }}>
+                  <Ionicons name="construct-outline" size={40} color="#CBD5E1" />
+                  <Text style={{ color: '#94A3B8', marginTop: 12, fontSize: 14 }}>Reçete bulunamadı. Montaj & Üretim ekranından BOM oluşturun.</Text>
+                </View>
+              ) : filteredBoms.map(bom => {
+                const isSelected = selectedBom?.id === bom.id;
+                const compCount = (bom.components || []).length;
+                return (
+                  <TouchableOpacity
+                    key={bom.id}
+                    style={[bomStyles.bomRow, isSelected && bomStyles.bomRowSelected]}
+                    onPress={() => setSelectedBom(bom)}
+                  >
+                    <View style={[bomStyles.bomIcon, isSelected && { backgroundColor: '#6366F1' }]}>
+                      <Ionicons name="layers" size={18} color={isSelected ? '#fff' : '#6366F1'} />
+                    </View>
+                    <View style={{ flex: 1 }}>
+                      <Text style={bomStyles.bomName}>{bom.product_name}</Text>
+                      <Text style={bomStyles.bomSub}>{bom.bom_number} • {compCount} bileşen</Text>
+                    </View>
+                    {isSelected && <Ionicons name="checkmark-circle" size={22} color="#6366F1" />}
+                  </TouchableOpacity>
+                );
+              })}
+
+              {selectedBom && (
+                <TouchableOpacity style={bomStyles.nextBtn} onPress={() => setStep(1)}>
+                  <Text style={bomStyles.nextBtnText}>Devam Et</Text>
+                  <Ionicons name="arrow-forward" size={18} color="#fff" style={{ marginLeft: 8 }} />
+                </TouchableOpacity>
+              )}
+            </>
+          ) : (
+            <>
+              {/* Seçilen BOM Özeti */}
+              <View style={bomStyles.summaryCard}>
+                <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 8 }}>
+                  <Ionicons name="layers" size={16} color="#6366F1" style={{ marginRight: 6 }} />
+                  <Text style={{ fontSize: 13, fontWeight: '700', color: '#6366F1' }}>{selectedBom?.bom_number}</Text>
+                </View>
+                <Text style={{ fontSize: 17, fontWeight: '800', color: '#0F172A', marginBottom: 4 }}>{selectedBom?.product_name}</Text>
+                <Text style={{ fontSize: 12, color: '#64748B' }}>{(selectedBom?.components || []).length} bileşen</Text>
+              </View>
+
+              {/* Stok Durumu Uyarısı */}
+              <View style={[bomStyles.stockAlert, hasEnoughStock ? bomStyles.stockAlertOk : bomStyles.stockAlertWarn]}>
+                <Ionicons name={hasEnoughStock ? 'checkmark-circle' : 'warning'} size={18} color={hasEnoughStock ? '#16A34A' : '#D97706'} style={{ marginRight: 8 }} />
+                <View style={{ flex: 1 }}>
+                  <Text style={{ fontSize: 13, fontWeight: '700', color: hasEnoughStock ? '#15803D' : '#B45309' }}>
+                    {mainProduct ? `Mevcut Stok: ${mainProduct.quantity} adet` : 'Ana ürün stokta kayıtlı değil'}
+                  </Text>
+                  {!hasEnoughStock && (
+                    <Text style={{ fontSize: 12, color: '#92400E', marginTop: 2 }}>
+                      Yetersiz stok — İş emri açarak üretmenizi öneririz
+                    </Text>
+                  )}
+                </View>
+              </View>
+
+              {/* Miktar */}
+              <Text style={bomStyles.label}>Üretilecek / Satılacak Miktar *</Text>
+              <TextInput
+                style={bomStyles.input}
+                value={quantity}
+                onChangeText={setQuantity}
+                keyboardType="numeric"
+                placeholder="1"
+              />
+
+              {/* Satış Fiyatı */}
+              <Text style={bomStyles.label}>Satış Fiyatı (₺)</Text>
+              <TextInput
+                style={bomStyles.input}
+                value={salePrice}
+                onChangeText={setSalePrice}
+                keyboardType="numeric"
+                placeholder="0.00"
+              />
+
+              {/* Açıklama */}
+              <Text style={bomStyles.label}>Sipariş Notu / Açıklama</Text>
+              <TextInput
+                style={bomStyles.input}
+                value={notes}
+                onChangeText={setNotes}
+                placeholder="Siparişe özel notlar..."
+                multiline
+              />
+
+              {/* Sevk Tarihi */}
+              <Text style={bomStyles.label}>Tahmini Sevk Tarihi</Text>
+              <DatePickerButton
+                value={shipmentDate}
+                onChange={setShipmentDate}
+                placeholder="Tarih Seçin"
+                style={{ marginBottom: 14 }}
+              />
+
+              {/* Müşteri Seçimi */}
+              <Text style={bomStyles.label}>Müşteri *</Text>
+              {selectedCustomer ? (
+                <View style={bomStyles.selectedCustomer}>
+                  <Text style={{ flex: 1, fontWeight: '700', color: '#1E293B' }}>{selectedCustomer.name}</Text>
+                  <TouchableOpacity onPress={() => setSelectedCustomer(null)}>
+                    <Ionicons name="close-circle" size={20} color="#94A3B8" />
+                  </TouchableOpacity>
+                </View>
+              ) : (
+                <>
+                  <View style={bomStyles.searchBox}>
+                    <Ionicons name="search" size={16} color="#94A3B8" />
+                    <TextInput
+                      style={bomStyles.searchInput}
+                      placeholder="Müşteri ara..."
+                      placeholderTextColor="#94A3B8"
+                      value={customerSearch}
+                      onChangeText={setCustomerSearch}
+                    />
+                  </View>
+                  <View style={{ maxHeight: 160, borderWidth: 1, borderColor: '#E2E8F0', borderRadius: 10, overflow: 'hidden', marginBottom: 16 }}>
+                    <ScrollView>
+                      {filteredCustomers.map(c => (
+                        <TouchableOpacity key={c.id} style={bomStyles.customerRow} onPress={() => setSelectedCustomer(c)}>
+                          <Text style={{ fontSize: 14, color: '#1E293B', fontWeight: '500' }}>{c.name}</Text>
+                        </TouchableOpacity>
+                      ))}
+                    </ScrollView>
+                  </View>
+                </>
+              )}
+
+              {/* Aksiyonlar */}
+              <View style={{ gap: 10, marginTop: 8 }}>
+                <TouchableOpacity
+                  style={[bomStyles.saveBtn, (!selectedCustomer || isSubmitting) && { opacity: 0.6 }]}
+                  onPress={handleSave}
+                  disabled={!selectedCustomer || isSubmitting}
+                >
+                  <Ionicons name="cart" size={18} color="#fff" style={{ marginRight: 8 }} />
+                  <Text style={bomStyles.saveBtnText}>{isSubmitting ? 'Kaydediliyor...' : 'Siparişi Oluştur'}</Text>
+                </TouchableOpacity>
+
+                {!hasEnoughStock && (
+                  <TouchableOpacity
+                    style={[bomStyles.woBtn, isSubmitting && { opacity: 0.6 }]}
+                    onPress={handleCreateWorkOrder}
+                    disabled={isSubmitting}
+                  >
+                    <Ionicons name="construct" size={18} color="#fff" style={{ marginRight: 8 }} />
+                    <Text style={bomStyles.saveBtnText}>İş Emri Oluştur ve Üret</Text>
+                  </TouchableOpacity>
+                )}
+
+                <TouchableOpacity style={bomStyles.cancelBtn} onPress={onClose}>
+                  <Text style={{ color: '#64748B', fontWeight: '600' }}>İptal</Text>
+                </TouchableOpacity>
+              </View>
+            </>
+          )}
+        </ScrollView>
+      </View>
+    </View>
+  );
+}
+
+const bomStyles = StyleSheet.create({
+  backdrop: {
+    position: 'fixed', top: 0, left: 0, right: 0, bottom: 0,
+    backgroundColor: 'rgba(15,23,42,0.6)', justifyContent: 'center', alignItems: 'center', zIndex: 9999,
+  },
+  panel: {
+    backgroundColor: '#F8FAFC', borderRadius: 20,
+    width: '95%', maxWidth: 560, maxHeight: '88%',
+    overflow: 'hidden',
+    ...Platform.select({ web: { boxShadow: '0 20px 60px rgba(0,0,0,0.25)' } }),
+  },
+  header: {
+    flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between',
+    paddingHorizontal: 20, paddingVertical: 16,
+    backgroundColor: '#fff', borderBottomWidth: 1, borderBottomColor: '#E2E8F0',
+  },
+  headerIcon: {
+    width: 34, height: 34, borderRadius: 10, backgroundColor: '#6366F1',
+    justifyContent: 'center', alignItems: 'center',
+  },
+  headerTitle: { fontSize: 16, fontWeight: '700', color: '#0F172A' },
+  headerSub: { fontSize: 12, color: '#64748B' },
+  closeBtn: {
+    width: 32, height: 32, borderRadius: 8, backgroundColor: '#F1F5F9',
+    justifyContent: 'center', alignItems: 'center',
+    ...Platform.select({ web: { cursor: 'pointer' } }),
+  },
+  searchBox: {
+    flexDirection: 'row', alignItems: 'center',
+    backgroundColor: '#fff', borderWidth: 1, borderColor: '#E2E8F0',
+    borderRadius: 10, paddingHorizontal: 12, paddingVertical: 8, marginBottom: 12,
+  },
+  searchInput: { flex: 1, marginLeft: 8, fontSize: 13, color: '#1E293B', outlineStyle: 'none' },
+  bomRow: {
+    flexDirection: 'row', alignItems: 'center',
+    backgroundColor: '#fff', borderRadius: 12, padding: 14,
+    marginBottom: 8, borderWidth: 1, borderColor: '#E2E8F0',
+    ...Platform.select({ web: { cursor: 'pointer' } }),
+  },
+  bomRowSelected: { borderColor: '#6366F1', backgroundColor: '#F5F3FF' },
+  bomIcon: {
+    width: 40, height: 40, borderRadius: 10,
+    backgroundColor: '#EEF2FF', justifyContent: 'center', alignItems: 'center', marginRight: 12,
+  },
+  bomName: { fontSize: 14, fontWeight: '700', color: '#0F172A' },
+  bomSub: { fontSize: 12, color: '#64748B', marginTop: 2 },
+  nextBtn: {
+    flexDirection: 'row', alignItems: 'center', justifyContent: 'center',
+    backgroundColor: '#6366F1', borderRadius: 12, paddingVertical: 14, marginTop: 16,
+    ...Platform.select({ web: { cursor: 'pointer' } }),
+  },
+  nextBtnText: { color: '#fff', fontWeight: '700', fontSize: 15 },
+  summaryCard: {
+    backgroundColor: '#EEF2FF', borderRadius: 12, padding: 16,
+    borderWidth: 1, borderColor: '#C7D2FE', marginBottom: 16,
+  },
+  stockAlert: {
+    flexDirection: 'row', alignItems: 'flex-start',
+    borderRadius: 10, padding: 12, marginBottom: 16,
+  },
+  stockAlertOk: { backgroundColor: '#F0FDF4', borderWidth: 1, borderColor: '#86EFAC' },
+  stockAlertWarn: { backgroundColor: '#FFFBEB', borderWidth: 1, borderColor: '#FDE68A' },
+  label: { fontSize: 13, fontWeight: '600', color: '#475569', marginBottom: 6 },
+  input: {
+    backgroundColor: '#fff', borderWidth: 1, borderColor: '#E2E8F0',
+    borderRadius: 10, padding: 12, fontSize: 14, color: '#1E293B', marginBottom: 14,
+    outlineStyle: 'none',
+  },
+  selectedCustomer: {
+    flexDirection: 'row', alignItems: 'center',
+    backgroundColor: '#F5F3FF', borderRadius: 10, padding: 12,
+    borderWidth: 1, borderColor: '#C7D2FE', marginBottom: 14,
+  },
+  customerRow: {
+    padding: 12, borderBottomWidth: 1, borderBottomColor: '#F1F5F9',
+    ...Platform.select({ web: { cursor: 'pointer' } }),
+  },
+  saveBtn: {
+    flexDirection: 'row', alignItems: 'center', justifyContent: 'center',
+    backgroundColor: '#6366F1', borderRadius: 12, paddingVertical: 14,
+    ...Platform.select({ web: { cursor: 'pointer' } }),
+  },
+  woBtn: {
+    flexDirection: 'row', alignItems: 'center', justifyContent: 'center',
+    backgroundColor: '#F59E0B', borderRadius: 12, paddingVertical: 14,
+    ...Platform.select({ web: { cursor: 'pointer' } }),
+  },
+  saveBtnText: { color: '#fff', fontWeight: '700', fontSize: 15 },
+  cancelBtn: {
+    alignItems: 'center', justifyContent: 'center',
+    backgroundColor: '#F1F5F9', borderRadius: 12, paddingVertical: 12,
+    ...Platform.select({ web: { cursor: 'pointer' } }),
   },
 });

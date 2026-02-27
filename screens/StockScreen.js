@@ -39,6 +39,7 @@ export default function StockScreen({ navigation }) {
     isPremium,
     sales,
     appDataLoading,
+    boms,
   } = useContext(AppContext);
   const { t } = useTranslation();
   const toast = useToast();
@@ -201,9 +202,13 @@ export default function StockScreen({ navigation }) {
     );
   }, [sortedProducts, searchQuery]);
 
-  const renderProductItem = useCallback(({ item }) => (
-    <StockListItem item={item} onSell={openCustomerSelection} onEdit={onEdit} onDelete={confirmDelete} />
-  ), [openCustomerSelection, confirmDelete, onEdit]);
+  const renderProductItem = useCallback(({ item }) => {
+    const hasBom = (boms || []).some(b =>
+      (b.product_code && item.code && b.product_code === item.code) ||
+      (b.product_name && item.name && b.product_name.toLowerCase() === item.name.toLowerCase())
+    );
+    return <StockListItem item={item} onSell={openCustomerSelection} onEdit={onEdit} onDelete={confirmDelete} hasBom={hasBom} />;
+  }, [openCustomerSelection, confirmDelete, onEdit, boms]);
 
   const navigateToDetailedStock = () => { if (navigation && navigation.navigate) { navigation.navigate('DetailedStockScreen'); } };
   const navigateToAddProduct = () => { if (navigation && navigation.navigate) { navigation.navigate('AddProductScreen'); } };
@@ -319,6 +324,7 @@ export default function StockScreen({ navigation }) {
             <View style={styles.webTableContainer}>
               <View style={styles.webTableHeader}>
                 <Text style={[styles.webHeaderCell, { flex: 2 }]}>{t('product_name')}</Text>
+                <Text style={[styles.webHeaderCell, { flex: 1 }]}>{t('product_code')}</Text>
                 <Text style={[styles.webHeaderCell, { flex: 1 }]}>{t('brand')}</Text>
                 <Text style={[styles.webHeaderCell, { flex: 1 }]}>{t('category')}</Text>
                 <Text style={[styles.webHeaderCell, { flex: 1, textAlign: 'center' }]}>{t('stock_quantity')}</Text>
@@ -329,42 +335,64 @@ export default function StockScreen({ navigation }) {
               <FlatList
                 data={filteredAndSortedProducts}
                 keyExtractor={(i) => i.id}
-                renderItem={({ item, index }) => (
-                  <View style={[styles.webTableRow, index % 2 === 0 ? styles.webTableRowEven : styles.webTableRowOdd]}>
-                    <View style={{ flex: 2, justifyContent: 'center' }}>
-                      <Text style={styles.webCellTextBold}>{item.name}</Text>
-                      {item.code && <Text style={styles.webCellSubText}>{item.code}</Text>}
-                    </View>
-                    <View style={{ flex: 1, justifyContent: 'center' }}>
-                      <Text style={styles.webCellText}>{item.brand || '-'}</Text>
-                    </View>
-                    <View style={{ flex: 1, justifyContent: 'center' }}>
-                      <Text style={styles.webCellText}>{item.category || '-'}</Text>
-                    </View>
-                    <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}>
-                      <View style={[styles.webStatusBadge, item.quantity <= (item.criticalStockLimit || 0) ? styles.webStatusCritical : styles.webStatusNormal]}>
-                        <Text style={[styles.webStatusText, item.quantity <= (item.criticalStockLimit || 0) ? { color: '#B91C1C' } : { color: '#15803D' }]}>{item.quantity} {t(item.unit || 'uom_pcs')}</Text>
+                renderItem={({ item, index }) => {
+                  const hasBom = (boms || []).some(b =>
+                    (b.product_code && item.code && b.product_code === item.code) ||
+                    (b.product_name && item.name && b.product_name.toLowerCase() === item.name.toLowerCase())
+                  );
+                  return (
+                    <View style={[styles.webTableRow, index % 2 === 0 ? styles.webTableRowEven : styles.webTableRowOdd]}>
+                      <View style={{ flex: 2, justifyContent: 'center' }}>
+                        <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+                          <Text style={styles.webCellTextBold}>{item.name}</Text>
+                          {hasBom && (
+                            <View style={{ backgroundColor: '#F5F3FF', paddingHorizontal: 6, paddingVertical: 2, borderRadius: 10, marginLeft: 8, borderWidth: 1, borderColor: '#DDD6FE' }}>
+                              <Text style={{ fontSize: 10, fontWeight: '700', color: '#6D28D9' }}>BOM</Text>
+                            </View>
+                          )}
+                        </View>
+                      </View>
+                      <View style={{ flex: 1, justifyContent: 'center' }}>
+                        {item.code ? (
+                          <View style={styles.webCodeBadge}>
+                            <Ionicons name="barcode-outline" size={12} color={'#6366F1'} style={{ marginRight: 4 }} />
+                            <Text style={styles.webCodeText}>{item.code}</Text>
+                          </View>
+                        ) : (
+                          <Text style={styles.webCellText}>-</Text>
+                        )}
+                      </View>
+                      <View style={{ flex: 1, justifyContent: 'center' }}>
+                        <Text style={styles.webCellText}>{item.brand || '-'}</Text>
+                      </View>
+                      <View style={{ flex: 1, justifyContent: 'center' }}>
+                        <Text style={styles.webCellText}>{item.category || '-'}</Text>
+                      </View>
+                      <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}>
+                        <View style={[styles.webStatusBadge, item.quantity <= (item.criticalStockLimit || 0) ? styles.webStatusCritical : styles.webStatusNormal]}>
+                          <Text style={[styles.webStatusText, item.quantity <= (item.criticalStockLimit || 0) ? { color: '#B91C1C' } : { color: '#15803D' }]}>{item.quantity} {t(item.unit || 'uom_pcs')}</Text>
+                        </View>
+                      </View>
+                      <View style={{ flex: 1, justifyContent: 'center', alignItems: 'flex-end' }}>
+                        <Text style={styles.webCellText}>{Number(item.price ?? 0).toLocaleString('tr-TR', { minimumFractionDigits: 2 })} ₺</Text>
+                      </View>
+                      <View style={{ flex: 1, justifyContent: 'center', paddingLeft: 10 }}>
+                        <Text style={styles.webCellText}>{item.warehouseLocation || '-'}</Text>
+                      </View>
+                      <View style={{ flex: 1, flexDirection: 'row', justifyContent: 'center', alignItems: 'center', gap: 8 }}>
+                        <TouchableOpacity onPress={() => onEdit(item)} style={styles.webActionBtn}>
+                          <Ionicons name="create-outline" size={18} color={Colors.iosBlue} />
+                        </TouchableOpacity>
+                        <TouchableOpacity onPress={() => openCustomerSelection(item)} style={[styles.webActionBtn, { backgroundColor: Colors.iosGreen }]}>
+                          <Ionicons name="cart-outline" size={18} color="#fff" />
+                        </TouchableOpacity>
+                        <TouchableOpacity onPress={() => confirmDelete(item.id, item.name)} style={[styles.webActionBtn, { backgroundColor: '#FFEEF2' }]}>
+                          <Ionicons name="trash-outline" size={18} color={Colors.critical} />
+                        </TouchableOpacity>
                       </View>
                     </View>
-                    <View style={{ flex: 1, justifyContent: 'center', alignItems: 'flex-end' }}>
-                      <Text style={styles.webCellText}>{Number(item.price ?? 0).toLocaleString('tr-TR', { minimumFractionDigits: 2 })} ₺</Text>
-                    </View>
-                    <View style={{ flex: 1, justifyContent: 'center', paddingLeft: 10 }}>
-                      <Text style={styles.webCellText}>{item.warehouseLocation || '-'}</Text>
-                    </View>
-                    <View style={{ flex: 1, flexDirection: 'row', justifyContent: 'center', alignItems: 'center', gap: 8 }}>
-                      <TouchableOpacity onPress={() => onEdit(item)} style={styles.webActionBtn}>
-                        <Ionicons name="create-outline" size={18} color={Colors.iosBlue} />
-                      </TouchableOpacity>
-                      <TouchableOpacity onPress={() => openCustomerSelection(item)} style={[styles.webActionBtn, { backgroundColor: Colors.iosGreen }]}>
-                        <Ionicons name="cart-outline" size={18} color="#fff" />
-                      </TouchableOpacity>
-                      <TouchableOpacity onPress={() => confirmDelete(item.id, item.name)} style={[styles.webActionBtn, { backgroundColor: '#FFEEF2' }]}>
-                        <Ionicons name="trash-outline" size={18} color={Colors.critical} />
-                      </TouchableOpacity>
-                    </View>
-                  </View>
-                )}
+                  );
+                }}
                 scrollEnabled={false}
               />
             </View>
@@ -450,7 +478,7 @@ export default function StockScreen({ navigation }) {
 // ... (SortButton ve StockListItem aynı) ...
 const SortButton = ({ title, currentSort, targetSort, onPress }) => (<TouchableOpacity style={[styles.sortButton, currentSort === targetSort && styles.sortButtonActive]} onPress={() => onPress(targetSort)}><Text style={[styles.sortButtonText, currentSort === targetSort && styles.sortButtonActiveText]}>{title}</Text></TouchableOpacity>);
 
-const StockListItem = ({ item, onSell, onEdit, onDelete }) => {
+const StockListItem = ({ item, onSell, onEdit, onDelete, hasBom }) => {
   const currentQuantity = item.quantity ?? 0;
   const criticalLimit = item.criticalStockLimit ?? 0;
   const isCritical = currentQuantity > 0 && currentQuantity <= criticalLimit;
@@ -481,10 +509,10 @@ const StockListItem = ({ item, onSell, onEdit, onDelete }) => {
                 <Text style={[styles.categoryText, { color: Colors.iosBlue }]}>{item.warehouseLocation}</Text>
               </View>
             )}
-            {item.code && (
-              <View style={styles.codeBadge}>
-                <Ionicons name="barcode-outline" size={10} color={Colors.secondary} style={{ marginRight: 3 }} />
-                <Text style={styles.codeText}>{item.code}</Text>
+            {hasBom && (
+              <View style={[styles.categoryBadge, { backgroundColor: '#F5F3FF' }]}>
+                <Ionicons name="layers-outline" size={10} color="#6D28D9" style={{ marginRight: 3 }} />
+                <Text style={[styles.categoryText, { color: "#6D28D9" }]}>BOM</Text>
               </View>
             )}
           </View>
@@ -912,6 +940,23 @@ const styles = StyleSheet.create({
   webStatusText: {
     fontSize: 12,
     fontWeight: '700',
+  },
+  webCodeBadge: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#EEF2FF',
+    borderWidth: 1,
+    borderColor: '#C7D2FE',
+    paddingHorizontal: 7,
+    paddingVertical: 3,
+    borderRadius: 6,
+    alignSelf: 'flex-start',
+  },
+  webCodeText: {
+    fontSize: 12,
+    fontWeight: '600',
+    color: '#4338CA',
+    fontFamily: 'monospace',
   },
   webActionBtn: {
     width: 32,

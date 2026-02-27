@@ -9,7 +9,7 @@ const isWeb = Platform.OS === 'web';
 
 export default function WorkOrderScreen() {
     const { t } = useTranslation();
-    const { workOrders, addWorkOrder, updateWorkOrder, closeWorkOrder, products, processTemplates, addProcessTemplate } = useContext(AppContext);
+    const { workOrders, addWorkOrder, updateWorkOrder, closeWorkOrder, products, processTemplates, addProcessTemplate, boms } = useContext(AppContext);
 
     const [modalVisible, setModalVisible] = useState(false);
     const [templateModalVisible, setTemplateModalVisible] = useState(false);
@@ -26,6 +26,8 @@ export default function WorkOrderScreen() {
     const [rawMaterialUsage, setRawMaterialUsage] = useState('');
     const [productSearch, setProductSearch] = useState('');
     const [rawMaterialSearch, setRawMaterialSearch] = useState('');
+    const [selectedBomId, setSelectedBomId] = useState('');
+    const [bomSearch, setBomSearch] = useState('');
 
     // Closure States
     const [actualQuantity, setActualQuantity] = useState('');
@@ -84,6 +86,7 @@ export default function WorkOrderScreen() {
         setProductId(''); setTargetQuantity(''); setNotes('');
         setProcesses([]); setRawMaterialId(''); setRawMaterialUsage('');
         setProductSearch(''); setRawMaterialSearch('');
+        setSelectedBomId(''); setBomSearch('');
         setSelectedWo(null); setIsEdit(false);
     };
 
@@ -119,10 +122,16 @@ export default function WorkOrderScreen() {
 
     const handleSaveWorkOrder = async () => {
         if (!productId || !targetQuantity) { Alert.alert('Hata', 'Lütfen ürün ve hedef miktar seçiniz.'); return; }
+
+        const selectedBom = selectedBomId ? (boms || []).find(b => b.id === selectedBomId) : null;
+        const bomComponents = selectedBom ? (selectedBom.components || []) : [];
+
         const woData = {
             product_id: productId, target_quantity: parseFloat(targetQuantity), notes, processes,
-            raw_material_id: rawMaterialId || null,
-            raw_material_usage: rawMaterialId ? parseFloat(rawMaterialUsage || 0) : null,
+            raw_material_id: !selectedBomId ? (rawMaterialId || null) : null,
+            raw_material_usage: !selectedBomId && rawMaterialId ? parseFloat(rawMaterialUsage || 0) : null,
+            bom_id: selectedBomId || null,
+            bom_components: bomComponents,
             wo_number: isEdit ? selectedWo.wo_number : generateWoNumber(),
             created_at: isEdit ? selectedWo.created_at : new Date().toISOString()
         };
@@ -364,34 +373,78 @@ export default function WorkOrderScreen() {
                                 </View>
                             </View>
 
-                            {/* Hammadde */}
+                            {/* BOM veya Tek Hammadde */}
                             <View style={styles.formSection}>
-                                <Text style={styles.sectionTitle}>Hammadde / Bileşen (Opsiyonel)</Text>
-                                <Text style={styles.hintText}>İş emri kapatıldığında bu üründen stok düşülecektir.</Text>
-                                <View style={styles.searchBar}>
-                                    <Ionicons name="search" size={16} color="#94A3B8" />
-                                    <TextInput style={styles.searchInput} placeholder="Hammadde adı ara..." value={rawMaterialSearch} onChangeText={setRawMaterialSearch} placeholderTextColor="#94A3B8" />
-                                </View>
-                                <ScrollView horizontal showsHorizontalScrollIndicator={false} style={{ marginBottom: 8 }}>
-                                    <TouchableOpacity style={[styles.chip, !rawMaterialId && styles.chipActive]} onPress={() => setRawMaterialId('')}>
-                                        <Text style={[styles.chipText, !rawMaterialId && styles.chipTextActive]}>Hiçbiri</Text>
-                                    </TouchableOpacity>
-                                    {products.filter(p => (p.name || '').toLowerCase().includes(rawMaterialSearch.toLowerCase()))
-                                        .map(p => (
-                                            <TouchableOpacity key={p.id} style={[styles.chip, rawMaterialId === p.id && styles.chipActive]} onPress={() => setRawMaterialId(p.id)}>
-                                                <Text style={[styles.chipText, rawMaterialId === p.id && styles.chipTextActive]}>{p.name}</Text>
+                                <Text style={styles.sectionTitle}>BOM Reçetesi / Hammadde</Text>
+                                <Text style={styles.hintText}>BOM seçerseniz tüm bileşenler otomatik eklenir. Yoksa tek hammadde seçebilirsiniz.</Text>
+
+                                {/* BOM Seçimi */}
+                                {(boms || []).length > 0 && !isEdit && (
+                                    <View style={{ marginBottom: 12 }}>
+                                        <Text style={styles.label}>BOM Reçetesi (Opsiyonel)</Text>
+                                        <View style={styles.searchBar}>
+                                            <Ionicons name="search" size={16} color="#94A3B8" />
+                                            <TextInput style={styles.searchInput} placeholder="Reçete ara..." value={bomSearch} onChangeText={setBomSearch} placeholderTextColor="#94A3B8" />
+                                        </View>
+                                        <ScrollView horizontal showsHorizontalScrollIndicator={false} style={{ marginBottom: 8 }}>
+                                            <TouchableOpacity style={[styles.chip, !selectedBomId && styles.chipActive]} onPress={() => setSelectedBomId('')}>
+                                                <Text style={[styles.chipText, !selectedBomId && styles.chipTextActive]}>BOM Yok</Text>
                                             </TouchableOpacity>
-                                        ))}
-                                </ScrollView>
-                                {rawMaterialId && (
+                                            {(boms || []).filter(b => (b.product_name || '').toLowerCase().includes(bomSearch.toLowerCase())).map(b => (
+                                                <TouchableOpacity key={b.id} style={[styles.chip, selectedBomId === b.id && styles.chipActive]} onPress={() => setSelectedBomId(b.id)}>
+                                                    <Text style={[styles.chipText, selectedBomId === b.id && styles.chipTextActive]}>{b.product_name}</Text>
+                                                    <Text style={[styles.chipSub, selectedBomId === b.id && { color: 'rgba(255,255,255,0.8)' }]}>{b.bom_number}</Text>
+                                                </TouchableOpacity>
+                                            ))}
+                                        </ScrollView>
+                                        {selectedBomId && (() => {
+                                            const selBom = (boms || []).find(b => b.id === selectedBomId);
+                                            if (!selBom) return null;
+                                            return (
+                                                <View style={{ backgroundColor: '#F5F3FF', borderRadius: 10, padding: 12, borderWidth: 1, borderColor: '#C7D2FE' }}>
+                                                    <Text style={{ fontSize: 12, fontWeight: '700', color: '#6366F1', marginBottom: 6 }}>Bileşenler ({(selBom.components || []).length} kalem)</Text>
+                                                    {(selBom.components || []).map((comp, ci) => (
+                                                        <Text key={ci} style={{ fontSize: 12, color: '#475569', marginBottom: 2 }}>
+                                                            • {comp.product_name} — x{comp.quantity} {comp.unit || ''}
+                                                        </Text>
+                                                    ))}
+                                                </View>
+                                            );
+                                        })()}
+                                    </View>
+                                )}
+
+                                {/* Tek Hammadde (BOM seçilmemişse) */}
+                                {!selectedBomId && (
                                     <View>
-                                        <Text style={styles.label}>Birim Başına Kullanım Miktarı</Text>
-                                        <TextInput style={styles.input} value={rawMaterialUsage} onChangeText={setRawMaterialUsage} keyboardType="numeric" placeholder="Örn: 0.5" />
-                                        {rawMaterialUsage && targetQuantity && (
-                                            <Text style={styles.calcNote}>Toplam tahmini tüketim: {(parseFloat(rawMaterialUsage) * parseFloat(targetQuantity || 0)).toFixed(2)} {products.find(p => p.id === rawMaterialId)?.unit || 'Birim'}</Text>
+                                        <Text style={styles.label}>Tek Hammadde (Opsiyonel)</Text>
+                                        <View style={styles.searchBar}>
+                                            <Ionicons name="search" size={16} color="#94A3B8" />
+                                            <TextInput style={styles.searchInput} placeholder="Hammadde adı ara..." value={rawMaterialSearch} onChangeText={setRawMaterialSearch} placeholderTextColor="#94A3B8" />
+                                        </View>
+                                        <ScrollView horizontal showsHorizontalScrollIndicator={false} style={{ marginBottom: 8 }}>
+                                            <TouchableOpacity style={[styles.chip, !rawMaterialId && styles.chipActive]} onPress={() => setRawMaterialId('')}>
+                                                <Text style={[styles.chipText, !rawMaterialId && styles.chipTextActive]}>Hiçbiri</Text>
+                                            </TouchableOpacity>
+                                            {products.filter(p => (p.name || '').toLowerCase().includes(rawMaterialSearch.toLowerCase()))
+                                                .map(p => (
+                                                    <TouchableOpacity key={p.id} style={[styles.chip, rawMaterialId === p.id && styles.chipActive]} onPress={() => setRawMaterialId(p.id)}>
+                                                        <Text style={[styles.chipText, rawMaterialId === p.id && styles.chipTextActive]}>{p.name}</Text>
+                                                    </TouchableOpacity>
+                                                ))}
+                                        </ScrollView>
+                                        {rawMaterialId && (
+                                            <View>
+                                                <Text style={styles.label}>Birim Başına Kullanım Miktarı</Text>
+                                                <TextInput style={styles.input} value={rawMaterialUsage} onChangeText={setRawMaterialUsage} keyboardType="numeric" placeholder="Örn: 0.5" />
+                                                {rawMaterialUsage && targetQuantity && (
+                                                    <Text style={styles.calcNote}>Toplam tahmini tüketim: {(parseFloat(rawMaterialUsage) * parseFloat(targetQuantity || 0)).toFixed(2)} {products.find(p => p.id === rawMaterialId)?.unit || 'Birim'}</Text>
+                                                )}
+                                            </View>
                                         )}
                                     </View>
                                 )}
+
                             </View>
 
                             {/* Prosesler */}

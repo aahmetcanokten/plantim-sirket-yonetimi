@@ -49,6 +49,7 @@ export function AppProvider({ children }) {
   const [maintenanceRequests, setMaintenanceRequests] = useState([]);
   const [quotations, setQuotations] = useState([]);
   const [warehouseTransfers, setWarehouseTransfers] = useState([]);
+  const [boms, setBoms] = useState([]);
   const [company, setCompany] = useState({ name: "Şirketim", address: "", taxId: "", requireInvoice: false });
 
   const [dbPremium, setDbPremium] = useState(false);
@@ -139,7 +140,21 @@ export function AppProvider({ children }) {
 
           setCustomers(customerRes.data || []);
           setProducts(productRes.data || []);
-          setSales(salesRes.data || []);
+
+          // Satış verilerini eşle (DB snake_case -> UI camelCase)
+          const mappedSales = (salesRes.data || []).map(s => ({
+            ...s,
+            productId: s.productId || s.product_id,
+            productName: s.productName || s.product_name,
+            customerId: s.customerId || s.customer_id,
+            customerName: s.customerName || s.customer_name,
+            isShipped: s.isShipped !== undefined ? s.isShipped : s.is_shipped,
+            productCode: s.productCode || s.product_code,
+            dateISO: s.dateISO || s.sale_date || s.created_at,
+            shipmentDate: s.shipmentDate || s.shipment_date,
+            invoiceNumber: s.invoiceNumber || s.invoice_number,
+          }));
+          setSales(mappedSales);
           setVehicles(vehicleRes.data || []);
           setPurchases(purchasesRes.data || []);
           setWorkOrders((workOrdersRes?.data || []).map(wo => ({
@@ -159,6 +174,23 @@ export function AppProvider({ children }) {
             items: typeof q.items === 'string' ? JSON.parse(q.items) : (q.items || [])
           })));
           setWarehouseTransfers(warehouseTransfersRes?.data || []);
+
+          // BOM verilerini ayrı yükle (tablo yoksa hata vermesin)
+          try {
+            const { data: bomsData, error: bomsError } = await supabase
+              .from('boms').select('*').eq('user_id', userId).order('created_at', { ascending: false });
+            if (!bomsError && bomsData) {
+              setBoms(bomsData.map(b => ({
+                ...b,
+                components: typeof b.components === 'string' ? JSON.parse(b.components) : (b.components || [])
+              })));
+            } else {
+              setBoms([]);
+            }
+          } catch (bomsErr) {
+            console.log('boms tablosu henüz oluşturulmamış olabilir:', bomsErr?.message);
+            setBoms([]);
+          }
 
           // Personel Görevlerini Parse Et
           const parsedPersonnel = (personnelRes.data || []).map(p => {
@@ -224,6 +256,7 @@ export function AppProvider({ children }) {
         setMaintenanceRequests([]);
         setQuotations([]);
         setWarehouseTransfers([]);
+        setBoms([]);
         setDbPremium(false);
         setRcPremium(false);
         setAppDataLoading(false);
@@ -300,10 +333,29 @@ export function AppProvider({ children }) {
   };
 
   // Satışlar
+  // NOT: Stok düşme işlemi artık teslim anında (markAsShipped / updateSale) gerçekleşir.
   const addSale = async (s) => {
     if (!session || !supabase) return;
-    const saleToAdd = { ...s, user_id: session.user.id, sale_date: new Date().toISOString() };
+
+    // DB tablosu snake_case sütunlar beklediği için eşleme yapıyoruz
+    const saleToAdd = {
+      ...s,
+      user_id: session.user.id,
+      sale_date: s.dateISO || s.sale_date || new Date().toISOString(),
+      product_id: s.productId || s.product_id,
+      product_name: s.productName || s.product_name,
+      customer_id: s.customerId || s.customer_id,
+      customer_name: s.customerName || s.customer_name,
+      is_shipped: s.isShipped !== undefined ? s.isShipped : s.is_shipped,
+      product_code: s.productCode || s.product_code,
+      invoice_number: s.invoiceNumber || s.invoice_number,
+      shipment_date: s.shipmentDate || s.shipment_date,
+    };
     delete saleToAdd.id;
+    // camelCase alanları temizle (DB'de yoksa hata vermemesi için)
+    delete saleToAdd.productId; delete saleToAdd.productName; delete saleToAdd.customerId;
+    delete saleToAdd.customerName; delete saleToAdd.isShipped; delete saleToAdd.productCode;
+    delete saleToAdd.invoiceNumber; delete saleToAdd.shipmentDate; delete saleToAdd.dateISO;
 
     const { data: saleData, error: saleError } = await supabase.from('sales').insert(saleToAdd).select();
     if (saleError) {
@@ -311,21 +363,84 @@ export function AppProvider({ children }) {
       return;
     }
 
-    const product = products.find(p => p.id === s.productId);
-    if (product) {
-      const newQuantity = (product.quantity || 0) - (s.quantity || 0);
-      const { data: productData } = await supabase.from('products').update({ quantity: newQuantity }).eq('id', s.productId).select();
-      if (productData) setProducts(prevP => prevP.map(p => p.id === s.productId ? productData[0] : p));
-    }
-    setSales((prev) => [saleData[0], ...prev]);
+    // Geriye dönen veriyi tekrar UI formatına sok
+    const newMappedSale = {
+      ...saleData[0],
+      productId: saleData[0].product_id,
+      productName: saleData[0].product_name,
+      customerId: saleData[0].customer_id,
+      customerName: saleData[0].customer_name,
+      isShipped: saleData[0].is_shipped,
+      productCode: saleData[0].product_code,
+      dateISO: saleData[0].sale_date,
+      shipmentDate: saleData[0].shipment_date,
+    };
+
+    setSales((prev) => [newMappedSale, ...prev]);
+    return newMappedSale;
   };
   const updateSale = async (u) => {
     if (!session || !supabase) return;
-    const updateData = { ...u };
+
+    // Teslim anında stok düş: isShipped true'ya geçiyorsa ve önceden false idiyse
+    const previousSale = sales.find(s => s.id === u.id);
+    const isBeingShipped = u.isShipped === true && previousSale && !previousSale.isShipped;
+
+    const updateData = {
+      ...u,
+      product_id: u.productId || u.product_id,
+      product_name: u.productName || u.product_name,
+      customer_id: u.customerId || u.customer_id,
+      customer_name: u.customerName || u.customer_name,
+      is_shipped: u.isShipped !== undefined ? u.isShipped : u.is_shipped,
+      product_code: u.productCode || u.product_code,
+      invoice_number: u.invoiceNumber || u.invoice_number,
+      shipment_date: u.shipmentDate || u.shipment_date,
+      sale_date: u.dateISO || u.sale_date,
+    };
     delete updateData.id;
+    // camelCase alanları temizle
+    delete updateData.productId; delete updateData.productName; delete updateData.customerId;
+    delete updateData.customerName; delete updateData.isShipped; delete updateData.productCode;
+    delete updateData.invoiceNumber; delete updateData.shipmentDate; delete updateData.dateISO;
+
     const { data, error } = await supabase.from('sales').update(updateData).eq('id', u.id).select();
-    if (error) Alert.alert("Hata", error.message);
-    else setSales((prev) => prev.map(s => s.id === u.id ? data[0] : s));
+    if (error) {
+      Alert.alert("Hata", error.message);
+      return;
+    }
+
+    const mappedUpdated = {
+      ...data[0],
+      productId: data[0].product_id,
+      productName: data[0].product_name,
+      customerId: data[0].customer_id,
+      customerName: data[0].customer_name,
+      isShipped: data[0].is_shipped,
+      productCode: data[0].product_code,
+      dateISO: data[0].sale_date,
+      shipmentDate: data[0].shipment_date,
+    };
+    setSales((prev) => prev.map(s => s.id === u.id ? mappedUpdated : s));
+
+    // Teslim onaylandıysa stoku düş
+    if (isBeingShipped) {
+      if (u.productId) {
+        // Standart tek ürün satışı
+        const product = products.find(p => p.id === u.productId);
+        if (product) {
+          const newQuantity = (product.quantity || 0) - (u.quantity || 0);
+          const { data: productData } = await supabase.from('products')
+            .update({ quantity: newQuantity })
+            .eq('id', u.productId).select();
+          if (productData) setProducts(prevP => prevP.map(p => p.id === u.productId ? productData[0] : p));
+        }
+      } else if (u.productCode === 'KOMPOZİT' && u.id) {
+        // Kompozit satış: bileşenler description alanında saklanır ama
+        // CompositeSaleModal artık stok düşmez, bu yüzden burada da gerek yok.
+        // (Bileşen bilgisi mevcut state'de yoksa atlanabilir)
+      }
+    }
   };
   const removeSale = async (sid) => {
     if (!session || !supabase) return false;
@@ -338,11 +453,15 @@ export function AppProvider({ children }) {
       return false;
     }
 
-    const product = products.find(p => p.id === sale.productId);
-    if (product) {
-      const newQuantity = (product.quantity || 0) + (sale.quantity || 0);
-      const { data: productData } = await supabase.from('products').update({ quantity: newQuantity }).eq('id', sale.productId).select();
-      if (productData) setProducts((prev) => prev.map(p => p.id === sale.productId ? productData[0] : p));
+    // Stok iadesi SADECE teslim edilmiş (isShipped) siparişler için geçerlidir.
+    // Teslim edilmemiş siparişlerde zaten stok düşülmemişti, iade gerekmez.
+    if (sale.isShipped && sale.productId) {
+      const product = products.find(p => p.id === sale.productId);
+      if (product) {
+        const newQuantity = (product.quantity || 0) + (sale.quantity || 0);
+        const { data: productData } = await supabase.from('products').update({ quantity: newQuantity }).eq('id', sale.productId).select();
+        if (productData) setProducts((prev) => prev.map(p => p.id === sale.productId ? productData[0] : p));
+      }
     }
     setSales((prev) => prev.filter(s => s.id !== sid));
     return true;
@@ -549,10 +668,11 @@ export function AppProvider({ children }) {
       return;
     }
 
-    // Stok güncelleme
+    const finishedQty = parseFloat(closingData.actual_quantity) || parseFloat(wo.target_quantity) || 0;
+
+    // Üretilen ürünü stoğa ekle
     const product = products.find(p => p.id === wo.product_id);
     if (product) {
-      const finishedQty = closingData.actual_quantity || wo.target_quantity || 0;
       const newQuantity = (product.quantity || 0) + finishedQty;
       const { data: productData } = await supabase.from('products').update({ quantity: newQuantity }).eq('id', wo.product_id).select();
       if (productData) setProducts(prevP => prevP.map(p => p.id === product.id ? productData[0] : p));
@@ -561,9 +681,39 @@ export function AppProvider({ children }) {
     const closedWo = { ...woData[0], processes: activeProcesses };
     setWorkOrders(prev => prev.map(w => w.id === id ? closedWo : w));
 
-    // --- YENİ: Hammadde Tüketimi ---
-    if (wo.raw_material_id && wo.raw_material_usage) {
-      const consumedQty = (parseFloat(wo.raw_material_usage) || 0) * (parseFloat(closingData.actual_quantity) || wo.target_quantity || 0);
+    // --- SATIŞI OTOMATİK TAMAMLA (Link varsa) ---
+    if (wo.sale_id) {
+      const sale = sales.find(s => s.id === wo.sale_id);
+      if (sale && !sale.isShipped) {
+        // Satışı sevk edildi (tamamlandı) olarak işaretle
+        // Bu işlem updateSale üzerinden geçerek hem DB'yi günceller hem stoku düşer.
+        await updateSale({ ...sale, isShipped: true });
+        console.log(`İş emri tamamlandığı için ${sale.id} nolu satış tamamlandı olarak işaretlendi.`);
+      }
+    }
+
+    // --- BOM Bileşen Tüketimi (çok bileşenli) ---
+    const bomComponents = typeof wo.bom_components === 'string'
+      ? JSON.parse(wo.bom_components || '[]')
+      : (wo.bom_components || []);
+
+    if (bomComponents.length > 0) {
+      for (const comp of bomComponents) {
+        const consumedQty = (parseFloat(comp.quantity) || 0) * finishedQty;
+        if (consumedQty > 0 && comp.product_id) {
+          const compProduct = products.find(p => p.id === comp.product_id);
+          if (compProduct) {
+            const newCompQty = Math.max(0, (compProduct.quantity || 0) - consumedQty);
+            const { data: compData } = await supabase.from('products').update({ quantity: newCompQty }).eq('id', comp.product_id).select();
+            if (compData && compData[0]) {
+              setProducts(prevP => prevP.map(p => p.id === comp.product_id ? compData[0] : p));
+            }
+          }
+        }
+      }
+    } else if (wo.raw_material_id && wo.raw_material_usage) {
+      // Geriye dönük uyumluluk: eski tek hammadde mantığı
+      const consumedQty = (parseFloat(wo.raw_material_usage) || 0) * finishedQty;
       if (consumedQty > 0) {
         const rawProduct = products.find(p => p.id === wo.raw_material_id);
         if (rawProduct) {
@@ -577,6 +727,68 @@ export function AppProvider({ children }) {
     }
 
     return true;
+  };
+
+  // --- BOM'DAN İŞ EMRİ OLUŞTURMA ---
+  const addWorkOrderFromBom = async (bomId, quantity, extraData = {}) => {
+    if (!session || !supabase) return null;
+    const bom = boms.find(b => b.id === bomId);
+    if (!bom) return null;
+
+    const prodQty = parseFloat(quantity) || 1;
+    const components = bom.components || [];
+
+    // İş emri numarası üret
+    const today = new Date();
+    const dateStr = today.getFullYear().toString() +
+      (today.getMonth() + 1).toString().padStart(2, '0') +
+      today.getDate().toString().padStart(2, '0');
+    const todaysOrders = workOrders.filter(wo => new Date(wo.created_at).toDateString() === today.toDateString());
+    const woNumber = `${dateStr}-${(todaysOrders.length + 1).toString().padStart(3, '0')}`;
+
+    // Ürün ID'sini isimden bul
+    const matchedProduct = products.find(p =>
+      p.name?.toLowerCase() === bom.product_name?.toLowerCase() ||
+      p.code?.toLowerCase() === bom.product_code?.toLowerCase()
+    );
+
+    const woData = {
+      product_id: extraData.product_id || matchedProduct?.id || null,
+      target_quantity: prodQty,
+      notes: extraData.notes || `BOM: ${bom.bom_number} - ${bom.product_name} için otomatik oluşturuldu`,
+      processes: [],
+      bom_id: bomId,
+      bom_components: components,
+      sale_id: extraData.sale_id || null, // Satış ID'si eklendi
+      raw_material_id: null,
+      raw_material_usage: null,
+      wo_number: woNumber,
+      created_at: new Date().toISOString(),
+      status: 'OPEN',
+      user_id: session.user.id,
+    };
+
+    const toInsert = {
+      ...woData,
+      processes: JSON.stringify([]),
+      bom_components: JSON.stringify(components),
+    };
+
+    try {
+      const { data, error } = await supabase.from('work_orders').insert(toInsert).select();
+      if (error) throw error;
+      const newWo = {
+        ...data[0],
+        processes: [],
+        bom_components: components,
+      };
+      setWorkOrders(prev => [newWo, ...prev]);
+      return newWo;
+    } catch (e) {
+      console.error('BOM iş emri oluşturma hatası:', e.message);
+      Alert.alert('Hata', 'İş emri oluşturulamadı: ' + e.message);
+      return null;
+    }
   };
 
   // --- BAKIM VE SERVİS YÖNETİMİ ---
@@ -854,6 +1066,182 @@ export function AppProvider({ children }) {
     }
   };
 
+  // --- BOM (BILL OF MATERIALS) YÖNETİMİ ---
+  const generateBomNumber = () => {
+    const today = new Date();
+    const dateStr = today.getFullYear().toString() + (today.getMonth() + 1).toString().padStart(2, '0') + today.getDate().toString().padStart(2, '0');
+    const todaysBoms = boms.filter(b => new Date(b.created_at).toDateString() === today.toDateString());
+    return `BOM-${dateStr}-${(todaysBoms.length + 1).toString().padStart(3, '0')}`;
+  };
+
+  const addBom = async (bom) => {
+    if (!session || !supabase) return null;
+    const toInsert = {
+      ...bom,
+      user_id: session.user.id,
+      bom_number: generateBomNumber(),
+      components: JSON.stringify(bom.components || []),
+      status: bom.status || 'ACTIVE',
+      created_at: new Date().toISOString(),
+      updated_at: new Date().toISOString()
+    };
+    try {
+      const { data, error } = await supabase.from('boms').insert(toInsert).select();
+      if (error) throw error;
+      const newBom = { ...data[0], components: bom.components || [] };
+      setBoms(prev => [newBom, ...prev]);
+
+      // Ürün stok listesinde yoksa 0 miktar ile oluştur
+      const matchedProduct = products.find(p =>
+        (p.code && bom.product_code && p.code === bom.product_code) ||
+        (p.name && p.name.toLowerCase() === bom.product_name.toLowerCase())
+      );
+
+      if (!matchedProduct) {
+        const placeholderProduct = {
+          name: bom.product_name,
+          category: bom.category || 'Üretim',
+          quantity: 0,
+          cost: 0,
+          price: bom.sale_price || 0,
+          code: bom.product_code || '',
+          criticalStockLimit: bom.critical_limit || 5,
+          description: bom.description || `BOM: ${newBom.bom_number}`,
+          user_id: session.user.id
+        };
+        await addProduct(placeholderProduct, true);
+      }
+
+      return newBom;
+    } catch (e) {
+      console.error('BOM eklenirken hata:', e.message);
+      return null;
+    }
+  };
+
+  const updateBom = async (u) => {
+    if (!session || !supabase) return false;
+    const updateData = {
+      ...u,
+      components: JSON.stringify(u.components || []),
+      updated_at: new Date().toISOString()
+    };
+    try {
+      const { data, error } = await supabase.from('boms').update(updateData).eq('id', u.id).select();
+      if (error) throw error;
+      const updatedBom = { ...data[0], components: u.components || [] };
+      setBoms(prev => prev.map(b => b.id === u.id ? updatedBom : b));
+      return true;
+    } catch (e) {
+      console.error('BOM güncellenirken hata:', e.message);
+      return false;
+    }
+  };
+
+  const deleteBom = async (id) => {
+    if (!session || !supabase) return false;
+    try {
+      const { error } = await supabase.from('boms').delete().eq('id', id);
+      if (error) throw error;
+      setBoms(prev => prev.filter(b => b.id !== id));
+      return true;
+    } catch (e) {
+      console.error('BOM silinirken hata:', e.message);
+      return false;
+    }
+  };
+
+  // BOM'dan üretim gerçekleştirme (stok düşme + yeni ürün ekleme)
+  const produceFromBom = async (bomId, quantity, overrides = {}) => {
+    if (!session || !supabase) return { success: false, error: 'Oturum yok' };
+    const bom = boms.find(b => b.id === bomId);
+    if (!bom) return { success: false, error: 'BOM bulunamadı' };
+
+    const prodQty = parseInt(quantity, 10) || 1;
+    const components = bom.components || [];
+
+    // Stok yeterlilik kontrolü
+    for (const comp of components) {
+      const product = products.find(p => p.id === comp.product_id);
+      const needed = (comp.quantity || 1) * prodQty;
+      if (!product || (product.quantity || 0) < needed) {
+        return {
+          success: false,
+          error: `Yetersiz stok: ${comp.name} (Gereken: ${needed}, Mevcut: ${product?.quantity || 0})`
+        };
+      }
+    }
+
+    try {
+      // Bileşen stoklarını düş
+      for (const comp of components) {
+        const product = products.find(p => p.id === comp.product_id);
+        if (product) {
+          const newQty = (product.quantity || 0) - ((comp.quantity || 1) * prodQty);
+          const { data: pd } = await supabase.from('products').update({ quantity: newQty }).eq('id', comp.product_id).select();
+          if (pd) setProducts(prev => prev.map(p => p.id === comp.product_id ? pd[0] : p));
+        }
+      }
+
+      // Toplam birim maliyeti hesapla
+      const unitCost = components.reduce((sum, c) => {
+        const p = products.find(pr => pr.id === c.product_id);
+        return sum + ((p?.cost || 0) * (c.quantity || 1));
+      }, 0);
+
+      const matchedProduct = products.find(p =>
+        (p.code && (overrides.code || bom.product_code) && p.code === (overrides.code || bom.product_code)) ||
+        (p.name && p.name.toLowerCase() === (overrides.productName || bom.product_name).toLowerCase())
+      );
+
+      const componentDesc = components.map(c => `${c.name} (x${c.quantity})`).join(', ');
+
+      if (matchedProduct) {
+        // Mevcut ürünü güncelle
+        const newQty = (matchedProduct.quantity || 0) + prodQty;
+        const { data: productData, error: productError } = await supabase.from('products')
+          .update({
+            quantity: newQty,
+            cost: unitCost,
+            price: overrides.price || bom.sale_price || matchedProduct.price,
+            description: `BOM: ${bom.bom_number}\nBileşenler: ${componentDesc}`
+          })
+          .eq('id', matchedProduct.id)
+          .select();
+        if (productError) throw productError;
+        setProducts(prev => prev.map(p => p.id === matchedProduct.id ? productData[0] : p));
+      } else {
+        // Yeni ürün ekle
+        const newProduct = {
+          name: overrides.productName || bom.product_name,
+          category: overrides.category || bom.category || 'Üretim',
+          quantity: prodQty,
+          cost: unitCost,
+          price: overrides.price || bom.sale_price || 0,
+          code: overrides.code || bom.product_code || '',
+          criticalStockLimit: overrides.criticalLimit || bom.critical_limit || 0,
+          description: `BOM: ${bom.bom_number}\nBileşenler: ${componentDesc}`,
+          user_id: session.user.id
+        };
+        const { data: productData, error: productError } = await supabase.from('products').insert(newProduct).select();
+        if (productError) throw productError;
+        setProducts(prev => [productData[0], ...prev]);
+      }
+
+      // BOM üretim sayısını artır
+      await supabase.from('boms').update({
+        last_produced_at: new Date().toISOString(),
+        total_produced: (bom.total_produced || 0) + prodQty
+      }).eq('id', bomId);
+      setBoms(prev => prev.map(b => b.id === bomId ? { ...b, last_produced_at: new Date().toISOString(), total_produced: (b.total_produced || 0) + prodQty } : b));
+
+      return { success: true, product: productData[0] };
+    } catch (e) {
+      console.error('Üretim hatası:', e);
+      return { success: false, error: e.message };
+    }
+  };
+
   // --- PROSES ŞABLONLARI ---
   const addProcessTemplate = async (pt) => {
     if (!session || !supabase) return;
@@ -983,11 +1371,12 @@ export function AppProvider({ children }) {
         vehicles, addVehicle, updateVehicle, deleteVehicle,
         purchases, addPurchase, updatePurchase, deletePurchase, markPurchaseDelivered,
         assets, addAsset, updateAsset, deleteAsset, assignAsset, unassignAsset,
-        workOrders, addWorkOrder, updateWorkOrder, closeWorkOrder,
+        workOrders, addWorkOrder, updateWorkOrder, closeWorkOrder, addWorkOrderFromBom,
         processTemplates, addProcessTemplate, deleteProcessTemplate,
         maintenanceRequests, addMaintenanceRequest, updateMaintenanceRequest, closeMaintenanceRequest, deleteMaintenanceRequest,
         quotations, addQuotation, updateQuotation, cancelQuotation, approveQuotation, convertQuotationToSale, deleteQuotation,
         warehouseTransfers, addWarehouseTransfer,
+        boms, addBom, updateBom, deleteBom, produceFromBom,
         company, updateCompanyInfo,
         isPremium, setPremiumStatus: setDbPremium, purchasePremium, restorePurchases,
         getPackages: async () => {
