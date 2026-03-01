@@ -20,7 +20,7 @@ import { scheduleShipmentNotification } from "../utils/NotificationHelper";
 import { useTranslation } from "react-i18next";
 
 export default function CompositeSaleModal({ visible, onClose, onComplete }) {
-    const { products, customers, addSale, isPremium } = useContext(AppContext);
+    const { products, customers, addSale, isPremium, boms } = useContext(AppContext);
     const { t } = useTranslation();
 
     const [step, setStep] = useState(0);
@@ -55,7 +55,7 @@ export default function CompositeSaleModal({ visible, onClose, onComplete }) {
 
     const filteredProducts = useMemo(() => {
         if (!products) return [];
-        let list = [...products]; // Stok sınırı kaldırıldı - sıfır stoklu ürünler de görünür
+        let list = [...products];
         if (searchQuery) {
             const q = searchQuery.toLowerCase();
             list = list.filter(p => p.name.toLowerCase().includes(q) || (p.code && p.code.toLowerCase().includes(q)) || (p.category && p.category.toLowerCase().includes(q)));
@@ -169,30 +169,68 @@ export default function CompositeSaleModal({ visible, onClose, onComplete }) {
 
         setIsSubmitting(true);
         try {
-            const totalCost = calculateTotalCost();
-            const finalPrice = parseFloat(salePrice);
+            const itemCount = getSelectedItemCount();
+            const finalPrice = parseFloat(salePrice) || 0;
 
-            // NOT: Bileşen stokları bu aşamada DÜŞÜLMÜYOR.
-            // Stok düşme işlemi, sipariş "Teslim Edildi" olarak işaretlendiğinde gerçekleşecek.
+            let newSale;
 
-            const newSale = {
-                productId: null,
-                productName: parentName,
-                price: finalPrice,
-                quantity: 1,
-                cost: totalCost,
-                dateISO: new Date().toISOString(),
-                date: new Date().toLocaleString(),
-                customerId: selectedCustomer.id,
-                customerName: selectedCustomer.name,
-                isShipped: false,
-                productCode: 'KOMPOZİT',
-                category: 'Özel Üretim',
-                description: `Bileşenler: ${selectedItemsList.map(x => `${x.product.name} (x${x.qty})`).join(', ')}`,
-                shipmentDate: shipmentDate ? shipmentDate.toISOString() : null
-            };
+            if (itemCount === 1) {
+                // SINGLE ITEM SALE (Standard or BOM product)
+                const singleItem = selectedItemsList[0];
+                const product = singleItem.product;
+                const qty = singleItem.qty || 1;
+                const unitPrice = qty > 0 ? (finalPrice / qty) : 0; // finalPrice was entered as total
 
-            await addSale(newSale);
+                // Check if it is a BOM product
+                const relatedBom = boms?.find(b =>
+                    b.product_name?.toLowerCase() === product.name.toLowerCase() ||
+                    (product.code && b.bom_number?.toLowerCase() === product.code.toLowerCase())
+                );
+
+                newSale = {
+                    productId: product.id,
+                    productName: parentName,
+                    price: unitPrice,
+                    quantity: qty,
+                    cost: product.cost || 0,
+                    dateISO: new Date().toISOString(),
+                    date: new Date().toLocaleString(),
+                    customerId: selectedCustomer.id,
+                    customerName: selectedCustomer.name,
+                    isShipped: false,
+                    productCode: product.code || '-',
+                    category: relatedBom ? 'BOM Ürünü' : (product.category || 'Standart'),
+                    description: relatedBom ? `BOM Siparişi: ${relatedBom.bom_number}` : 'Standart Satış',
+                    shipmentDate: shipmentDate ? shipmentDate.toISOString() : null,
+                    is_bom_product: !!relatedBom,
+                    bom_id: relatedBom ? relatedBom.id : null,
+                };
+            } else {
+                // COMPOSITE SALE (Multiple items bundled)
+                const totalCost = calculateTotalCost();
+                newSale = {
+                    productId: null,
+                    productName: parentName,
+                    price: finalPrice,
+                    quantity: 1,
+                    cost: totalCost,
+                    dateISO: new Date().toISOString(),
+                    date: new Date().toLocaleString(),
+                    customerId: selectedCustomer.id,
+                    customerName: selectedCustomer.name,
+                    isShipped: false,
+                    productCode: 'KOMPOZİT',
+                    category: 'Özel Üretim',
+                    description: `Bileşenler: ${selectedItemsList.map(x => `${x.product.name} (x${x.qty})`).join(', ')}`,
+                    shipmentDate: shipmentDate ? shipmentDate.toISOString() : null
+                };
+            }
+
+            const addedSale = await addSale(newSale);
+            if (addedSale === false || addedSale === null) {
+                // error handled in addSale
+                return;
+            }
             if (shipmentDate) scheduleShipmentNotification(parentName, shipmentDate.toISOString());
             onComplete();
             onClose();
@@ -217,7 +255,7 @@ export default function CompositeSaleModal({ visible, onClose, onComplete }) {
                             </View>
                             <View>
                                 <Text style={webStyles.headerTitle}>{t("create_new_sale")}</Text>
-                                <Text style={webStyles.headerSub}>Yeni Satış Siparişi Oluştur</Text>
+                                <Text style={webStyles.headerSub}>Satış Siparişi Oluştur</Text>
                             </View>
                         </View>
                         <TouchableOpacity onPress={onClose} style={webStyles.closeBtn}>
@@ -280,8 +318,8 @@ export default function CompositeSaleModal({ visible, onClose, onComplete }) {
                                                 </View>
                                                 <View style={webStyles.productRowMeta}>
                                                     <Text style={webStyles.productRowMetaText}>Stok: <Text style={{ color: item.quantity <= 0 ? '#E53E3E' : (item.quantity <= 5 ? '#D97706' : '#22C55E'), fontWeight: '700' }}>{item.quantity}</Text></Text>
-                                                    {item.category && <Text style={webStyles.productRowMetaDivider}>•</Text>}
-                                                    {item.category && <Text style={webStyles.productRowMetaText}>{item.category}</Text>}
+                                                    {!!item.category && <Text style={webStyles.productRowMetaDivider}>•</Text>}
+                                                    {!!item.category && <Text style={webStyles.productRowMetaText}>{item.category}</Text>}
                                                     {item.cost > 0 && <Text style={webStyles.productRowMetaDivider}>•</Text>}
                                                     {item.cost > 0 && <Text style={webStyles.productRowMetaText}>Maliyet: {Number(item.cost).toLocaleString('tr-TR')} ₺</Text>}
                                                 </View>
@@ -377,7 +415,7 @@ export default function CompositeSaleModal({ visible, onClose, onComplete }) {
                                     </View>
                                     <View style={webStyles.fieldRow}>
                                         <View style={[webStyles.fieldGroup, { flex: 1, marginRight: 8 }]}>
-                                            <Text style={webStyles.fieldLabel}>Satış Fiyatı (₺) <Text style={webStyles.required}>*</Text></Text>
+                                            <Text style={webStyles.fieldLabel}>Toplam Satış Fiyatı (₺) <Text style={webStyles.required}>*</Text></Text>
                                             <View style={webStyles.inputWrapper}>
                                                 <Text style={webStyles.currencySymbol}>₺</Text>
                                                 <TextInput
@@ -579,11 +617,11 @@ export default function CompositeSaleModal({ visible, onClose, onComplete }) {
                                 <View style={styles.summaryBox}>
                                     <Text style={styles.summaryTitle}>{t("cost_summary")}</Text>
                                     <Text style={styles.summaryCost}>{calculateTotalCost().toFixed(2)} ₺</Text>
-                                    <Text style={styles.summaryNote}>{t("components_will_be_deducted", { count: getSelectedItemCount() })}</Text>
+                                    <Text style={styles.summaryNote}>{getSelectedItemCount() === 1 ? 'Standart Satış' : t("components_will_be_deducted", { count: getSelectedItemCount() })}</Text>
                                 </View>
-                                <Text style={styles.label}>{t("order_number_or_product_name")}</Text>
+                                <Text style={styles.label}>{getSelectedItemCount() === 1 ? 'Sipariş / Ürün Adı' : t("order_number_or_product_name")}</Text>
                                 <TextInput style={styles.input} placeholder={t("composite_product_placeholder")} value={parentName} onChangeText={setParentName} selectTextOnFocus />
-                                <Text style={styles.label}>{t("sales_price_currency")}</Text>
+                                <Text style={styles.label}>Toplam Satış Fiyatı (₺)</Text>
                                 <TextInput style={styles.input} placeholder="0.00" keyboardType="numeric" value={salePrice} onChangeText={setSalePrice} selectTextOnFocus />
                                 <Text style={styles.label}>{t("shipment_date")}</Text>
                                 <DatePickerButton value={shipmentDate} onChange={setShipmentDate} placeholder={t("date_not_specified")} />

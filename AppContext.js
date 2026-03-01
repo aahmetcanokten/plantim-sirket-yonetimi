@@ -342,38 +342,46 @@ export function AppProvider({ children }) {
       ...s,
       user_id: session.user.id,
       sale_date: s.dateISO || s.sale_date || new Date().toISOString(),
-      product_id: s.productId || s.product_id,
-      product_name: s.productName || s.product_name,
-      customer_id: s.customerId || s.customer_id,
-      customer_name: s.customerName || s.customer_name,
-      is_shipped: s.isShipped !== undefined ? s.isShipped : s.is_shipped,
-      product_code: s.productCode || s.product_code,
-      invoice_number: s.invoiceNumber || s.invoice_number,
-      shipment_date: s.shipmentDate || s.shipment_date,
+      productId: s.productId || s.product_id,
+      productName: s.productName || s.product_name,
+      customerId: s.customerId || s.customer_id,
+      customerName: s.customerName || s.customer_name,
+      isShipped: s.isShipped !== undefined ? s.isShipped : s.is_shipped,
+      productCode: s.productCode || s.product_code,
+      invoiceNumber: s.invoiceNumber || s.invoice_number,
+      shipmentDate: s.shipmentDate || s.shipment_date,
     };
     delete saleToAdd.id;
-    // camelCase alanları temizle (DB'de yoksa hata vermemesi için)
-    delete saleToAdd.productId; delete saleToAdd.productName; delete saleToAdd.customerId;
-    delete saleToAdd.customerName; delete saleToAdd.isShipped; delete saleToAdd.productCode;
-    delete saleToAdd.invoiceNumber; delete saleToAdd.shipmentDate; delete saleToAdd.dateISO;
+    delete saleToAdd.dateISO;
+    delete saleToAdd.date;
+    delete saleToAdd.product_id; delete saleToAdd.product_name; delete saleToAdd.customer_id;
+    delete saleToAdd.customer_name; delete saleToAdd.is_shipped; delete saleToAdd.product_code;
+    delete saleToAdd.invoice_number; delete saleToAdd.shipment_date;
 
     const { data: saleData, error: saleError } = await supabase.from('sales').insert(saleToAdd).select();
     if (saleError) {
-      Alert.alert("Satış Hatası", saleError.message);
-      return;
+      console.error("SUPABASE ERROR DETAILS:", saleError);
+
+      const errorMsg = `Supabase Hata Detayı: \n\nMessage: ${saleError.message}\nDetails: ${saleError.details}\nHint: ${saleError.hint}`;
+      if (Platform.OS === 'web') {
+        window.alert(errorMsg);
+      } else {
+        Alert.alert("Satış Hatası", errorMsg);
+      }
+      return false; // Return explicit false so caller knows it failed
     }
 
-    // Geriye dönen veriyi tekrar UI formatına sok
+    // Geriye dönen veriyi direkt kullanabiliriz (snake_case ile geldiği yerler varsa yine camelCase yapalım)
     const newMappedSale = {
       ...saleData[0],
-      productId: saleData[0].product_id,
-      productName: saleData[0].product_name,
-      customerId: saleData[0].customer_id,
-      customerName: saleData[0].customer_name,
-      isShipped: saleData[0].is_shipped,
-      productCode: saleData[0].product_code,
+      productId: saleData[0].productId || saleData[0].product_id,
+      productName: saleData[0].productName || saleData[0].product_name,
+      customerId: saleData[0].customerId || saleData[0].customer_id,
+      customerName: saleData[0].customerName || saleData[0].customer_name,
+      isShipped: saleData[0].isShipped !== undefined ? saleData[0].isShipped : saleData[0].is_shipped,
+      productCode: saleData[0].productCode || saleData[0].product_code,
       dateISO: saleData[0].sale_date,
-      shipmentDate: saleData[0].shipment_date,
+      shipmentDate: saleData[0].shipmentDate || saleData[0].shipment_date,
     };
 
     setSales((prev) => [newMappedSale, ...prev]);
@@ -388,21 +396,22 @@ export function AppProvider({ children }) {
 
     const updateData = {
       ...u,
-      product_id: u.productId || u.product_id,
-      product_name: u.productName || u.product_name,
-      customer_id: u.customerId || u.customer_id,
-      customer_name: u.customerName || u.customer_name,
-      is_shipped: u.isShipped !== undefined ? u.isShipped : u.is_shipped,
-      product_code: u.productCode || u.product_code,
-      invoice_number: u.invoiceNumber || u.invoice_number,
-      shipment_date: u.shipmentDate || u.shipment_date,
+      productId: u.productId || u.product_id,
+      productName: u.productName || u.product_name,
+      customerId: u.customerId || u.customer_id,
+      customerName: u.customerName || u.customer_name,
+      isShipped: u.isShipped !== undefined ? u.isShipped : u.is_shipped,
+      productCode: u.productCode || u.product_code,
+      invoiceNumber: u.invoiceNumber || u.invoice_number,
+      shipmentDate: u.shipmentDate || u.shipment_date,
       sale_date: u.dateISO || u.sale_date,
     };
     delete updateData.id;
-    // camelCase alanları temizle
-    delete updateData.productId; delete updateData.productName; delete updateData.customerId;
-    delete updateData.customerName; delete updateData.isShipped; delete updateData.productCode;
-    delete updateData.invoiceNumber; delete updateData.shipmentDate; delete updateData.dateISO;
+    delete updateData.dateISO;
+    delete updateData.date;
+    delete updateData.product_id; delete updateData.product_name; delete updateData.customer_id;
+    delete updateData.customer_name; delete updateData.is_shipped; delete updateData.product_code;
+    delete updateData.invoice_number; delete updateData.shipment_date;
 
     const { data, error } = await supabase.from('sales').update(updateData).eq('id', u.id).select();
     if (error) {
@@ -412,14 +421,14 @@ export function AppProvider({ children }) {
 
     const mappedUpdated = {
       ...data[0],
-      productId: data[0].product_id,
-      productName: data[0].product_name,
-      customerId: data[0].customer_id,
-      customerName: data[0].customer_name,
-      isShipped: data[0].is_shipped,
-      productCode: data[0].product_code,
+      productId: data[0].productId || data[0].product_id,
+      productName: data[0].productName || data[0].product_name,
+      customerId: data[0].customerId || data[0].customer_id,
+      customerName: data[0].customerName || data[0].customer_name,
+      isShipped: data[0].isShipped !== undefined ? data[0].isShipped : data[0].is_shipped,
+      productCode: data[0].productCode || data[0].product_code,
       dateISO: data[0].sale_date,
-      shipmentDate: data[0].shipment_date,
+      shipmentDate: data[0].shipmentDate || data[0].shipment_date,
     };
     setSales((prev) => prev.map(s => s.id === u.id ? mappedUpdated : s));
 

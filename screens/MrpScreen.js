@@ -126,6 +126,44 @@ export default function MrpScreen() {
         // Satışlardan talep topla
         if (sourceType !== 'QUOTES') {
             sales.filter(s => selectedSaleIds.has(s.id)).forEach(s => {
+                if (s.productCode === 'KOMPOZİT') {
+                    // Kalabalık kompozit sipariş - bileşenleri descriptions'dan ayrıştır
+                    const prefix = "Bileşenler: ";
+                    if (s.description && s.description.startsWith(prefix)) {
+                        const compStr = s.description.substring(prefix.length);
+                        // Regex: "(.*?)\s*\(x(\d+(?:\.\d+)?)\)" eşleşmesini arar (Ör: "Ürün A (x2), Ürün B (x5)")
+                        // Virgülleri handle etmek için regex daha güvenlidir
+                        const regex = /(.*?)\s*\(x(\d+(?:\.\d+)?)\)/g;
+                        let match;
+                        while ((match = regex.exec(compStr)) !== null) {
+                            let pName = match[1];
+                            if (pName.startsWith(', ')) {
+                                pName = pName.substring(2);
+                            }
+                            pName = pName.trim();
+                            const qty = parseFloat(match[2]) || 0;
+
+                            const prod = (products || []).find(p => p.name === pName);
+                            // Ürün bulunursa ürün ID'si, bulunamazsa isim bazlı geçici ID
+                            const pid = prod ? prod.id : `unknown_${pName}`;
+
+                            if (!demand[pid]) {
+                                demand[pid] = {
+                                    name: pName,
+                                    code: prod ? prod.code : '',
+                                    needed: 0,
+                                    sources: []
+                                };
+                            }
+                            const saleTotalQty = parseFloat(s.quantity) || 1;
+                            const neededQty = qty * saleTotalQty;
+                            demand[pid].needed += neededQty;
+                            demand[pid].sources.push({ type: 'sale', label: `${s.customerName || 'Bilinmeyen'} (Kompozit)`, qty: neededQty });
+                        }
+                    }
+                    return; // Normal ürün olarak ekleme adımlarını atla
+                }
+
                 const pid = s.productId;
                 if (!pid) return;
                 if (!demand[pid]) demand[pid] = { name: s.productName || 'Bilinmeyen', code: s.productCode || '', needed: 0, sources: [] };

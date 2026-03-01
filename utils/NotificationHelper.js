@@ -41,6 +41,7 @@ export async function registerForPushNotificationsAsync() {
 }
 
 export async function scheduleShipmentNotification(productName, shipmentDateISO) {
+    if (Platform.OS === 'web') return; // Notifications not supported fully on web
     try {
         const shipmentDate = new Date(shipmentDateISO);
 
@@ -92,6 +93,7 @@ export async function scheduleShipmentNotification(productName, shipmentDateISO)
  * @param {Array} products - Ürün listesi
  */
 export async function checkAndTriggerLowStockNotification(products) {
+    if (Platform.OS === 'web') return; // Notifications not supported on web
     try {
         // Kritik seviyedeki ürünleri filtrele (Stok <= Kritik Limit)
         // Eğer kritik limit null ise varsayılan olarak 5 kabul etmeyelim, 0'dan büyük ve kritik limite eşit/küçük

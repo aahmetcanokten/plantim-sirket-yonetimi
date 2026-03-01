@@ -1,0 +1,1208 @@
+﻿commit a4958f1b70c5368068991b23099b134a6f343b95
+Author: Builder <builder@app.com>
+Date:   Fri Feb 27 16:27:11 2026 +0300
+
+    BOM sipari┼ƒ y├╢netimi, i┼ƒ emri entegrasyonu ve veri e┼ƒleme geli┼ƒtirmeleri
+
+diff --git a/AppContext.js b/AppContext.js
+index 7483824..6010d1c 100644
+--- a/AppContext.js
++++ b/AppContext.js
+@@ -49,6 +49,7 @@ export function AppProvider({ children }) {
+   const [maintenanceRequests, setMaintenanceRequests] = useState([]);
+   const [quotations, setQuotations] = useState([]);
+   const [warehouseTransfers, setWarehouseTransfers] = useState([]);
++  const [boms, setBoms] = useState([]);
+   const [company, setCompany] = useState({ name: "┼₧irketim", address: "", taxId: "", requireInvoice: false });
+ 
+   const [dbPremium, setDbPremium] = useState(false);
+@@ -139,7 +140,21 @@ export function AppProvider({ children }) {
+ 
+           setCustomers(customerRes.data || []);
+           setProducts(productRes.data || []);
+-          setSales(salesRes.data || []);
++
++          // Sat─▒┼ƒ verilerini e┼ƒle (DB snake_case -> UI camelCase)
++          const mappedSales = (salesRes.data || []).map(s => ({
++            ...s,
++            productId: s.productId || s.product_id,
++            productName: s.productName || s.product_name,
++            customerId: s.customerId || s.customer_id,
++            customerName: s.customerName || s.customer_name,
++            isShipped: s.isShipped !== undefined ? s.isShipped : s.is_shipped,
++            productCode: s.productCode || s.product_code,
++            dateISO: s.dateISO || s.sale_date || s.created_at,
++            shipmentDate: s.shipmentDate || s.shipment_date,
++            invoiceNumber: s.invoiceNumber || s.invoice_number,
++          }));
++          setSales(mappedSales);
+           setVehicles(vehicleRes.data || []);
+           setPurchases(purchasesRes.data || []);
+           setWorkOrders((workOrdersRes?.data || []).map(wo => ({
+@@ -160,6 +175,23 @@ export function AppProvider({ children }) {
+           })));
+           setWarehouseTransfers(warehouseTransfersRes?.data || []);
+ 
++          // BOM verilerini ayr─▒ y├╝kle (tablo yoksa hata vermesin)
++          try {
++            const { data: bomsData, error: bomsError } = await supabase
++              .from('boms').select('*').eq('user_id', userId).order('created_at', { ascending: false });
++            if (!bomsError && bomsData) {
++              setBoms(bomsData.map(b => ({
++                ...b,
++                components: typeof b.components === 'string' ? JSON.parse(b.components) : (b.components || [])
++              })));
++            } else {
++              setBoms([]);
++            }
++          } catch (bomsErr) {
++            console.log('boms tablosu hen├╝z olu┼ƒturulmam─▒┼ƒ olabilir:', bomsErr?.message);
++            setBoms([]);
++          }
++
+           // Personel G├╢revlerini Parse Et
+           const parsedPersonnel = (personnelRes.data || []).map(p => {
+             if (typeof p.tasks === 'string') {
+@@ -224,6 +256,7 @@ export function AppProvider({ children }) {
+         setMaintenanceRequests([]);
+         setQuotations([]);
+         setWarehouseTransfers([]);
++        setBoms([]);
+         setDbPremium(false);
+         setRcPremium(false);
+         setAppDataLoading(false);
+@@ -300,10 +333,29 @@ export function AppProvider({ children }) {
+   };
+ 
+   // Sat─▒┼ƒlar
++  // NOT: Stok d├╝┼ƒme i┼ƒlemi art─▒k teslim an─▒nda (markAsShipped / updateSale) ger├ºekle┼ƒir.
+   const addSale = async (s) => {
+     if (!session || !supabase) return;
+-    const saleToAdd = { ...s, user_id: session.user.id, sale_date: new Date().toISOString() };
++
++    // DB tablosu snake_case s├╝tunlar bekledi─ƒi i├ºin e┼ƒleme yap─▒yoruz
++    const saleToAdd = {
++      ...s,
++      user_id: session.user.id,
++      sale_date: s.dateISO || s.sale_date || new Date().toISOString(),
++      product_id: s.productId || s.product_id,
++      product_name: s.productName || s.product_name,
++      customer_id: s.customerId || s.customer_id,
++      customer_name: s.customerName || s.customer_name,
++      is_shipped: s.isShipped !== undefined ? s.isShipped : s.is_shipped,
++      product_code: s.productCode || s.product_code,
++      invoice_number: s.invoiceNumber || s.invoice_number,
++      shipment_date: s.shipmentDate || s.shipment_date,
++    };
+     delete saleToAdd.id;
++    // camelCase alanlar─▒ temizle (DB'de yoksa hata vermemesi i├ºin)
++    delete saleToAdd.productId; delete saleToAdd.productName; delete saleToAdd.customerId;
++    delete saleToAdd.customerName; delete saleToAdd.isShipped; delete saleToAdd.productCode;
++    delete saleToAdd.invoiceNumber; delete saleToAdd.shipmentDate; delete saleToAdd.dateISO;
+ 
+     const { data: saleData, error: saleError } = await supabase.from('sales').insert(saleToAdd).select();
+     if (saleError) {
+@@ -311,21 +363,84 @@ export function AppProvider({ children }) {
+       return;
+     }
+ 
+-    const product = products.find(p => p.id === s.productId);
+-    if (product) {
+-      const newQuantity = (product.quantity || 0) - (s.quantity || 0);
+-      const { data: productData } = await supabase.from('products').update({ quantity: newQuantity }).eq('id', s.productId).select();
+-      if (productData) setProducts(prevP => prevP.map(p => p.id === s.productId ? productData[0] : p));
+-    }
+-    setSales((prev) => [saleData[0], ...prev]);
++    // Geriye d├╢nen veriyi tekrar UI format─▒na sok
++    const newMappedSale = {
++      ...saleData[0],
++      productId: saleData[0].product_id,
++      productName: saleData[0].product_name,
++      customerId: saleData[0].customer_id,
++      customerName: saleData[0].customer_name,
++      isShipped: saleData[0].is_shipped,
++      productCode: saleData[0].product_code,
++      dateISO: saleData[0].sale_date,
++      shipmentDate: saleData[0].shipment_date,
++    };
++
++    setSales((prev) => [newMappedSale, ...prev]);
++    return newMappedSale;
+   };
+   const updateSale = async (u) => {
+     if (!session || !supabase) return;
+-    const updateData = { ...u };
++
++    // Teslim an─▒nda stok d├╝┼ƒ: isShipped true'ya ge├ºiyorsa ve ├╢nceden false idiyse
++    const previousSale = sales.find(s => s.id === u.id);
++    const isBeingShipped = u.isShipped === true && previousSale && !previousSale.isShipped;
++
++    const updateData = {
++      ...u,
++      product_id: u.productId || u.product_id,
++      product_name: u.productName || u.product_name,
++      customer_id: u.customerId || u.customer_id,
++      customer_name: u.customerName || u.customer_name,
++      is_shipped: u.isShipped !== undefined ? u.isShipped : u.is_shipped,
++      product_code: u.productCode || u.product_code,
++      invoice_number: u.invoiceNumber || u.invoice_number,
++      shipment_date: u.shipmentDate || u.shipment_date,
++      sale_date: u.dateISO || u.sale_date,
++    };
+     delete updateData.id;
++    // camelCase alanlar─▒ temizle
++    delete updateData.productId; delete updateData.productName; delete updateData.customerId;
++    delete updateData.customerName; delete updateData.isShipped; delete updateData.productCode;
++    delete updateData.invoiceNumber; delete updateData.shipmentDate; delete updateData.dateISO;
++
+     const { data, error } = await supabase.from('sales').update(updateData).eq('id', u.id).select();
+-    if (error) Alert.alert("Hata", error.message);
+-    else setSales((prev) => prev.map(s => s.id === u.id ? data[0] : s));
++    if (error) {
++      Alert.alert("Hata", error.message);
++      return;
++    }
++
++    const mappedUpdated = {
++      ...data[0],
++      productId: data[0].product_id,
++      productName: data[0].product_name,
++      customerId: data[0].customer_id,
++      customerName: data[0].customer_name,
++      isShipped: data[0].is_shipped,
++      productCode: data[0].product_code,
++      dateISO: data[0].sale_date,
++      shipmentDate: data[0].shipment_date,
++    };
++    setSales((prev) => prev.map(s => s.id === u.id ? mappedUpdated : s));
++
++    // Teslim onayland─▒ysa stoku d├╝┼ƒ
++    if (isBeingShipped) {
++      if (u.productId) {
++        // Standart tek ├╝r├╝n sat─▒┼ƒ─▒
++        const product = products.find(p => p.id === u.productId);
++        if (product) {
++          const newQuantity = (product.quantity || 0) - (u.quantity || 0);
++          const { data: productData } = await supabase.from('products')
++            .update({ quantity: newQuantity })
++            .eq('id', u.productId).select();
++          if (productData) setProducts(prevP => prevP.map(p => p.id === u.productId ? productData[0] : p));
++        }
++      } else if (u.productCode === 'KOMPOZ─░T' && u.id) {
++        // Kompozit sat─▒┼ƒ: bile┼ƒenler description alan─▒nda saklan─▒r ama
++        // CompositeSaleModal art─▒k stok d├╝┼ƒmez, bu y├╝zden burada da gerek yok.
++        // (Bile┼ƒen bilgisi mevcut state'de yoksa atlanabilir)
++      }
++    }
+   };
+   const removeSale = async (sid) => {
+     if (!session || !supabase) return false;
+@@ -338,11 +453,15 @@ export function AppProvider({ children }) {
+       return false;
+     }
+ 
+-    const product = products.find(p => p.id === sale.productId);
+-    if (product) {
+-      const newQuantity = (product.quantity || 0) + (sale.quantity || 0);
+-      const { data: productData } = await supabase.from('products').update({ quantity: newQuantity }).eq('id', sale.productId).select();
+-      if (productData) setProducts((prev) => prev.map(p => p.id === sale.productId ? productData[0] : p));
++    // Stok iadesi SADECE teslim edilmi┼ƒ (isShipped) sipari┼ƒler i├ºin ge├ºerlidir.
++    // Teslim edilmemi┼ƒ sipari┼ƒlerde zaten stok d├╝┼ƒ├╝lmemi┼ƒti, iade gerekmez.
++    if (sale.isShipped && sale.productId) {
++      const product = products.find(p => p.id === sale.productId);
++      if (product) {
++        const newQuantity = (product.quantity || 0) + (sale.quantity || 0);
++        const { data: productData } = await supabase.from('products').update({ quantity: newQuantity }).eq('id', sale.productId).select();
++        if (productData) setProducts((prev) => prev.map(p => p.id === sale.productId ? productData[0] : p));
++      }
+     }
+     setSales((prev) => prev.filter(s => s.id !== sid));
+     return true;
+@@ -549,10 +668,11 @@ export function AppProvider({ children }) {
+       return;
+     }
+ 
+-    // Stok g├╝ncelleme
++    const finishedQty = parseFloat(closingData.actual_quantity) || parseFloat(wo.target_quantity) || 0;
++
++    // ├£retilen ├╝r├╝n├╝ sto─ƒa ekle
+     const product = products.find(p => p.id === wo.product_id);
+     if (product) {
+-      const finishedQty = closingData.actual_quantity || wo.target_quantity || 0;
+       const newQuantity = (product.quantity || 0) + finishedQty;
+       const { data: productData } = await supabase.from('products').update({ quantity: newQuantity }).eq('id', wo.product_id).select();
+       if (productData) setProducts(prevP => prevP.map(p => p.id === product.id ? productData[0] : p));
+@@ -561,9 +681,39 @@ export function AppProvider({ children }) {
+     const closedWo = { ...woData[0], processes: activeProcesses };
+     setWorkOrders(prev => prev.map(w => w.id === id ? closedWo : w));
+ 
+-    // --- YEN─░: Hammadde T├╝ketimi ---
+-    if (wo.raw_material_id && wo.raw_material_usage) {
+-      const consumedQty = (parseFloat(wo.raw_material_usage) || 0) * (parseFloat(closingData.actual_quantity) || wo.target_quantity || 0);
++    // --- SATI┼₧I OTOMAT─░K TAMAMLA (Link varsa) ---
++    if (wo.sale_id) {
++      const sale = sales.find(s => s.id === wo.sale_id);
++      if (sale && !sale.isShipped) {
++        // Sat─▒┼ƒ─▒ sevk edildi (tamamland─▒) olarak i┼ƒaretle
++        // Bu i┼ƒlem updateSale ├╝zerinden ge├ºerek hem DB'yi g├╝nceller hem stoku d├╝┼ƒer.
++        await updateSale({ ...sale, isShipped: true });
++        console.log(`─░┼ƒ emri tamamland─▒─ƒ─▒ i├ºin ${sale.id} nolu sat─▒┼ƒ tamamland─▒ olarak i┼ƒaretlendi.`);
++      }
++    }
++
++    // --- BOM Bile┼ƒen T├╝ketimi (├ºok bile┼ƒenli) ---
++    const bomComponents = typeof wo.bom_components === 'string'
++      ? JSON.parse(wo.bom_components || '[]')
++      : (wo.bom_components || []);
++
++    if (bomComponents.length > 0) {
++      for (const comp of bomComponents) {
++        const consumedQty = (parseFloat(comp.quantity) || 0) * finishedQty;
++        if (consumedQty > 0 && comp.product_id) {
++          const compProduct = products.find(p => p.id === comp.product_id);
++          if (compProduct) {
++            const newCompQty = Math.max(0, (compProduct.quantity || 0) - consumedQty);
++            const { data: compData } = await supabase.from('products').update({ quantity: newCompQty }).eq('id', comp.product_id).select();
++            if (compData && compData[0]) {
++              setProducts(prevP => prevP.map(p => p.id === comp.product_id ? compData[0] : p));
++            }
++          }
++        }
++      }
++    } else if (wo.raw_material_id && wo.raw_material_usage) {
++      // Geriye d├╢n├╝k uyumluluk: eski tek hammadde mant─▒─ƒ─▒
++      const consumedQty = (parseFloat(wo.raw_material_usage) || 0) * finishedQty;
+       if (consumedQty > 0) {
+         const rawProduct = products.find(p => p.id === wo.raw_material_id);
+         if (rawProduct) {
+@@ -579,6 +729,68 @@ export function AppProvider({ children }) {
+     return true;
+   };
+ 
++  // --- BOM'DAN ─░┼₧ EMR─░ OLU┼₧TURMA ---
++  const addWorkOrderFromBom = async (bomId, quantity, extraData = {}) => {
++    if (!session || !supabase) return null;
++    const bom = boms.find(b => b.id === bomId);
++    if (!bom) return null;
++
++    const prodQty = parseFloat(quantity) || 1;
++    const components = bom.components || [];
++
++    // ─░┼ƒ emri numaras─▒ ├╝ret
++    const today = new Date();
++    const dateStr = today.getFullYear().toString() +
++      (today.getMonth() + 1).toString().padStart(2, '0') +
++      today.getDate().toString().padStart(2, '0');
++    const todaysOrders = workOrders.filter(wo => new Date(wo.created_at).toDateString() === today.toDateString());
++    const woNumber = `${dateStr}-${(todaysOrders.length + 1).toString().padStart(3, '0')}`;
++
++    // ├£r├╝n ID'sini isimden bul
++    const matchedProduct = products.find(p =>
++      p.name?.toLowerCase() === bom.product_name?.toLowerCase() ||
++      p.code?.toLowerCase() === bom.product_code?.toLowerCase()
++    );
++
++    const woData = {
++      product_id: extraData.product_id || matchedProduct?.id || null,
++      target_quantity: prodQty,
++      notes: extraData.notes || `BOM: ${bom.bom_number} - ${bom.product_name} i├ºin otomatik olu┼ƒturuldu`,
++      processes: [],
++      bom_id: bomId,
++      bom_components: components,
++      sale_id: extraData.sale_id || null, // Sat─▒┼ƒ ID'si eklendi
++      raw_material_id: null,
++      raw_material_usage: null,
++      wo_number: woNumber,
++      created_at: new Date().toISOString(),
++      status: 'OPEN',
++      user_id: session.user.id,
++    };
++
++    const toInsert = {
++      ...woData,
++      processes: JSON.stringify([]),
++      bom_components: JSON.stringify(components),
++    };
++
++    try {
++      const { data, error } = await supabase.from('work_orders').insert(toInsert).select();
++      if (error) throw error;
++      const newWo = {
++        ...data[0],
++        processes: [],
++        bom_components: components,
++      };
++      setWorkOrders(prev => [newWo, ...prev]);
++      return newWo;
++    } catch (e) {
++      console.error('BOM i┼ƒ emri olu┼ƒturma hatas─▒:', e.message);
++      Alert.alert('Hata', '─░┼ƒ emri olu┼ƒturulamad─▒: ' + e.message);
++      return null;
++    }
++  };
++
+   // --- BAKIM VE SERV─░S Y├ûNET─░M─░ ---
+   const generateMrNumber = () => {
+     const today = new Date();
+@@ -854,6 +1066,182 @@ export function AppProvider({ children }) {
+     }
+   };
+ 
++  // --- BOM (BILL OF MATERIALS) Y├ûNET─░M─░ ---
++  const generateBomNumber = () => {
++    const today = new Date();
++    const dateStr = today.getFullYear().toString() + (today.getMonth() + 1).toString().padStart(2, '0') + today.getDate().toString().padStart(2, '0');
++    const todaysBoms = boms.filter(b => new Date(b.created_at).toDateString() === today.toDateString());
++    return `BOM-${dateStr}-${(todaysBoms.length + 1).toString().padStart(3, '0')}`;
++  };
++
++  const addBom = async (bom) => {
++    if (!session || !supabase) return null;
++    const toInsert = {
++      ...bom,
++      user_id: session.user.id,
++      bom_number: generateBomNumber(),
++      components: JSON.stringify(bom.components || []),
++      status: bom.status || 'ACTIVE',
++      created_at: new Date().toISOString(),
++      updated_at: new Date().toISOString()
++    };
++    try {
++      const { data, error } = await supabase.from('boms').insert(toInsert).select();
++      if (error) throw error;
++      const newBom = { ...data[0], components: bom.components || [] };
++      setBoms(prev => [newBom, ...prev]);
++
++      // ├£r├╝n stok listesinde yoksa 0 miktar ile olu┼ƒtur
++      const matchedProduct = products.find(p =>
++        (p.code && bom.product_code && p.code === bom.product_code) ||
++        (p.name && p.name.toLowerCase() === bom.product_name.toLowerCase())
++      );
++
++      if (!matchedProduct) {
++        const placeholderProduct = {
++          name: bom.product_name,
++          category: bom.category || '├£retim',
++          quantity: 0,
++          cost: 0,
++          price: bom.sale_price || 0,
++          code: bom.product_code || '',
++          criticalStockLimit: bom.critical_limit || 5,
++          description: bom.description || `BOM: ${newBom.bom_number}`,
++          user_id: session.user.id
++        };
++        await addProduct(placeholderProduct, true);
++      }
++
++      return newBom;
++    } catch (e) {
++      console.error('BOM eklenirken hata:', e.message);
++      return null;
++    }
++  };
++
++  const updateBom = async (u) => {
++    if (!session || !supabase) return false;
++    const updateData = {
++      ...u,
++      components: JSON.stringify(u.components || []),
++      updated_at: new Date().toISOString()
++    };
++    try {
++      const { data, error } = await supabase.from('boms').update(updateData).eq('id', u.id).select();
++      if (error) throw error;
++      const updatedBom = { ...data[0], components: u.components || [] };
++      setBoms(prev => prev.map(b => b.id === u.id ? updatedBom : b));
++      return true;
++    } catch (e) {
++      console.error('BOM g├╝ncellenirken hata:', e.message);
++      return false;
++    }
++  };
++
++  const deleteBom = async (id) => {
++    if (!session || !supabase) return false;
++    try {
++      const { error } = await supabase.from('boms').delete().eq('id', id);
++      if (error) throw error;
++      setBoms(prev => prev.filter(b => b.id !== id));
++      return true;
++    } catch (e) {
++      console.error('BOM silinirken hata:', e.message);
++      return false;
++    }
++  };
++
++  // BOM'dan ├╝retim ger├ºekle┼ƒtirme (stok d├╝┼ƒme + yeni ├╝r├╝n ekleme)
++  const produceFromBom = async (bomId, quantity, overrides = {}) => {
++    if (!session || !supabase) return { success: false, error: 'Oturum yok' };
++    const bom = boms.find(b => b.id === bomId);
++    if (!bom) return { success: false, error: 'BOM bulunamad─▒' };
++
++    const prodQty = parseInt(quantity, 10) || 1;
++    const components = bom.components || [];
++
++    // Stok yeterlilik kontrol├╝
++    for (const comp of components) {
++      const product = products.find(p => p.id === comp.product_id);
++      const needed = (comp.quantity || 1) * prodQty;
++      if (!product || (product.quantity || 0) < needed) {
++        return {
++          success: false,
++          error: `Yetersiz stok: ${comp.name} (Gereken: ${needed}, Mevcut: ${product?.quantity || 0})`
++        };
++      }
++    }
++
++    try {
++      // Bile┼ƒen stoklar─▒n─▒ d├╝┼ƒ
++      for (const comp of components) {
++        const product = products.find(p => p.id === comp.product_id);
++        if (product) {
++          const newQty = (product.quantity || 0) - ((comp.quantity || 1) * prodQty);
++          const { data: pd } = await supabase.from('products').update({ quantity: newQty }).eq('id', comp.product_id).select();
++          if (pd) setProducts(prev => prev.map(p => p.id === comp.product_id ? pd[0] : p));
++        }
++      }
++
++      // Toplam birim maliyeti hesapla
++      const unitCost = components.reduce((sum, c) => {
++        const p = products.find(pr => pr.id === c.product_id);
++        return sum + ((p?.cost || 0) * (c.quantity || 1));
++      }, 0);
++
++      const matchedProduct = products.find(p =>
++        (p.code && (overrides.code || bom.product_code) && p.code === (overrides.code || bom.product_code)) ||
++        (p.name && p.name.toLowerCase() === (overrides.productName || bom.product_name).toLowerCase())
++      );
++
++      const componentDesc = components.map(c => `${c.name} (x${c.quantity})`).join(', ');
++
++      if (matchedProduct) {
++        // Mevcut ├╝r├╝n├╝ g├╝ncelle
++        const newQty = (matchedProduct.quantity || 0) + prodQty;
++        const { data: productData, error: productError } = await supabase.from('products')
++          .update({
++            quantity: newQty,
++            cost: unitCost,
++            price: overrides.price || bom.sale_price || matchedProduct.price,
++            description: `BOM: ${bom.bom_number}\nBile┼ƒenler: ${componentDesc}`
++          })
++          .eq('id', matchedProduct.id)
++          .select();
++        if (productError) throw productError;
++        setProducts(prev => prev.map(p => p.id === matchedProduct.id ? productData[0] : p));
++      } else {
++        // Yeni ├╝r├╝n ekle
++        const newProduct = {
++          name: overrides.productName || bom.product_name,
++          category: overrides.category || bom.category || '├£retim',
++          quantity: prodQty,
++          cost: unitCost,
++          price: overrides.price || bom.sale_price || 0,
++          code: overrides.code || bom.product_code || '',
++          criticalStockLimit: overrides.criticalLimit || bom.critical_limit || 0,
++          description: `BOM: ${bom.bom_number}\nBile┼ƒenler: ${componentDesc}`,
++          user_id: session.user.id
++        };
++        const { data: productData, error: productError } = await supabase.from('products').insert(newProduct).select();
++        if (productError) throw productError;
++        setProducts(prev => [productData[0], ...prev]);
++      }
++
++      // BOM ├╝retim say─▒s─▒n─▒ art─▒r
++      await supabase.from('boms').update({
++        last_produced_at: new Date().toISOString(),
++        total_produced: (bom.total_produced || 0) + prodQty
++      }).eq('id', bomId);
++      setBoms(prev => prev.map(b => b.id === bomId ? { ...b, last_produced_at: new Date().toISOString(), total_produced: (b.total_produced || 0) + prodQty } : b));
++
++      return { success: true, product: productData[0] };
++    } catch (e) {
++      console.error('├£retim hatas─▒:', e);
++      return { success: false, error: e.message };
++    }
++  };
++
+   // --- PROSES ┼₧ABLONLARI ---
+   const addProcessTemplate = async (pt) => {
+     if (!session || !supabase) return;
+@@ -983,11 +1371,12 @@ export function AppProvider({ children }) {
+         vehicles, addVehicle, updateVehicle, deleteVehicle,
+         purchases, addPurchase, updatePurchase, deletePurchase, markPurchaseDelivered,
+         assets, addAsset, updateAsset, deleteAsset, assignAsset, unassignAsset,
+-        workOrders, addWorkOrder, updateWorkOrder, closeWorkOrder,
++        workOrders, addWorkOrder, updateWorkOrder, closeWorkOrder, addWorkOrderFromBom,
+         processTemplates, addProcessTemplate, deleteProcessTemplate,
+         maintenanceRequests, addMaintenanceRequest, updateMaintenanceRequest, closeMaintenanceRequest, deleteMaintenanceRequest,
+         quotations, addQuotation, updateQuotation, cancelQuotation, approveQuotation, convertQuotationToSale, deleteQuotation,
+         warehouseTransfers, addWarehouseTransfer,
++        boms, addBom, updateBom, deleteBom, produceFromBom,
+         company, updateCompanyInfo,
+         isPremium, setPremiumStatus: setDbPremium, purchasePremium, restorePurchases,
+         getPackages: async () => {
+
+commit 00dc11d50f5c720573f04434d00244b6718877f8
+Author: Builder <builder@app.com>
+Date:   Thu Feb 26 14:00:09 2026 +0300
+
+    feat: Depo ve Transfer ekr╨░╨╜╨╕ eklendi - warehouse_transfers tablosu, AppContext CRUD, WarehouseScreen, navigasyon guncellendi
+
+diff --git a/AppContext.js b/AppContext.js
+index 8749586..7483824 100644
+--- a/AppContext.js
++++ b/AppContext.js
+@@ -48,6 +48,7 @@ export function AppProvider({ children }) {
+   const [processTemplates, setProcessTemplates] = useState([]);
+   const [maintenanceRequests, setMaintenanceRequests] = useState([]);
+   const [quotations, setQuotations] = useState([]);
++  const [warehouseTransfers, setWarehouseTransfers] = useState([]);
+   const [company, setCompany] = useState({ name: "┼₧irketim", address: "", taxId: "", requireInvoice: false });
+ 
+   const [dbPremium, setDbPremium] = useState(false);
+@@ -111,7 +112,8 @@ export function AppProvider({ children }) {
+             workOrdersRes,
+             processTemplatesRes,
+             maintenanceRes,
+-            quotationsRes
++            quotationsRes,
++            warehouseTransfersRes
+           ] = await Promise.all([
+             supabase.from('customers').select('*').eq('user_id', userId).order('created_at', { ascending: false }),
+             supabase.from('products').select('*').eq('user_id', userId).order('name', { ascending: true }),
+@@ -124,7 +126,8 @@ export function AppProvider({ children }) {
+             supabase.from('work_orders').select('*').eq('user_id', userId).order('created_at', { ascending: false }),
+             supabase.from('process_templates').select('*').eq('user_id', userId).order('created_at', { ascending: false }),
+             supabase.from('maintenance_requests').select('*').eq('user_id', userId).order('created_at', { ascending: false }),
+-            supabase.from('quotations').select('*').eq('user_id', userId).order('created_at', { ascending: false })
++            supabase.from('quotations').select('*').eq('user_id', userId).order('created_at', { ascending: false }),
++            supabase.from('warehouse_transfers').select('*').eq('user_id', userId).order('transferred_at', { ascending: false })
+           ]);
+ 
+           if (userRes.data && userRes.data.is_premium) {
+@@ -155,6 +158,7 @@ export function AppProvider({ children }) {
+             ...q,
+             items: typeof q.items === 'string' ? JSON.parse(q.items) : (q.items || [])
+           })));
++          setWarehouseTransfers(warehouseTransfersRes?.data || []);
+ 
+           // Personel G├╢revlerini Parse Et
+           const parsedPersonnel = (personnelRes.data || []).map(p => {
+@@ -219,6 +223,7 @@ export function AppProvider({ children }) {
+         setProcessTemplates([]);
+         setMaintenanceRequests([]);
+         setQuotations([]);
++        setWarehouseTransfers([]);
+         setDbPremium(false);
+         setRcPremium(false);
+         setAppDataLoading(false);
+@@ -788,6 +793,67 @@ export function AppProvider({ children }) {
+     else setQuotations(prev => prev.filter(q => q.id !== id));
+   };
+ 
++  // --- DEPO TRANSFERLER─░ ---
++  const addWarehouseTransfer = async (transfer) => {
++    if (!session || !supabase) return false;
++    const { product_id, from_warehouse, to_warehouse, quantity, note } = transfer;
++
++    // ├£r├╝n├╝ bul
++    const product = products.find(p => p.id === product_id);
++    if (!product) {
++      Alert.alert('Hata', '├£r├╝n bulunamad─▒.');
++      return false;
++    }
++    if ((product.quantity || 0) < quantity) {
++      Alert.alert('Hata', `Yeterli stok yok. Mevcut: ${product.quantity}`);
++      return false;
++    }
++
++    try {
++      // Transfer kayd─▒ ekle
++      const toInsert = {
++        user_id: session.user.id,
++        product_id,
++        product_name: product.name,
++        quantity,
++        from_warehouse,
++        to_warehouse,
++        note: note || '',
++        transferred_at: new Date().toISOString(),
++        created_at: new Date().toISOString()
++      };
++      const { data: transferData, error: transferError } = await supabase
++        .from('warehouse_transfers')
++        .insert(toInsert)
++        .select();
++      if (transferError) {
++        Alert.alert('Hata', transferError.message);
++        return false;
++      }
++
++      // ├£r├╝n├╝n depo konumunu hedef depoya g├╝ncelle (tam transfer)
++      const { data: productData, error: productError } = await supabase
++        .from('products')
++        .update({ warehouseLocation: to_warehouse })
++        .eq('id', product_id)
++        .select();
++      if (productError) {
++        Alert.alert('Hata', productError.message);
++        return false;
++      }
++      if (productData && productData[0]) {
++        setProducts(prev => prev.map(p => p.id === product_id ? productData[0] : p));
++      }
++
++      setWarehouseTransfers(prev => [transferData[0], ...prev]);
++      return true;
++    } catch (e) {
++      console.error('Transfer hatas─▒:', e);
++      Alert.alert('Hata', 'Transfer ger├ºekle┼ƒtirilemedi.');
++      return false;
++    }
++  };
++
+   // --- PROSES ┼₧ABLONLARI ---
+   const addProcessTemplate = async (pt) => {
+     if (!session || !supabase) return;
+@@ -921,6 +987,7 @@ export function AppProvider({ children }) {
+         processTemplates, addProcessTemplate, deleteProcessTemplate,
+         maintenanceRequests, addMaintenanceRequest, updateMaintenanceRequest, closeMaintenanceRequest, deleteMaintenanceRequest,
+         quotations, addQuotation, updateQuotation, cancelQuotation, approveQuotation, convertQuotationToSale, deleteQuotation,
++        warehouseTransfers, addWarehouseTransfer,
+         company, updateCompanyInfo,
+         isPremium, setPremiumStatus: setDbPremium, purchasePremium, restorePurchases,
+         getPackages: async () => {
+
+commit 10d1ef8901bb4e1ff0eea19969b37d6cabe7d728
+Author: Builder <builder@app.com>
+Date:   Thu Feb 26 08:59:43 2026 +0300
+
+    feat: Teklif modulu eklendi (QuotationScreen, AppContext CRUD, sidebar menu, satislarda rozet)
+
+diff --git a/AppContext.js b/AppContext.js
+index ad0518c..8749586 100644
+--- a/AppContext.js
++++ b/AppContext.js
+@@ -46,6 +46,8 @@ export function AppProvider({ children }) {
+   const [assets, setAssets] = useState([]);
+   const [workOrders, setWorkOrders] = useState([]);
+   const [processTemplates, setProcessTemplates] = useState([]);
++  const [maintenanceRequests, setMaintenanceRequests] = useState([]);
++  const [quotations, setQuotations] = useState([]);
+   const [company, setCompany] = useState({ name: "┼₧irketim", address: "", taxId: "", requireInvoice: false });
+ 
+   const [dbPremium, setDbPremium] = useState(false);
+@@ -107,7 +109,9 @@ export function AppProvider({ children }) {
+             userRes,
+             companyRes,
+             workOrdersRes,
+-            processTemplatesRes
++            processTemplatesRes,
++            maintenanceRes,
++            quotationsRes
+           ] = await Promise.all([
+             supabase.from('customers').select('*').eq('user_id', userId).order('created_at', { ascending: false }),
+             supabase.from('products').select('*').eq('user_id', userId).order('name', { ascending: true }),
+@@ -118,7 +122,9 @@ export function AppProvider({ children }) {
+             supabase.from('user_profiles').select('is_premium').eq('user_id', userId).maybeSingle(),
+             supabase.from('companies').select('*').eq('user_id', userId).maybeSingle(),
+             supabase.from('work_orders').select('*').eq('user_id', userId).order('created_at', { ascending: false }),
+-            supabase.from('process_templates').select('*').eq('user_id', userId).order('created_at', { ascending: false })
++            supabase.from('process_templates').select('*').eq('user_id', userId).order('created_at', { ascending: false }),
++            supabase.from('maintenance_requests').select('*').eq('user_id', userId).order('created_at', { ascending: false }),
++            supabase.from('quotations').select('*').eq('user_id', userId).order('created_at', { ascending: false })
+           ]);
+ 
+           if (userRes.data && userRes.data.is_premium) {
+@@ -141,6 +147,14 @@ export function AppProvider({ children }) {
+             ...pt,
+             processes: typeof pt.processes === 'string' ? JSON.parse(pt.processes) : (pt.processes || [])
+           })));
++          setMaintenanceRequests((maintenanceRes?.data || []).map(mr => ({
++            ...mr,
++            tasks: typeof mr.tasks === 'string' ? JSON.parse(mr.tasks) : (mr.tasks || [])
++          })));
++          setQuotations((quotationsRes?.data || []).map(q => ({
++            ...q,
++            items: typeof q.items === 'string' ? JSON.parse(q.items) : (q.items || [])
++          })));
+ 
+           // Personel G├╢revlerini Parse Et
+           const parsedPersonnel = (personnelRes.data || []).map(p => {
+@@ -203,6 +217,8 @@ export function AppProvider({ children }) {
+         setAssets([]);
+         setWorkOrders([]);
+         setProcessTemplates([]);
++        setMaintenanceRequests([]);
++        setQuotations([]);
+         setDbPremium(false);
+         setRcPremium(false);
+         setAppDataLoading(false);
+@@ -558,6 +574,220 @@ export function AppProvider({ children }) {
+     return true;
+   };
+ 
++  // --- BAKIM VE SERV─░S Y├ûNET─░M─░ ---
++  const generateMrNumber = () => {
++    const today = new Date();
++    const dateStr = today.getFullYear().toString() + (today.getMonth() + 1).toString().padStart(2, '0') + today.getDate().toString().padStart(2, '0');
++    const todaysEntries = maintenanceRequests.filter(mr => new Date(mr.created_at).toDateString() === today.toDateString());
++    return `MR-${dateStr}-${(todaysEntries.length + 1).toString().padStart(3, '0')}`;
++  };
++
++  const addMaintenanceRequest = async (mr) => {
++    if (!session || !supabase) return;
++    const toInsert = {
++      ...mr,
++      user_id: session.user.id,
++      status: 'OPEN',
++      tasks: JSON.stringify(mr.tasks || []),
++      mr_number: generateMrNumber(),
++      created_at: new Date().toISOString()
++    };
++    const { data, error } = await supabase.from('maintenance_requests').insert(toInsert).select();
++    if (error) Alert.alert('Hata', error.message);
++    else {
++      const newMr = { ...data[0], tasks: mr.tasks || [] };
++      setMaintenanceRequests(prev => [newMr, ...prev]);
++      return newMr;
++    }
++  };
++
++  const updateMaintenanceRequest = async (u) => {
++    if (!session || !supabase) return;
++    const updateData = { ...u, tasks: JSON.stringify(u.tasks || []) };
++    const { data, error } = await supabase.from('maintenance_requests').update(updateData).eq('id', u.id).select();
++    if (error) Alert.alert('Hata', error.message);
++    else {
++      const updatedMr = { ...data[0], tasks: u.tasks || [] };
++      setMaintenanceRequests(prev => prev.map(mr => mr.id === u.id ? updatedMr : mr));
++    }
++  };
++
++  const closeMaintenanceRequest = async (id, closingData) => {
++    if (!session || !supabase) return;
++    const mr = maintenanceRequests.find(m => m.id === id);
++    if (!mr) return;
++    const activeTasks = closingData.tasks || mr.tasks || [];
++    const totalDuration = activeTasks.reduce((acc, t) => acc + (parseFloat(t.spent_time) || 0), 0);
++    const updateData = {
++      ...closingData,
++      tasks: JSON.stringify(activeTasks),
++      status: 'CLOSED',
++      closed_at: new Date().toISOString(),
++      total_duration: totalDuration
++    };
++    const { data, error } = await supabase.from('maintenance_requests').update(updateData).eq('id', id).select();
++    if (error) { Alert.alert('Hata', error.message); return; }
++    const closedMr = { ...data[0], tasks: activeTasks };
++    setMaintenanceRequests(prev => prev.map(m => m.id === id ? closedMr : m));
++    return true;
++  };
++
++  const deleteMaintenanceRequest = async (id) => {
++    if (!session || !supabase) return;
++    const { error } = await supabase.from('maintenance_requests').delete().eq('id', id);
++    if (error) Alert.alert('Hata', error.message);
++    else setMaintenanceRequests(prev => prev.filter(mr => mr.id !== id));
++  };
++
++  // --- TEKL─░FLER (QUOTATIONS) ---
++  const generateQuoteNumber = () => {
++    const today = new Date();
++    const dateStr = today.getFullYear().toString() + (today.getMonth() + 1).toString().padStart(2, '0') + today.getDate().toString().padStart(2, '0');
++    const todaysQuotes = quotations.filter(q => new Date(q.created_at).toDateString() === today.toDateString());
++    return `TKL-${dateStr}-${(todaysQuotes.length + 1).toString().padStart(3, '0')}`;
++  };
++
++  const addQuotation = async (q) => {
++    if (!session || !supabase) return;
++    const totalAmount = (q.items || []).reduce((sum, item) => sum + (parseFloat(item.total) || 0), 0);
++    const toInsert = {
++      ...q,
++      user_id: session.user.id,
++      status: 'DRAFT',
++      items: JSON.stringify(q.items || []),
++      quote_number: generateQuoteNumber(),
++      total_amount: totalAmount,
++      created_at: new Date().toISOString(),
++      updated_at: new Date().toISOString()
++    };
++    const { data, error } = await supabase.from('quotations').insert(toInsert).select();
++    if (error) Alert.alert('Hata', error.message);
++    else {
++      const newQ = { ...data[0], items: q.items || [] };
++      setQuotations(prev => [newQ, ...prev]);
++      return newQ;
++    }
++  };
++
++  const updateQuotation = async (u) => {
++    if (!session || !supabase) return;
++    const totalAmount = (u.items || []).reduce((sum, item) => sum + (parseFloat(item.total) || 0), 0);
++    const updateData = {
++      ...u,
++      items: JSON.stringify(u.items || []),
++      total_amount: totalAmount,
++      updated_at: new Date().toISOString()
++    };
++    const { data, error } = await supabase.from('quotations').update(updateData).eq('id', u.id).select();
++    if (error) Alert.alert('Hata', error.message);
++    else {
++      const updatedQ = { ...data[0], items: u.items || [] };
++      setQuotations(prev => prev.map(q => q.id === u.id ? updatedQ : q));
++    }
++  };
++
++  const cancelQuotation = async (id) => {
++    if (!session || !supabase) return;
++    const { data, error } = await supabase.from('quotations').update({ status: 'CANCELLED', updated_at: new Date().toISOString() }).eq('id', id).select();
++    if (error) Alert.alert('Hata', error.message);
++    else {
++      const existing = quotations.find(q => q.id === id);
++      setQuotations(prev => prev.map(q => q.id === id ? { ...data[0], items: existing?.items || [] } : q));
++    }
++  };
++
++  const approveQuotation = async (id) => {
++    if (!session || !supabase) return;
++    const { data, error } = await supabase.from('quotations').update({ status: 'APPROVED', updated_at: new Date().toISOString() }).eq('id', id).select();
++    if (error) Alert.alert('Hata', error.message);
++    else {
++      const existing = quotations.find(q => q.id === id);
++      setQuotations(prev => prev.map(q => q.id === id ? { ...data[0], items: existing?.items || [] } : q));
++    }
++  };
++
++  const convertQuotationToSale = async (id) => {
++    if (!session || !supabase) return;
++    const quotation = quotations.find(q => q.id === id);
++    if (!quotation) return;
++    const items = quotation.items || [];
++    if (items.length === 0) {
++      Alert.alert('Hata', 'Teklifte ├╝r├╝n kalemi bulunmuyor.');
++      return;
++    }
++    try {
++      // Her kalem i├ºin sat─▒┼ƒ olu┼ƒtur
++      const salePromises = items.map(item => {
++        const product = products.find(p => p.id === item.product_id);
++        const saleToAdd = {
++          user_id: session.user.id,
++          productId: item.product_id,
++          productName: item.product_name,
++          productCode: product?.code || '',
++          quantity: item.quantity,
++          price: item.unit_price,
++          cost: product?.cost || 0,
++          customerId: quotation.customer_id || null,
++          customerName: quotation.customer_name || '',
++          description: `Tekliften olu┼ƒturuldu: ${quotation.quote_number}`,
++          source_quote_id: id,
++          isShipped: false,
++          date: new Date().toLocaleString(),
++          sale_date: new Date().toISOString(),
++          dateISO: new Date().toISOString()
++        };
++        return supabase.from('sales').insert(saleToAdd).select();
++      });
++
++      const results = await Promise.all(salePromises);
++      const errors = results.filter(r => r.error);
++      if (errors.length > 0) {
++        Alert.alert('Hata', 'Baz─▒ kalemler sipari┼ƒe d├╢n├╝┼ƒt├╝r├╝l├╝rken hata olu┼ƒtu.');
++        return;
++      }
++
++      // Stok g├╝ncelle ve sales state'i g├╝ncelle
++      const newSales = [];
++      for (let i = 0; i < results.length; i++) {
++        const saleRow = results[i].data[0];
++        newSales.push(saleRow);
++        const item = items[i];
++        const product = products.find(p => p.id === item.product_id);
++        if (product) {
++          const newQty = (product.quantity || 0) - (item.quantity || 0);
++          const { data: prodData } = await supabase.from('products').update({ quantity: newQty }).eq('id', item.product_id).select();
++          if (prodData) setProducts(prev => prev.map(p => p.id === item.product_id ? prodData[0] : p));
++        }
++      }
++      setSales(prev => [...newSales, ...prev]);
++
++      // Teklif durumunu CONVERTED yap
++      const { data: qData, error: qError } = await supabase.from('quotations')
++        .update({ status: 'CONVERTED', updated_at: new Date().toISOString() })
++        .eq('id', id).select();
++      if (!qError && qData) {
++        setQuotations(prev => prev.map(q => q.id === id ? { ...qData[0], items: quotation.items } : q));
++      }
++      return true;
++    } catch (e) {
++      Alert.alert('Hata', 'Sipari┼ƒe d├╢n├╝┼ƒt├╝rme s─▒ras─▒nda beklenmedik bir hata olu┼ƒtu.');
++      return false;
++    }
++  };
++
++  const deleteQuotation = async (id) => {
++    if (!session || !supabase) return;
++    const quotation = quotations.find(q => q.id === id);
++    if (!quotation) return;
++    if (quotation.status !== 'DRAFT' && quotation.status !== 'CANCELLED') {
++      Alert.alert('Hata', 'Yaln─▒zca taslak veya iptal edilmi┼ƒ teklifler silinebilir.');
++      return;
++    }
++    const { error } = await supabase.from('quotations').delete().eq('id', id);
++    if (error) Alert.alert('Hata', error.message);
++    else setQuotations(prev => prev.filter(q => q.id !== id));
++  };
++
+   // --- PROSES ┼₧ABLONLARI ---
+   const addProcessTemplate = async (pt) => {
+     if (!session || !supabase) return;
+@@ -689,6 +919,8 @@ export function AppProvider({ children }) {
+         assets, addAsset, updateAsset, deleteAsset, assignAsset, unassignAsset,
+         workOrders, addWorkOrder, updateWorkOrder, closeWorkOrder,
+         processTemplates, addProcessTemplate, deleteProcessTemplate,
++        maintenanceRequests, addMaintenanceRequest, updateMaintenanceRequest, closeMaintenanceRequest, deleteMaintenanceRequest,
++        quotations, addQuotation, updateQuotation, cancelQuotation, approveQuotation, convertQuotationToSale, deleteQuotation,
+         company, updateCompanyInfo,
+         isPremium, setPremiumStatus: setDbPremium, purchasePremium, restorePurchases,
+         getPackages: async () => {
+
+commit 00b7cb9991f897b28ce25a804128bc57b6d2a6e7
+Author: Builder <builder@app.com>
+Date:   Tue Feb 24 16:08:56 2026 +0300
+
+    feat: improve Asset Management UI and login screen responsiveness
+
+diff --git a/AppContext.js b/AppContext.js
+index 316ac95..ad0518c 100644
+--- a/AppContext.js
++++ b/AppContext.js
+@@ -44,6 +44,8 @@ export function AppProvider({ children }) {
+   const [vehicles, setVehicles] = useState([]);
+   const [purchases, setPurchases] = useState([]);
+   const [assets, setAssets] = useState([]);
++  const [workOrders, setWorkOrders] = useState([]);
++  const [processTemplates, setProcessTemplates] = useState([]);
+   const [company, setCompany] = useState({ name: "┼₧irketim", address: "", taxId: "", requireInvoice: false });
+ 
+   const [dbPremium, setDbPremium] = useState(false);
+@@ -103,7 +105,9 @@ export function AppProvider({ children }) {
+             vehicleRes,
+             purchasesRes,
+             userRes,
+-            companyRes
++            companyRes,
++            workOrdersRes,
++            processTemplatesRes
+           ] = await Promise.all([
+             supabase.from('customers').select('*').eq('user_id', userId).order('created_at', { ascending: false }),
+             supabase.from('products').select('*').eq('user_id', userId).order('name', { ascending: true }),
+@@ -112,7 +116,9 @@ export function AppProvider({ children }) {
+             supabase.from('vehicles').select('*').eq('user_id', userId).order('created_at', { ascending: false }),
+             supabase.from('purchases').select('*').eq('user_id', userId).order('created_at', { ascending: false }),
+             supabase.from('user_profiles').select('is_premium').eq('user_id', userId).maybeSingle(),
+-            supabase.from('companies').select('*').eq('user_id', userId).maybeSingle()
++            supabase.from('companies').select('*').eq('user_id', userId).maybeSingle(),
++            supabase.from('work_orders').select('*').eq('user_id', userId).order('created_at', { ascending: false }),
++            supabase.from('process_templates').select('*').eq('user_id', userId).order('created_at', { ascending: false })
+           ]);
+ 
+           if (userRes.data && userRes.data.is_premium) {
+@@ -127,6 +133,14 @@ export function AppProvider({ children }) {
+           setSales(salesRes.data || []);
+           setVehicles(vehicleRes.data || []);
+           setPurchases(purchasesRes.data || []);
++          setWorkOrders((workOrdersRes?.data || []).map(wo => ({
++            ...wo,
++            processes: typeof wo.processes === 'string' ? JSON.parse(wo.processes) : (wo.processes || [])
++          })));
++          setProcessTemplates((processTemplatesRes?.data || []).map(pt => ({
++            ...pt,
++            processes: typeof pt.processes === 'string' ? JSON.parse(pt.processes) : (pt.processes || [])
++          })));
+ 
+           // Personel G├╢revlerini Parse Et
+           const parsedPersonnel = (personnelRes.data || []).map(p => {
+@@ -187,6 +201,8 @@ export function AppProvider({ children }) {
+         setVehicles([]);
+         setPurchases([]);
+         setAssets([]);
++        setWorkOrders([]);
++        setProcessTemplates([]);
+         setDbPremium(false);
+         setRcPremium(false);
+         setAppDataLoading(false);
+@@ -455,6 +471,117 @@ export function AppProvider({ children }) {
+     else setAssets((prev) => prev.map(a => a.id === assetId ? data[0] : a));
+   };
+ 
++  // --- ─░┼₧ EM─░RLER─░ (WORK ORDERS) ---
++  const addWorkOrder = async (wo) => {
++    if (!session || !supabase) return;
++    const toInsert = {
++      ...wo,
++      user_id: session.user.id,
++      status: wo.status || 'OPEN',
++      processes: JSON.stringify(wo.processes || [])
++    };
++    const { data, error } = await supabase.from('work_orders').insert(toInsert).select();
++    if (error) Alert.alert("Hata", error.message);
++    else {
++      const newWo = { ...data[0], processes: wo.processes || [] };
++      setWorkOrders((prev) => [newWo, ...prev]);
++      return newWo;
++    }
++  };
++
++  const updateWorkOrder = async (u) => {
++    if (!session || !supabase) return;
++    const updateData = {
++      ...u,
++      processes: JSON.stringify(u.processes || [])
++    };
++    const { data, error } = await supabase.from('work_orders').update(updateData).eq('id', u.id).select();
++    if (error) Alert.alert("Hata", error.message);
++    else {
++      const updatedWo = { ...data[0], processes: u.processes || [] };
++      setWorkOrders((prev) => prev.map(wo => wo.id === u.id ? updatedWo : wo));
++    }
++  };
++
++  const closeWorkOrder = async (id, closingData) => {
++    if (!session || !supabase) return;
++    const wo = workOrders.find(w => w.id === id);
++    if (!wo) return;
++
++    // Kullan─▒lan prosesleri belirle (gelen veri varsa onu yoksa mevcut olan─▒ kullan)
++    const activeProcesses = closingData.processes || wo.processes || [];
++
++    // Proseslerden toplam s├╝reyi hesapla
++    const totalDuration = activeProcesses.reduce((acc, curr) => acc + (parseFloat(curr.spent_time) || 0), 0);
++
++    const updateData = {
++      ...closingData,
++      processes: JSON.stringify(activeProcesses),
++      status: 'CLOSED',
++      closed_at: new Date().toISOString(),
++      total_duration: totalDuration
++    };
++
++    const { data: woData, error: woError } = await supabase.from('work_orders').update(updateData).eq('id', id).select();
++    if (woError) {
++      Alert.alert("Hata", woError.message);
++      return;
++    }
++
++    // Stok g├╝ncelleme
++    const product = products.find(p => p.id === wo.product_id);
++    if (product) {
++      const finishedQty = closingData.actual_quantity || wo.target_quantity || 0;
++      const newQuantity = (product.quantity || 0) + finishedQty;
++      const { data: productData } = await supabase.from('products').update({ quantity: newQuantity }).eq('id', wo.product_id).select();
++      if (productData) setProducts(prevP => prevP.map(p => p.id === product.id ? productData[0] : p));
++    }
++
++    const closedWo = { ...woData[0], processes: activeProcesses };
++    setWorkOrders(prev => prev.map(w => w.id === id ? closedWo : w));
++
++    // --- YEN─░: Hammadde T├╝ketimi ---
++    if (wo.raw_material_id && wo.raw_material_usage) {
++      const consumedQty = (parseFloat(wo.raw_material_usage) || 0) * (parseFloat(closingData.actual_quantity) || wo.target_quantity || 0);
++      if (consumedQty > 0) {
++        const rawProduct = products.find(p => p.id === wo.raw_material_id);
++        if (rawProduct) {
++          const newRawQty = (rawProduct.quantity || 0) - consumedQty;
++          const { data: rawData } = await supabase.from('products').update({ quantity: newRawQty }).eq('id', wo.raw_material_id).select();
++          if (rawData && rawData[0]) {
++            setProducts(prevP => prevP.map(p => p.id === rawProduct.id ? rawData[0] : p));
++          }
++        }
++      }
++    }
++
++    return true;
++  };
++
++  // --- PROSES ┼₧ABLONLARI ---
++  const addProcessTemplate = async (pt) => {
++    if (!session || !supabase) return;
++    const toInsert = {
++      ...pt,
++      user_id: session.user.id,
++      processes: JSON.stringify(pt.processes || [])
++    };
++    const { data, error } = await supabase.from('process_templates').insert(toInsert).select();
++    if (error) Alert.alert("Hata", error.message);
++    else {
++      const newPt = { ...data[0], processes: pt.processes || [] };
++      setProcessTemplates((prev) => [newPt, ...prev]);
++      return newPt;
++    }
++  };
++
++  const deleteProcessTemplate = async (id) => {
++    if (!session || !supabase) return;
++    const { error } = await supabase.from('process_templates').delete().eq('id', id);
++    if (error) Alert.alert("Hata", error.message);
++    else setProcessTemplates((prev) => prev.filter(pt => pt.id !== id));
++  };
++
+   // --- ┼₧irket Bilgileri (Supabase) ---
+   const updateCompanyInfo = async (info) => {
+     if (!session || !supabase) return;
+@@ -560,6 +687,8 @@ export function AppProvider({ children }) {
+         vehicles, addVehicle, updateVehicle, deleteVehicle,
+         purchases, addPurchase, updatePurchase, deletePurchase, markPurchaseDelivered,
+         assets, addAsset, updateAsset, deleteAsset, assignAsset, unassignAsset,
++        workOrders, addWorkOrder, updateWorkOrder, closeWorkOrder,
++        processTemplates, addProcessTemplate, deleteProcessTemplate,
+         company, updateCompanyInfo,
+         isPremium, setPremiumStatus: setDbPremium, purchasePremium, restorePurchases,
+         getPackages: async () => {
+
+commit ba1420c5fcc584b59960008d9dc452aa2b2b66e8
+Author: Builder <builder@app.com>
+Date:   Thu Feb 12 15:14:43 2026 +0300
+
+    Web iyile┼ƒtirmeleri ve .env yap─▒land─▒rmas─▒
+
+diff --git a/AppContext.js b/AppContext.js
+index 74cedb8..316ac95 100644
+--- a/AppContext.js
++++ b/AppContext.js
+@@ -3,10 +3,7 @@ import { Alert, Platform } from "react-native";
+ import { useAuth } from "./AuthContext";
+ 
+ let Purchases;
+-try {
+-  Purchases = require('react-native-purchases').default;
+-} catch (e) {
+-  console.log("RevenueCat (react-native-purchases) y├╝klenemedi. Expo Go kullan─▒yorsan─▒z bu normaldir.");
++if (Platform.OS === 'web') {
+   Purchases = {
+     setup: () => { },
+     getOfferings: async () => ({ current: null }),
+@@ -16,6 +13,21 @@ try {
+     getCustomerInfo: async () => ({ entitlements: { active: {} } }),
+     configure: async () => { },
+   };
++} else {
++  try {
++    Purchases = require('react-native-purchases').default;
++  } catch (e) {
++    console.log("RevenueCat (react-native-purchases) y├╝klenemedi. Expo Go kullan─▒yorsan─▒z bu normaldir.");
++    Purchases = {
++      setup: () => { },
++      getOfferings: async () => ({ current: null }),
++      purchasePackage: async () => { },
++      restorePurchases: async () => { },
++      addCustomerInfoUpdateListener: () => { },
++      getCustomerInfo: async () => ({ entitlements: { active: {} } }),
++      configure: async () => { },
++    };
++  }
+ }
+ 
+ export const AppContext = createContext(null);
