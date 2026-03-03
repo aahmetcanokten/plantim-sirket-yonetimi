@@ -6,6 +6,68 @@ import { Ionicons } from '@expo/vector-icons'; // İkon kütüphanesi
 import { useTranslation } from 'react-i18next';
 
 
+// YENİ PAZARLAMA BİLEŞENİ
+const BrandingContent = ({ t, isMobileWeb, isVerySmall, setIsLoginView }) => (
+  <>
+    {isMobileWeb && (
+      <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 24 }}>
+        <View style={styles.webLogoIcon}>
+          <Ionicons name="leaf" size={isVerySmall ? 24 : 32} color={Colors.iosBlue} />
+        </View>
+        <Text style={[styles.webLogoText, isVerySmall && { fontSize: 24 }]}>PLANTİM <Text style={{ fontWeight: '400', opacity: 0.8 }}>ERP</Text></Text>
+      </View>
+    )}
+
+    <Text style={[styles.webHeroTitle, isMobileWeb && { fontSize: isVerySmall ? 32 : 40, lineHeight: isVerySmall ? 38 : 46, marginBottom: 16 }]}>
+      {t("web_hero_title")}
+    </Text>
+
+    <Text style={[styles.webHeroSub, isMobileWeb && { fontSize: 16, lineHeight: 24, marginBottom: 32 }]}>
+      {t("web_hero_sub")}
+    </Text>
+
+    {!isMobileWeb && (
+      <TouchableOpacity
+        style={styles.webHeroCta}
+        onPress={() => setIsLoginView(false)}
+      >
+        <Text style={styles.webHeroCtaText}>{t("web_cta_register")}</Text>
+        <Ionicons name="rocket-outline" size={20} color="#fff" />
+      </TouchableOpacity>
+    )}
+
+    {!isMobileWeb && (
+      <>
+        <View style={styles.separator} />
+
+        <View style={styles.whySection}>
+          <Text style={styles.sectionHeading}>{t("web_why_erp_title")}</Text>
+          <View style={styles.whyGrid}>
+            <WhyItem icon="shield-outline" title={t("web_why_erp_1")} desc={t("web_why_erp_1_desc")} />
+            <WhyItem icon="phone-portrait-outline" title={t("web_why_erp_2")} desc={t("web_why_erp_2_desc")} />
+            <WhyItem icon="stats-chart-outline" title={t("web_why_erp_3")} desc={t("web_why_erp_3_desc")} />
+          </View>
+        </View>
+
+        <View style={[styles.trustContainer, { marginTop: 40 }]}>
+          <TrustStat stat={t("web_trust_stat_1")} desc={t("web_trust_desc_1")} />
+          <View style={styles.trustDivider} />
+          <TrustStat stat={t("web_trust_stat_2")} desc={t("web_trust_desc_2")} />
+          <View style={styles.trustDivider} />
+          <TrustStat stat={t("web_trust_stat_3")} desc={t("web_trust_desc_3")} />
+        </View>
+
+        <View style={{ marginTop: 60, opacity: 0.5 }}>
+          <Text style={{ color: '#94A3B8', fontSize: 13, textAlign: 'center' }}>
+            <Ionicons name="lock-closed" size={12} color="#94A3B8" /> {t("web_trust_footer")}
+          </Text>
+        </View>
+      </>
+    )}
+  </>
+);
+
+
 export default function LoginScreen() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -127,13 +189,45 @@ export default function LoginScreen() {
 
   // Sekme değiştirici
   const renderTabContent = () => {
+    const backToLoginButton = (
+      <TouchableOpacity
+        style={styles.backButton}
+        onPress={() => setActiveTab('login')}
+      >
+        <Ionicons name="arrow-back" size={18} color={Colors.iosBlue} />
+        <Text style={styles.backButtonText}>{t("back_to_login") || "Giriş Ekranına Dön"}</Text>
+      </TouchableOpacity>
+    );
+
     switch (activeTab) {
       case 'about':
-        return <AboutSection t={t} isMobileWeb={isMobileWeb} />;
+        return (
+          <View style={styles.sectionWrapper}>
+            {backToLoginButton}
+            <AboutSection t={t} />
+          </View>
+        );
       case 'solutions':
-        return <SolutionsSection t={t} isMobileWeb={isMobileWeb} />;
+        return (
+          <View style={styles.sectionWrapper}>
+            {backToLoginButton}
+            <SolutionsSection t={t} />
+          </View>
+        );
       case 'pricing':
-        return <PricingSection t={t} isMobileWeb={isMobileWeb} />;
+        return (
+          <View style={styles.sectionWrapper}>
+            {backToLoginButton}
+            <PricingSection t={t} />
+          </View>
+        );
+      case 'faq':
+        return (
+          <View style={styles.sectionWrapper}>
+            {backToLoginButton}
+            <InfoSection t={t} />
+          </View>
+        );
       default:
         return (
           <View style={[styles.webFormCard, isMobileWeb && { padding: isVerySmall ? 24 : 32, shadowOpacity: 0.05, elevation: 2 }]}>
@@ -199,194 +293,185 @@ export default function LoginScreen() {
 
   // Web Arayüzü (Responsive Design)
   return (
-    <ScrollView
-      style={styles.webContainer}
-      contentContainerStyle={{ flexGrow: 1, flexDirection: isMobileWeb ? 'column' : 'row' }}
-      showsVerticalScrollIndicator={false}
-    >
-      {/* Sol Taraf: Pazarlama / Tanıtım (Mobilde Üst Kısma Geçer veya Küçülür) */}
-      <View style={[
-        styles.webLeftPanel,
-        isMobileWeb && { flex: 0, padding: isVerySmall ? 24 : 40, paddingTop: 60, minHeight: isMobileWeb ? 'auto' : '100vh' }
-      ]}>
-
-        {/* YENİ: Web Navigasyon Bar Ekleniyor */}
-        {!isMobileWeb && (
-          <View style={styles.webNavBar}>
+    <View style={[styles.webWrapper, Platform.OS === 'web' && { height: '100vh', overflow: 'hidden' }]}>
+      {/* GLOBAL HEADER */}
+      {Platform.OS === 'web' && !isMobileWeb && (
+        <View style={styles.webGlobalHeader}>
+          <View style={styles.headerContainer}>
             <View style={{ flexDirection: 'row', alignItems: 'center' }}>
-              <View style={[styles.webLogoIcon, { width: 40, height: 40, borderRadius: 12 }]}>
-                <Ionicons name="leaf" size={20} color={Colors.iosBlue} />
+              <View style={[styles.webLogoIcon, { width: 36, height: 36, borderRadius: 10 }]}>
+                <Ionicons name="leaf" size={18} color={Colors.iosBlue} />
               </View>
-              <Text style={[styles.webLogoText, { fontSize: 22, marginLeft: 12 }]}>PLANTİM</Text>
+              <Text style={[styles.headerLogoText, { fontSize: 20, marginLeft: 10 }]}>PLANTİM <Text style={{ fontWeight: '400', color: Colors.iosBlue }}>ERP</Text></Text>
             </View>
-            <View style={styles.navLinks}>
-              <TouchableOpacity onPress={() => setActiveTab('login')}><Text style={[styles.navLink, activeTab === 'login' && styles.navLinkActive]}>{t('nav_login') || "Giriş / Kayıt"}</Text></TouchableOpacity>
-              <TouchableOpacity onPress={() => setActiveTab('about')}><Text style={[styles.navLink, activeTab === 'about' && styles.navLinkActive]}>{t('nav_about') || "Hakkımızda"}</Text></TouchableOpacity>
-              <TouchableOpacity onPress={() => setActiveTab('solutions')}><Text style={[styles.navLink, activeTab === 'solutions' && styles.navLinkActive]}>{t('nav_solutions') || "Çözümlerimiz"}</Text></TouchableOpacity>
-              <TouchableOpacity onPress={() => setActiveTab('pricing')}><Text style={[styles.navLink, activeTab === 'pricing' && styles.navLinkActive]}>{t('nav_pricing') || "Ücretlendirme"}</Text></TouchableOpacity>
+            <View style={styles.headerNavLinks}>
+              <TouchableOpacity onPress={() => setActiveTab('login')}><Text style={[styles.headerNavLink, activeTab === 'login' && styles.headerNavLinkActive]}>{t('nav_login')}</Text></TouchableOpacity>
+              <TouchableOpacity onPress={() => setActiveTab('about')}><Text style={[styles.headerNavLink, activeTab === 'about' && styles.headerNavLinkActive]}>{t('nav_about')}</Text></TouchableOpacity>
+              <TouchableOpacity onPress={() => setActiveTab('solutions')}><Text style={[styles.headerNavLink, activeTab === 'solutions' && styles.headerNavLinkActive]}>{t('nav_solutions')}</Text></TouchableOpacity>
+              <TouchableOpacity onPress={() => setActiveTab('pricing')}><Text style={[styles.headerNavLink, activeTab === 'pricing' && styles.headerNavLinkActive]}>{t('nav_pricing')}</Text></TouchableOpacity>
+              <TouchableOpacity onPress={() => setActiveTab('faq')}><Text style={[styles.headerNavLink, activeTab === 'faq' && styles.headerNavLinkActive]}>{t('nav_faq') || "SSS"}</Text></TouchableOpacity>
             </View>
+            <TouchableOpacity
+              style={styles.headerCta}
+              onPress={() => { setIsLoginView(false); setActiveTab('login'); }}
+            >
+              <Text style={styles.headerCtaText}>{t("register")}</Text>
+            </TouchableOpacity>
           </View>
-        )}
-
-        <View style={styles.webBranding}>
-          {isMobileWeb && (
-            <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 24 }}>
-              <View style={styles.webLogoIcon}>
-                <Ionicons name="leaf" size={isVerySmall ? 24 : 32} color={Colors.iosBlue} />
-              </View>
-              <Text style={[styles.webLogoText, isVerySmall && { fontSize: 24 }]}>PLANTİM <Text style={{ fontWeight: '400', opacity: 0.8 }}>ERP</Text></Text>
-            </View>
-          )}
-
-          <Text style={[styles.webHeroTitle, isMobileWeb && { fontSize: isVerySmall ? 28 : 36, lineHeight: isVerySmall ? 34 : 42, marginBottom: 16 }]}>
-            {t("web_hero_title")}
-          </Text>
-
-          {!isVerySmall && (
-            <Text style={[styles.webHeroSub, isMobileWeb && { fontSize: 16, lineHeight: 24, marginBottom: 32 }]}>
-              {t("web_hero_sub")}
-            </Text>
-          )}
-
-          {!isMobileWeb && (
-            <>
-              <View style={styles.businessGrid}>
-                <View style={styles.businessRow}>
-                  <BusinessFeature
-                    icon="cube"
-                    title={t("web_feature_stock")}
-                    desc={t("web_feature_stock_desc")}
-                  />
-                  <BusinessFeature
-                    icon="trending-up"
-                    title={t("web_feature_reports")}
-                    desc={t("web_feature_reports_desc")}
-                  />
-                </View>
-                <View style={styles.businessRow}>
-                  <BusinessFeature
-                    icon="people"
-                    title={t("web_feature_personnel")}
-                    desc={t("web_feature_personnel_desc")}
-                  />
-                  <BusinessFeature
-                    icon="shield-checkmark"
-                    title={t("web_feature_security")}
-                    desc={t("web_feature_security_desc")}
-                  />
-                </View>
-              </View>
-
-              <View style={styles.trustContainer}>
-                <TrustStat stat={t("web_trust_stat_1")} desc={t("web_trust_desc_1")} />
-                <View style={styles.trustDivider} />
-                <TrustStat stat={t("web_trust_stat_2")} desc={t("web_trust_desc_2")} />
-                <View style={styles.trustDivider} />
-                <TrustStat stat={t("web_trust_stat_3")} desc={t("web_trust_desc_3")} />
-              </View>
-            </>
-          )}
         </View>
+      )}
 
-        {!isMobileWeb && (
-          <View style={styles.webFooter}>
-            <Text style={styles.webFooterText}>&copy; 2026 Plantim Kurumsal Yazılım Teknolojileri</Text>
+      {/* Desktop Design */}
+      {!isMobileWeb && (
+        <View style={[styles.webContainer, { flexDirection: 'row' }]}>
+          {/* Sol Taraf: Pazarlama / Tanıtım */}
+          <ScrollView
+            style={styles.webLeftPanel}
+            contentContainerStyle={{ flexGrow: 1, padding: 60, paddingTop: 80, paddingBottom: 60 }}
+            showsVerticalScrollIndicator={false}
+          >
+            <View style={styles.webBranding}>
+              <BrandingContent t={t} isMobileWeb={isMobileWeb} isVerySmall={isVerySmall} setIsLoginView={setIsLoginView} />
+            </View>
+
+            <View style={styles.webFooter}>
+              <Text style={styles.webFooterText}>&copy; 2026 Plantim Kurumsal Yazılım Teknolojileri</Text>
+            </View>
+          </ScrollView>
+
+          {/* Sağ Taraf: Değişen Panel (Form, About, vb.) */}
+          <ScrollView
+            style={styles.webRightPanel}
+            contentContainerStyle={{ flexGrow: 1, padding: 40, paddingTop: 80, justifyContent: 'flex-start', alignItems: 'center' }}
+            showsVerticalScrollIndicator={false}
+          >
+            {renderTabContent()}
+          </ScrollView>
+        </View>
+      )}
+
+      {/* Mobile Web Design */}
+      {isMobileWeb && (
+        <ScrollView
+          style={styles.webContainer}
+          contentContainerStyle={{ flexGrow: 1, padding: isVerySmall ? 16 : 24, paddingBottom: 60 }}
+          showsVerticalScrollIndicator={false}
+        >
+          {/* Top Branding Logo */}
+          <View style={{ marginBottom: 24 }}>
+            <BrandingContent t={t} isMobileWeb={isMobileWeb} isVerySmall={isVerySmall} setIsLoginView={setIsLoginView} />
           </View>
-        )}
-      </View>
 
-      {/* Sağ Taraf: Değişen Panel (Form, About, vb.) */}
-      <View style={[
-        styles.webRightPanel,
-        isMobileWeb && { flex: 1, padding: isVerySmall ? 16 : 40, paddingBottom: 60 }
-      ]}>
-        {renderTabContent()}
-      </View>
-    </ScrollView>
+          {/* Main Content (Form) */}
+          <View style={{ width: '100%', alignItems: 'center', marginBottom: 40 }}>
+            {renderTabContent()}
+          </View>
+        </ScrollView>
+      )}
+    </View>
   );
 }
 
 // YENİ EKLENEN SEKMELER (About, Solutions, Pricing)
 const AboutSection = ({ t }) => (
-  <ScrollView style={styles.scrollSection} showsVerticalScrollIndicator={false}>
-    <View style={styles.sectionCard}>
-      <Text style={styles.sectionTitle}>{t('about_title') || "Hakkımızda"}</Text>
-      <Text style={styles.sectionDesc}>{t('about_desc')}</Text>
+  <View style={styles.sectionCard}>
+    <Text style={styles.sectionTitle}>{t('about_title') || "Hakkımızda"}</Text>
+    <Text style={styles.sectionDesc}>{t('about_desc')}</Text>
 
-      <View style={styles.featureBox}>
-        <Ionicons name="rocket" size={32} color={Colors.iosBlue} />
-        <Text style={styles.featureTitle}>{t('about_mission')}</Text>
-        <Text style={styles.featureDesc}>{t('about_mission_desc')}</Text>
-      </View>
-
-      <View style={styles.featureBox}>
-        <Ionicons name="eye" size={32} color={Colors.iosGreen} />
-        <Text style={styles.featureTitle}>{t('about_vision')}</Text>
-        <Text style={styles.featureDesc}>{t('about_vision_desc')}</Text>
-      </View>
-      <Text style={styles.sectionDesc}>{t('about_contact')}</Text>
+    <View style={styles.featureBox}>
+      <Ionicons name="rocket" size={32} color={Colors.iosBlue} />
+      <Text style={styles.featureTitle}>{t('about_mission')}</Text>
+      <Text style={styles.featureDesc}>{t('about_mission_desc')}</Text>
     </View>
-  </ScrollView>
+
+    <View style={styles.featureBox}>
+      <Ionicons name="eye" size={32} color={Colors.iosGreen} />
+      <Text style={styles.featureTitle}>{t('about_vision')}</Text>
+      <Text style={styles.featureDesc}>{t('about_vision_desc')}</Text>
+    </View>
+    <Text style={styles.sectionDesc}>{t('about_contact')}</Text>
+  </View>
 );
 
 const SolutionsSection = ({ t }) => (
-  <ScrollView style={styles.scrollSection} showsVerticalScrollIndicator={false}>
-    <View style={styles.sectionCard}>
-      <Text style={styles.sectionTitle}>{t('nav_solutions') || "Çözümlerimiz"}</Text>
-      <Text style={styles.sectionDesc}>{t('solutions_desc')}</Text>
+  <View style={styles.sectionCard}>
+    <Text style={styles.sectionTitle}>{t('nav_solutions') || "Çözümlerimiz"}</Text>
+    <Text style={styles.sectionDesc}>{t('solutions_desc')}</Text>
 
-      <View style={styles.solutionList}>
-        <View style={styles.solutionItem}>
-          <Ionicons name="cube" size={24} color="#6366F1" />
-          <Text style={styles.solutionItemTitle}>{t('sol_stock')}</Text>
-        </View>
-        <View style={styles.solutionItem}>
-          <Ionicons name="people" size={24} color="#10B981" />
-          <Text style={styles.solutionItemTitle}>{t('sol_hr')}</Text>
-        </View>
-        <View style={styles.solutionItem}>
-          <Ionicons name="stats-chart" size={24} color="#F59E0B" />
-          <Text style={styles.solutionItemTitle}>{t('sol_finance')}</Text>
-        </View>
-        <View style={styles.solutionItem}>
-          <Ionicons name="hammer" size={24} color="#EF4444" />
-          <Text style={styles.solutionItemTitle}>{t('sol_prod')}</Text>
-        </View>
-        <View style={styles.solutionItem}>
-          <Ionicons name="business" size={24} color="#8B5CF6" />
-          <Text style={styles.solutionItemTitle}>{t('sol_asset')}</Text>
-        </View>
-      </View>
+    <View style={styles.solutionGrid}>
+      <SolutionItem icon="cube" title={t('sol_stock')} t={t} color="#6366F1" />
+      <SolutionItem icon="people" title={t('sol_hr')} t={t} color="#10B981" />
+      <SolutionItem icon="stats-chart" title={t('sol_finance')} t={t} color="#F59E0B" />
+      <SolutionItem icon="hammer" title={t('sol_prod')} t={t} color="#EF4444" />
+      <SolutionItem icon="business" title={t('sol_asset')} t={t} color="#8B5CF6" />
+      <SolutionItem icon="cloud-done" title={t('web_feature_mobile')} t={t} color="#0A84FF" />
     </View>
-  </ScrollView>
+  </View>
+);
+
+const SolutionItem = ({ icon, title, color }) => (
+  <View style={styles.solutionGridItem}>
+    <View style={[styles.solutionIconSmall, { backgroundColor: color + '15' }]}>
+      <Ionicons name={icon} size={24} color={color} />
+    </View>
+    <Text style={styles.solutionGridTitle}>{title}</Text>
+  </View>
 );
 
 const PricingSection = ({ t }) => (
-  <ScrollView style={styles.scrollSection} showsVerticalScrollIndicator={false}>
-    <View style={styles.sectionCard}>
-      <Text style={styles.sectionTitle}>{t('nav_pricing') || "Ücretlendirme"}</Text>
-      <Text style={styles.sectionDesc}>{t('pricing_desc')}</Text>
+  <View style={styles.sectionCard}>
+    <Text style={styles.sectionTitle}>{t('nav_pricing') || "Ücretlendirme"}</Text>
+    <Text style={styles.sectionDesc}>{t('pricing_desc')}</Text>
 
-      <View style={styles.pricingCardContainer}>
-        <View style={[styles.pricingCard, { borderColor: '#E2E8F0' }]}>
-          <Text style={styles.pricingPlan}>{t('pricing_starter')}</Text>
-          <Text style={styles.pricingPrice}>{t('pricing_free')}</Text>
-          <Text style={styles.pricingDetail}>{t('pricing_s_1')}</Text>
-          <Text style={styles.pricingDetail}>{t('pricing_s_2')}</Text>
-          <Text style={styles.pricingDetail}>{t('pricing_s_3')}</Text>
-        </View>
+    <View style={styles.pricingGrid}>
+      <View style={[styles.priceCard, { borderColor: '#E2E8F0' }]}>
+        <Text style={styles.pricePlanName}>{t('pricing_starter')}</Text>
+        <Text style={styles.priceAmount}>{t('pricing_free')}</Text>
+        <View style={styles.priceDivider} />
+        <PriceFeature text={t('pricing_s_1')} />
+        <PriceFeature text={t('pricing_s_2')} />
+        <PriceFeature text={t('pricing_s_3')} />
+      </View>
 
-        <View style={[styles.pricingCard, { borderColor: Colors.iosBlue, backgroundColor: '#F0F7FF' }]}>
-          <Text style={[styles.pricingPlan, { color: Colors.iosBlue }]}>{t('pricing_pro')}</Text>
-          <Text style={styles.pricingPrice}>299 ₺ <Text style={{ fontSize: 14, color: '#64748B' }}>{t('pricing_mo')}</Text></Text>
-          <Text style={styles.pricingDetail}>{t('pricing_p_1')}</Text>
-          <Text style={styles.pricingDetail}>{t('pricing_p_2')}</Text>
-          <Text style={styles.pricingDetail}>{t('pricing_p_3')}</Text>
-          <View style={styles.popularBadge}><Text style={{ color: '#fff', fontSize: 10, fontWeight: 'bold' }}>{t('pricing_popular')}</Text></View>
-        </View>
+      <View style={[styles.priceCard, styles.priceCardFeatured]}>
+        <View style={styles.popularBadgeGlobal}><Text style={styles.popularBadgeText}>{t('pricing_popular')}</Text></View>
+        <Text style={[styles.pricePlanName, { color: Colors.iosBlue }]}>{t('pricing_pro')}</Text>
+        <Text style={styles.priceAmount}>299 ₺ <Text style={styles.pricePeriod}>{t('pricing_mo')}</Text></Text>
+        <View style={styles.priceDivider} />
+        <PriceFeature text={t('pricing_p_1')} />
+        <PriceFeature text={t('pricing_p_2')} />
+        <PriceFeature text={t('pricing_p_3')} />
+        <PriceFeature text={t('web_feature_security')} bold />
       </View>
     </View>
-  </ScrollView>
+  </View>
+);
+
+const PriceFeature = ({ text, bold }) => (
+  <View style={styles.priceFeatureItem}>
+    <Ionicons name="checkmark-circle" size={20} color={Colors.iosBlue} />
+    <Text style={[styles.priceFeatureText, bold && { fontWeight: '700', color: '#1E293B' }]}>{text}</Text>
+  </View>
+);
+
+const InfoSection = ({ t }) => (
+  <View style={styles.sectionCard}>
+    <Text style={styles.sectionTitle}>{t('web_faq_title')}</Text>
+    <View style={{ gap: 16 }}>
+      <WebFaqItem q={t("web_faq_1_q")} a={t("web_faq_1_a")} />
+      <WebFaqItem q={t("web_faq_2_q")} a={t("web_faq_2_a")} />
+      <WebFaqItem q={t("web_faq_3_q")} a={t("web_faq_3_a")} />
+      <WebFaqItem q={t("web_faq_4_q")} a={t("web_faq_4_a")} />
+      <WebFaqItem q={t("web_faq_5_q")} a={t("web_faq_5_a")} />
+    </View>
+  </View>
+);
+
+const WebFaqItem = ({ q, a }) => (
+  <View style={{ backgroundColor: '#F8FAFC', padding: 24, borderRadius: 16, borderWidth: 1, borderColor: '#E2E8F0' }}>
+    <Text style={{ fontSize: 17, fontWeight: '700', color: '#0F172A', marginBottom: 8 }}>{q}</Text>
+    <Text style={{ fontSize: 15, color: '#475569', lineHeight: 22 }}>{a}</Text>
+  </View>
 );
 
 // Yardımcı Bileşenler
@@ -406,6 +491,25 @@ const TrustStat = ({ stat, desc }) => (
   <View style={styles.trustItem}>
     <Text style={styles.trustStatText}>{stat}</Text>
     <Text style={styles.trustDescText}>{desc}</Text>
+  </View>
+);
+
+const WhyItem = ({ icon, title, desc }) => (
+  <View style={styles.whyItem}>
+    <View style={styles.whyIconCircle}>
+      <Ionicons name={icon} size={24} color={Colors.iosBlue} />
+    </View>
+    <View style={{ flex: 1 }}>
+      <Text style={styles.whyTitle}>{title}</Text>
+      <Text style={styles.whyDesc}>{desc}</Text>
+    </View>
+  </View>
+);
+
+const FaqItem = ({ q, a }) => (
+  <View style={styles.faqItem}>
+    <Text style={styles.faqQ}>{q}</Text>
+    <Text style={styles.faqA}>{a}</Text>
   </View>
 );
 
@@ -597,25 +701,29 @@ const styles = StyleSheet.create({
   // WEB STYLES (ENHANCED)
   webContainer: {
     flex: 1,
-    flexDirection: 'row',
-    height: '100vh',
     width: '100%',
     backgroundColor: '#F8FAFC',
   },
   webLeftPanel: {
     flex: 1.2,
-    backgroundColor: '#0F172A', // Dark Slate for premium look
-    padding: 80,
-    justifyContent: 'center',
-    position: 'relative',
-    overflow: 'hidden',
+    backgroundColor: '#020617',
+    ...Platform.select({
+      web: {
+        backgroundImage: 'linear-gradient(135deg, #020617 0%, #0F172A 50%, #1E1B4B 100%)',
+        height: '100%',
+        overflowY: 'auto'
+      }
+    }),
   },
   webRightPanel: {
     flex: 1,
     backgroundColor: 'transparent',
-    justifyContent: 'center',
-    alignItems: 'center',
-    padding: 40,
+    ...Platform.select({
+      web: {
+        height: '100%',
+        overflowY: 'auto'
+      }
+    })
   },
   webBranding: {
     zIndex: 2,
@@ -649,10 +757,10 @@ const styles = StyleSheet.create({
     letterSpacing: -1,
   },
   webHeroSub: {
-    fontSize: 20,
+    fontSize: 18,
     color: '#94A3B8',
-    marginBottom: 48,
-    lineHeight: 32,
+    marginBottom: 32,
+    lineHeight: 28,
     fontWeight: '400',
   },
   businessGrid: {
@@ -696,11 +804,18 @@ const styles = StyleSheet.create({
   trustContainer: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: 'rgba(255,255,255,0.03)',
-    padding: 24,
-    borderRadius: 20,
+    backgroundColor: 'rgba(255, 255, 255, 0.04)',
+    ...Platform.select({
+      web: { backdropFilter: 'blur(16px)' }
+    }),
+    padding: 28,
+    borderRadius: 24,
     borderWidth: 1,
-    borderColor: 'rgba(255,255,255,0.05)',
+    borderColor: 'rgba(255, 255, 255, 0.08)',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 10 },
+    shadowOpacity: 0.2,
+    shadowRadius: 20,
   },
   trustItem: {
     flex: 1,
@@ -725,25 +840,27 @@ const styles = StyleSheet.create({
     letterSpacing: 0.5,
   },
   webFooter: {
-    position: 'absolute',
-    bottom: 40,
-    left: 80,
+    marginTop: 'auto',
+    alignSelf: 'flex-start',
+    paddingTop: 40,
   },
   webFooterText: {
     color: '#475569',
     fontSize: 14,
   },
   webFormCard: {
+    backgroundColor: '#ffffff',
+    padding: 48,
+    borderRadius: 32,
     width: '100%',
     maxWidth: 480,
-    backgroundColor: '#fff',
-    padding: 48,
-    borderRadius: 24,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 20 },
+    shadowColor: '#0F172A',
+    shadowOffset: { width: 0, height: 24 },
     shadowOpacity: 0.08,
-    shadowRadius: 32,
+    shadowRadius: 48,
     elevation: 10,
+    borderWidth: 1,
+    borderColor: 'rgba(226, 232, 240, 0.8)',
   },
   formIconContainer: {
     width: 64,
@@ -752,20 +869,21 @@ const styles = StyleSheet.create({
     backgroundColor: '#F0F7FF',
     alignItems: 'center',
     justifyContent: 'center',
-    marginBottom: 16,
+    marginBottom: 24,
   },
   formTitle: {
     fontSize: 32,
     fontWeight: '800',
     color: '#0F172A',
     textAlign: 'center',
-    letterSpacing: -0.5,
+    letterSpacing: -1,
   },
   formSub: {
     fontSize: 16,
     color: '#64748B',
-    marginTop: 8,
+    marginTop: 10,
     textAlign: 'center',
+    lineHeight: 22,
   },
   inputGroup: {
     marginBottom: 20,
@@ -781,10 +899,13 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     backgroundColor: '#F8FAFC',
-    borderRadius: 14,
-    borderWidth: 1,
+    borderRadius: 16,
+    borderWidth: 1.5,
     borderColor: '#E2E8F0',
     paddingHorizontal: 16,
+    ...Platform.select({
+      web: { transition: 'border-color 0.2s ease, box-shadow 0.2s ease' }
+    })
   },
   inputIcon: {
     marginRight: 12,
@@ -804,18 +925,18 @@ const styles = StyleSheet.create({
   },
   mainButton: {
     flexDirection: 'row',
-    backgroundColor: '#0F172A',
+    backgroundColor: '#2563EB',
     height: 56,
-    borderRadius: 14,
+    borderRadius: 16,
     alignItems: 'center',
     justifyContent: 'center',
     gap: 12,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.2,
-    shadowRadius: 8,
+    shadowColor: '#2563EB',
+    shadowOffset: { width: 0, height: 8 },
+    shadowOpacity: 0.35,
+    shadowRadius: 16,
     ...Platform.select({
-      web: { cursor: 'pointer', transition: 'all 0.2s' }
+      web: { cursor: 'pointer', transition: 'transform 0.2s, box-shadow 0.2s' }
     })
   },
   mainButtonText: {
@@ -994,5 +1115,311 @@ const styles = StyleSheet.create({
     paddingHorizontal: 12,
     paddingVertical: 6,
     borderRadius: 20,
+  },
+
+  // NEW MARKETING STYLES
+  webHeroCta: {
+    backgroundColor: '#3B82F6',
+    paddingHorizontal: 36,
+    paddingVertical: 18,
+    borderRadius: 16,
+    flexDirection: 'row',
+    alignItems: 'center',
+    alignSelf: 'flex-start',
+    gap: 12,
+    marginBottom: 40,
+    shadowColor: '#3B82F6',
+    shadowOffset: { width: 0, height: 10 },
+    shadowOpacity: 0.4,
+    shadowRadius: 20,
+    ...Platform.select({
+      web: { transition: 'transform 0.2s ease, box-shadow 0.2s ease', cursor: 'pointer' }
+    })
+  },
+  webHeroCtaText: {
+    color: '#fff',
+    fontSize: 18,
+    fontWeight: '800',
+  },
+  separator: {
+    height: 1,
+    backgroundColor: 'rgba(255,255,255,0.1)',
+    marginVertical: 32,
+    width: '100%',
+  },
+  sectionHeading: {
+    color: '#fff',
+    fontSize: 24,
+    fontWeight: '800',
+    marginBottom: 24,
+    letterSpacing: -0.5,
+  },
+  whySection: {
+    marginBottom: 40,
+  },
+  whyGrid: {
+    gap: 20,
+  },
+  whyItem: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    backgroundColor: 'rgba(255, 255, 255, 0.04)',
+    ...Platform.select({
+      web: { backdropFilter: 'blur(12px)' }
+    }),
+    padding: 20,
+    borderRadius: 16,
+    borderWidth: 1,
+    borderColor: 'rgba(255, 255, 255, 0.08)',
+  },
+  whyIconCircle: {
+    width: 48,
+    height: 48,
+    borderRadius: 24,
+    backgroundColor: 'rgba(0, 122, 255, 0.1)',
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginRight: 20,
+  },
+  whyTitle: {
+    color: '#fff',
+    fontSize: 18,
+    fontWeight: '700',
+    marginBottom: 6,
+  },
+  whyDesc: {
+    color: '#94A3B8',
+    fontSize: 15,
+    lineHeight: 22,
+  },
+  testimonialSection: {
+    backgroundColor: 'rgba(0, 122, 255, 0.05)',
+    padding: 32,
+    borderRadius: 24,
+    borderWidth: 1,
+    borderColor: 'rgba(0, 122, 255, 0.1)',
+    marginTop: 20,
+  },
+  testimonialText: {
+    color: '#fff',
+    fontSize: 18,
+    fontStyle: 'italic',
+    lineHeight: 28,
+    marginBottom: 16,
+  },
+  testimonialUser: {
+    color: Colors.iosBlue,
+    fontSize: 16,
+    fontWeight: '700',
+  },
+  faqSection: {
+    marginTop: 60,
+  },
+  faqItem: {
+    marginBottom: 24,
+    backgroundColor: 'rgba(255,255,255,0.02)',
+    padding: 20,
+    borderRadius: 12,
+  },
+  faqQ: {
+    color: '#fff',
+    fontSize: 17,
+    fontWeight: '700',
+    marginBottom: 8,
+  },
+  faqA: {
+    color: '#94A3B8',
+    fontSize: 15,
+    lineHeight: 22,
+  },
+
+  // PREMIUN REFACTOR STYLES
+  webWrapper: {
+    flex: 1,
+    backgroundColor: '#F1F5F9', // Slightly richer background
+  },
+  webGlobalHeader: {
+    height: 76,
+    backgroundColor: Platform.OS === 'web' ? 'rgba(255, 255, 255, 0.85)' : '#fff',
+    ...Platform.select({
+      web: { backdropFilter: 'blur(12px)' }
+    }),
+    justifyContent: 'center',
+    zIndex: 100,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.03,
+    shadowRadius: 10,
+    elevation: 2,
+    borderBottomWidth: 1,
+    borderBottomColor: 'rgba(226, 232, 240, 0.4)',
+  },
+  headerContainer: {
+    maxWidth: 1280,
+    width: '100%',
+    alignSelf: 'center',
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    paddingHorizontal: 40,
+  },
+  headerNavLinks: {
+    flexDirection: 'row',
+    gap: 24,
+  },
+  headerNavLink: {
+    fontSize: 15,
+    fontWeight: '600',
+    color: '#64748B',
+    paddingHorizontal: 16,
+    paddingVertical: 8,
+    borderRadius: 20,
+    ...Platform.select({ web: { cursor: 'pointer', transition: 'all 0.2s' } })
+  },
+  headerNavLinkActive: {
+    color: '#0F172A',
+    backgroundColor: '#E2E8F0', // Pill effect
+  },
+  headerCta: {
+    backgroundColor: '#2563EB',
+    paddingHorizontal: 24,
+    paddingVertical: 12,
+    borderRadius: 12,
+    shadowColor: '#2563EB',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.3,
+    shadowRadius: 8,
+  },
+  headerCtaText: {
+    color: '#fff',
+    fontSize: 14,
+    fontWeight: '700',
+  },
+  sectionWrapper: {
+    width: '100%',
+    maxWidth: 800,
+    alignSelf: 'center',
+  },
+  backButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 20,
+    gap: 8,
+    ...Platform.select({ web: { cursor: 'pointer' } })
+  },
+  backButtonText: {
+    fontSize: 15,
+    fontWeight: '600',
+    color: Colors.iosBlue,
+  },
+  solutionGrid: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 16,
+    marginTop: 10,
+  },
+  solutionGridItem: {
+    width: '48%',
+    backgroundColor: '#F8FAFC',
+    padding: 20,
+    borderRadius: 16,
+    borderWidth: 1,
+    borderColor: '#E2E8F0',
+    alignItems: 'center',
+  },
+  solutionIconSmall: {
+    width: 52,
+    height: 52,
+    borderRadius: 14,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginBottom: 12,
+  },
+  solutionGridTitle: {
+    fontSize: 15,
+    fontWeight: '700',
+    color: '#1E293B',
+    textAlign: 'center',
+  },
+  pricingGrid: {
+    flexDirection: 'row',
+    gap: 24,
+    marginTop: 10,
+    ...Platform.select({
+      web: { flexWrap: 'nowrap' }
+    })
+  },
+  priceCard: {
+    flex: 1,
+    backgroundColor: '#fff',
+    padding: 32,
+    borderRadius: 24,
+    borderWidth: 2,
+    position: 'relative',
+    minHeight: 400,
+  },
+  priceCardFeatured: {
+    borderColor: Colors.iosBlue,
+    backgroundColor: '#F0F7FF',
+    shadowColor: Colors.iosBlue,
+    shadowOffset: { width: 0, height: 10 },
+    shadowOpacity: 0.1,
+    shadowRadius: 20,
+    elevation: 5,
+  },
+  pricePlanName: {
+    fontSize: 18,
+    fontWeight: '800',
+    color: '#64748B',
+    marginBottom: 12,
+    textTransform: 'uppercase',
+    letterSpacing: 1,
+  },
+  priceAmount: {
+    fontSize: 36,
+    fontWeight: '900',
+    color: '#0F172A',
+    marginBottom: 20,
+  },
+  pricePeriod: {
+    fontSize: 14,
+    color: '#94A3B8',
+    fontWeight: '500',
+  },
+  priceDivider: {
+    height: 1,
+    backgroundColor: '#E2E8F0',
+    marginBottom: 24,
+  },
+  priceFeatureItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+    marginBottom: 16,
+  },
+  priceFeatureText: {
+    fontSize: 15,
+    color: '#475569',
+  },
+  popularBadgeGlobal: {
+    position: 'absolute',
+    top: -12,
+    right: 32,
+    backgroundColor: Colors.iosBlue,
+    paddingHorizontal: 12,
+    paddingVertical: 4,
+    borderRadius: 20,
+  },
+  popularBadgeText: {
+    color: '#fff',
+    fontSize: 11,
+    fontWeight: '800',
+  },
+  headerLogoText: {
+    color: '#0F172A',
+    fontSize: 32,
+    fontWeight: '800',
+    marginLeft: 20,
+    letterSpacing: -0.5,
   }
 });
