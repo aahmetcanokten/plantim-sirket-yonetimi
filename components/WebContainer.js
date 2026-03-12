@@ -6,6 +6,7 @@ import { Colors } from '../Theme';
 import { useAuth } from '../AuthContext';
 
 const MENU_ITEMS = [
+    { name: 'DashboardScreen', label: 'Şirket Özeti', icon: 'grid-outline' },
     { name: 'MainTabs', params: { screen: 'Stok' }, label: 'Stok Listesi', icon: 'list-outline' },
     { name: 'AddProductScreen', label: 'Yeni Ürün Ekle', icon: 'add-circle-outline' },
     { name: 'AssemblyScreen', label: 'Montaj / Üretim', icon: 'construct-outline' },
@@ -14,6 +15,7 @@ const MENU_ITEMS = [
     { name: 'MrpScreen', label: 'Malzeme İhtiyaç', icon: 'layers-outline' },
     { name: 'MainTabs', params: { screen: 'Satışlar' }, label: 'Satışlar', icon: 'cash-outline' },
     { name: 'MainTabs', params: { screen: 'Satın Alma' }, label: 'Satın Alma', icon: 'cart-outline' },
+    { name: 'FinanceScreen', label: 'Finans Yönetimi', icon: 'wallet-outline' },
     { name: 'MainTabs', params: { screen: 'Müşteriler' }, label: 'Müşteriler', icon: 'people-outline' },
     { name: 'WorkOrderScreen', label: 'İş Emirleri', icon: 'construct-outline' },
     { name: 'WorkOrderArchiveScreen', label: 'İş Emri Arşivi', icon: 'archive-outline' },
@@ -86,6 +88,7 @@ export default function WebContainer({ children, activeRoute }) {
         if (!currentRouteName) return 'Plantim ERP';
 
         switch (currentRouteName) {
+            case 'DashboardScreen': return 'Şirket Özeti';
             case 'Stok': return 'Stok Yönetimi';
             case 'Satışlar': return 'Satış İşlemleri';
             case 'Satın Alma': return 'Satın Alma';
@@ -105,6 +108,7 @@ export default function WebContainer({ children, activeRoute }) {
             case 'QuotationScreen': return 'Teklif Yönetimi';
             case 'WarehouseScreen': return 'Depo ve Transfer';
             case 'MrpScreen': return 'Malzeme İhtiyaç Analizi';
+            case 'FinanceScreen': return 'Finans Yönetimi';
             case 'Login': return 'Giriş Yap';
             case 'Onboarding': return 'Hoşgeldiniz';
             case 'Paywall': return 'Premium';

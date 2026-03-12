@@ -51,6 +51,9 @@ export function AppProvider({ children }) {
   const [warehouseTransfers, setWarehouseTransfers] = useState([]);
   const [boms, setBoms] = useState([]);
   const [company, setCompany] = useState({ name: "Şirketim", address: "", taxId: "", requireInvoice: false });
+  // --- FİNANS ---
+  const [financeTransactions, setFinanceTransactions] = useState([]);
+  const [budgets, setBudgets] = useState([]);
 
   const [dbPremium, setDbPremium] = useState(false);
   const [rcPremium, setRcPremium] = useState(false);
@@ -130,6 +133,20 @@ export function AppProvider({ children }) {
             supabase.from('quotations').select('*').eq('user_id', userId).order('created_at', { ascending: false }),
             supabase.from('warehouse_transfers').select('*').eq('user_id', userId).order('transferred_at', { ascending: false })
           ]);
+
+          // Finans verilerini yükle
+          try {
+            const [financeRes, budgetsRes] = await Promise.all([
+              supabase.from('finance_transactions').select('*').eq('user_id', userId).order('transaction_date', { ascending: false }),
+              supabase.from('budgets').select('*').eq('user_id', userId).order('period', { ascending: false })
+            ]);
+            setFinanceTransactions(financeRes.data || []);
+            setBudgets(budgetsRes.data || []);
+          } catch (financeErr) {
+            console.log('Finans tabloları henüz oluşturulmamış olabilir:', financeErr?.message);
+            setFinanceTransactions([]);
+            setBudgets([]);
+          }
 
           if (userRes.data && userRes.data.is_premium) {
             setDbPremium(true);
@@ -257,6 +274,8 @@ export function AppProvider({ children }) {
         setQuotations([]);
         setWarehouseTransfers([]);
         setBoms([]);
+        setFinanceTransactions([]);
+        setBudgets([]);
         setDbPremium(false);
         setRcPremium(false);
         setAppDataLoading(false);
@@ -1328,6 +1347,63 @@ export function AppProvider({ children }) {
     }
   };
 
+  // --- FİNANS İŞLEMLERİ (TRANSACTIONS) ---
+  const addTransaction = async (t) => {
+    if (!session || !supabase) return false;
+    const toInsert = { ...t, user_id: session.user.id };
+    const { data, error } = await supabase.from('finance_transactions').insert(toInsert).select();
+    if (error) { Alert.alert('Hata', error.message); return false; }
+    setFinanceTransactions((prev) => [data[0], ...prev]);
+    return data[0];
+  };
+  const updateTransaction = async (t) => {
+    if (!session || !supabase) return false;
+    const { data, error } = await supabase.from('finance_transactions').update(t).eq('id', t.id).select();
+    if (error) { Alert.alert('Hata', error.message); return false; }
+    setFinanceTransactions((prev) => prev.map(item => item.id === t.id ? data[0] : item));
+    return true;
+  };
+  const deleteTransaction = async (id) => {
+    if (!session || !supabase) return false;
+    const { error } = await supabase.from('finance_transactions').delete().eq('id', id);
+    if (error) { Alert.alert('Hata', error.message); return false; }
+    setFinanceTransactions((prev) => prev.filter(item => item.id !== id));
+    return true;
+  };
+  const markTransactionPaid = async (id) => {
+    if (!session || !supabase) return false;
+    const { data, error } = await supabase.from('finance_transactions')
+      .update({ is_paid: true })
+      .eq('id', id).select();
+    if (error) { Alert.alert('Hata', error.message); return false; }
+    setFinanceTransactions((prev) => prev.map(item => item.id === id ? data[0] : item));
+    return true;
+  };
+
+  // --- BÜTÇE YÖNETİMİ (BUDGETS) ---
+  const addBudget = async (b) => {
+    if (!session || !supabase) return false;
+    const toInsert = { ...b, user_id: session.user.id };
+    const { data, error } = await supabase.from('budgets').insert(toInsert).select();
+    if (error) { Alert.alert('Hata', error.message); return false; }
+    setBudgets((prev) => [data[0], ...prev]);
+    return data[0];
+  };
+  const updateBudget = async (b) => {
+    if (!session || !supabase) return false;
+    const { data, error } = await supabase.from('budgets').update(b).eq('id', b.id).select();
+    if (error) { Alert.alert('Hata', error.message); return false; }
+    setBudgets((prev) => prev.map(item => item.id === b.id ? data[0] : item));
+    return true;
+  };
+  const deleteBudget = async (id) => {
+    if (!session || !supabase) return false;
+    const { error } = await supabase.from('budgets').delete().eq('id', id);
+    if (error) { Alert.alert('Hata', error.message); return false; }
+    setBudgets((prev) => prev.filter(item => item.id !== id));
+    return true;
+  };
+
   const deleteUserAccount = async () => {
     if (!session || !supabase) return false;
     const userId = session.user.id;
@@ -1387,6 +1463,8 @@ export function AppProvider({ children }) {
         warehouseTransfers, addWarehouseTransfer,
         boms, addBom, updateBom, deleteBom, produceFromBom,
         company, updateCompanyInfo,
+        financeTransactions, addTransaction, updateTransaction, deleteTransaction, markTransactionPaid,
+        budgets, addBudget, updateBudget, deleteBudget,
         isPremium, setPremiumStatus: setDbPremium, purchasePremium, restorePurchases,
         getPackages: async () => {
           const offerings = await Purchases.getOfferings();

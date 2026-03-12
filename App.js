@@ -35,6 +35,8 @@ import MaintenanceArchiveScreen from "./screens/MaintenanceArchiveScreen";
 import QuotationScreen from "./screens/QuotationScreen";
 import WarehouseScreen from "./screens/WarehouseScreen";
 import MrpScreen from "./screens/MrpScreen";
+import DashboardScreen from "./screens/DashboardScreen";
+import FinanceScreen from "./screens/FinanceScreen";
 import LoginScreen from "./screens/LoginScreen";
 import PaywallScreen from "./screens/PaywallScreen";
 import OnboardingScreen from "./screens/OnboardingScreen";
@@ -132,6 +134,7 @@ function RootNavigator() {
           <Stack.Screen name="ResetPassword" component={ResetPasswordScreen} />
         ) : (
           <>
+            <Stack.Screen name="DashboardScreen" component={DashboardScreen} />
             <Stack.Screen name="MainTabs" component={MainTabs} />
             <Stack.Screen name="Ayarlar" component={SettingsScreen} />
             <Stack.Screen name="Analytics" component={AnalyticsScreen} />
@@ -148,6 +151,7 @@ function RootNavigator() {
             <Stack.Screen name="QuotationScreen" component={QuotationScreen} />
             <Stack.Screen name="WarehouseScreen" component={WarehouseScreen} />
             <Stack.Screen name="MrpScreen" component={MrpScreen} />
+            <Stack.Screen name="FinanceScreen" component={FinanceScreen} />
             <Stack.Screen name="Paywall" component={PaywallScreen} options={{ presentation: 'modal' }} />
           </>
         )
