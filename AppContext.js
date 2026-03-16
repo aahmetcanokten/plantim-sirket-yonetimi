@@ -49,11 +49,14 @@ export function AppProvider({ children }) {
   const [maintenanceRequests, setMaintenanceRequests] = useState([]);
   const [quotations, setQuotations] = useState([]);
   const [warehouseTransfers, setWarehouseTransfers] = useState([]);
+  const [stockLocations, setStockLocations] = useState([]); // Çoklu depo stok konumları
   const [boms, setBoms] = useState([]);
   const [company, setCompany] = useState({ name: "Şirketim", address: "", taxId: "", requireInvoice: false });
   // --- FİNANS ---
   const [financeTransactions, setFinanceTransactions] = useState([]);
   const [budgets, setBudgets] = useState([]);
+  // --- PERSONEL İZİN GEÇMİŞİ ---
+  const [leaveHistory, setLeaveHistory] = useState([]);
 
   const [dbPremium, setDbPremium] = useState(false);
   const [rcPremium, setRcPremium] = useState(false);
@@ -148,6 +151,20 @@ export function AppProvider({ children }) {
             setBudgets([]);
           }
 
+          // Personel izin geçmişini yükle
+          try {
+            const { data: leaveData, error: leaveErr } = await supabase
+              .from('personnel_leave_history')
+              .select('*')
+              .eq('user_id', userId)
+              .order('created_at', { ascending: false });
+            if (!leaveErr) setLeaveHistory(leaveData || []);
+            else setLeaveHistory([]);
+          } catch (leaveEx) {
+            console.log('personnel_leave_history tablosu yüklenemedi:', leaveEx?.message);
+            setLeaveHistory([]);
+          }
+
           if (userRes.data && userRes.data.is_premium) {
             setDbPremium(true);
           } else {
@@ -191,6 +208,20 @@ export function AppProvider({ children }) {
             items: typeof q.items === 'string' ? JSON.parse(q.items) : (q.items || [])
           })));
           setWarehouseTransfers(warehouseTransfersRes?.data || []);
+
+          // Stock Locations (Çoklu Depo Stok) yükle
+          try {
+            const { data: slData, error: slError } = await supabase
+              .from('stock_locations')
+              .select('*')
+              .eq('user_id', userId)
+              .order('warehouse_name', { ascending: true });
+            if (!slError) setStockLocations(slData || []);
+            else setStockLocations([]);
+          } catch (slEx) {
+            console.log('stock_locations tablosu henüz oluşturulmamış olabilir:', slEx?.message);
+            setStockLocations([]);
+          }
 
           // BOM verilerini ayrı yükle (tablo yoksa hata vermesin)
           try {
@@ -273,9 +304,11 @@ export function AppProvider({ children }) {
         setMaintenanceRequests([]);
         setQuotations([]);
         setWarehouseTransfers([]);
+        setStockLocations([]);
         setBoms([]);
         setFinanceTransactions([]);
         setBudgets([]);
+        setLeaveHistory([]);
         setDbPremium(false);
         setRcPremium(false);
         setAppDataLoading(false);
@@ -509,7 +542,24 @@ export function AppProvider({ children }) {
   // Personel
   const addPersonnel = async (p) => {
     if (!session || !supabase) return;
-    const toInsert = { ...p, user_id: session.user.id, tasks: JSON.stringify(p.tasks || []) };
+    const toInsert = {
+      ...p,
+      user_id: session.user.id,
+      tasks: JSON.stringify(p.tasks || []),
+      // Yeni alanlar — undefined gelirse null'a çevir
+      department: p.department || null,
+      email: p.email || null,
+      national_id: p.national_id || null,
+      employment_type: p.employment_type || 'FULL_TIME',
+      status: p.status || 'ACTIVE',
+      salary: p.salary ? parseFloat(p.salary) : null,
+      salary_currency: p.salary_currency || 'TRY',
+      emergency_contact: p.emergency_contact || null,
+      emergency_phone: p.emergency_phone || null,
+      end_date: p.end_date || null,
+      performance_score: p.performance_score ? parseFloat(p.performance_score) : null,
+      notes: p.notes || null,
+    };
     const { data, error } = await supabase.from('personnel').insert(toInsert).select();
     if (error) Alert.alert("Hata", error.message);
     else {
@@ -520,8 +570,12 @@ export function AppProvider({ children }) {
   };
   const updatePersonnel = async (u) => {
     if (!session || !supabase) return;
-    const updateData = { ...u };
-    updateData.tasks = JSON.stringify(updateData.tasks || []);
+    const updateData = {
+      ...u,
+      tasks: JSON.stringify(u.tasks || []),
+      salary: u.salary ? parseFloat(u.salary) : null,
+      performance_score: u.performance_score ? parseFloat(u.performance_score) : null,
+    };
     const { data, error } = await supabase.from('personnel').update(updateData).eq('id', u.id).select();
     if (error) Alert.alert("Hata", error.message);
     else {
@@ -535,6 +589,26 @@ export function AppProvider({ children }) {
     const { error } = await supabase.from('personnel').delete().eq('id', id);
     if (error) Alert.alert("Hata", error.message);
     else setPersonnel((prev) => prev.filter(p => p.id !== id));
+  };
+
+  // --- PERSONEL İZİN GEÇMİŞİ ---
+  const addLeaveRecord = async (record) => {
+    if (!session || !supabase) return false;
+    const toInsert = { ...record, user_id: session.user.id };
+    const { data, error } = await supabase.from('personnel_leave_history').insert(toInsert).select();
+    if (error) { Alert.alert("Hata", error.message); return false; }
+    setLeaveHistory((prev) => [data[0], ...prev]);
+    return data[0];
+  };
+  const deleteLeaveRecord = async (id) => {
+    if (!session || !supabase) return false;
+    const { error } = await supabase.from('personnel_leave_history').delete().eq('id', id);
+    if (error) { Alert.alert("Hata", error.message); return false; }
+    setLeaveHistory((prev) => prev.filter(l => l.id !== id));
+    return true;
+  };
+  const fetchLeaveHistory = (personId) => {
+    return leaveHistory.filter(l => l.person_id === personId);
   };
 
   // Araçlar
@@ -1033,7 +1107,69 @@ export function AppProvider({ children }) {
     else setQuotations(prev => prev.filter(q => q.id !== id));
   };
 
-  // --- DEPO TRANSFERLERİ ---
+  // --- DEPO TRANSFERLERİ (ÇOK DEPOLU ERP MANTIĞI) ---
+
+  // Bir ürünün tüm depolardaki dağılımını getir
+  const getProductStockLocations = (productId) => {
+    return stockLocations.filter(sl => sl.product_id === productId);
+  };
+
+  // Belirli bir ürünün belirli bir depodaki stok miktarını getir
+  const getStockAtWarehouse = (productId, warehouseName) => {
+    const sl = stockLocations.find(s => s.product_id === productId && s.warehouse_name === warehouseName);
+    return sl ? sl.quantity : 0;
+  };
+
+  // Tüm benzersiz depo isimlerini getir
+  const getAllWarehouses = () => {
+    const warehouseSet = new Set();
+    stockLocations.forEach(sl => {
+      if (sl.warehouse_name) warehouseSet.add(sl.warehouse_name);
+    });
+    // Ayrıca ürünlerdeki warehouseLocation'ları da ekle (eski uyumluluk)
+    products.forEach(p => {
+      const loc = p.warehouseLocation || p.warehouse_location;
+      if (loc) warehouseSet.add(loc);
+    });
+    return Array.from(warehouseSet).sort();
+  };
+
+  // stock_locations tablosunu güncelle (upsert - kayıt yoksa ekle, varsa güncelle)
+  const upsertStockLocation = async (userId, productId, warehouseName, quantity) => {
+    if (quantity <= 0) {
+      // Sıfırlanmışsa kaydı sil
+      const { error } = await supabase
+        .from('stock_locations')
+        .delete()
+        .eq('product_id', productId)
+        .eq('warehouse_name', warehouseName);
+      if (!error) {
+        setStockLocations(prev => prev.filter(
+          sl => !(sl.product_id === productId && sl.warehouse_name === warehouseName)
+        ));
+      }
+      return !error;
+    }
+    const { data, error } = await supabase
+      .from('stock_locations')
+      .upsert(
+        { user_id: userId, product_id: productId, warehouse_name: warehouseName, quantity, updated_at: new Date().toISOString() },
+        { onConflict: 'product_id,warehouse_name', ignoreDuplicates: false }
+      )
+      .select();
+    if (!error && data && data[0]) {
+      setStockLocations(prev => {
+        const existing = prev.find(sl => sl.product_id === productId && sl.warehouse_name === warehouseName);
+        if (existing) {
+          return prev.map(sl => (sl.product_id === productId && sl.warehouse_name === warehouseName) ? data[0] : sl);
+        } else {
+          return [data[0], ...prev];
+        }
+      });
+    }
+    return !error;
+  };
+
   const addWarehouseTransfer = async (transfer) => {
     if (!session || !supabase) return false;
     const { product_id, from_warehouse, to_warehouse, quantity, note } = transfer;
@@ -1041,18 +1177,37 @@ export function AppProvider({ children }) {
     // Ürünü bul
     const product = products.find(p => p.id === product_id);
     if (!product) {
-      Alert.alert('Hata', 'Ürün bulunamadı.');
+      if (Platform.OS === 'web') window.alert('Ürün bulunamadı.');
+      else Alert.alert('Hata', 'Ürün bulunamadı.');
       return false;
     }
-    if ((product.quantity || 0) < quantity) {
-      Alert.alert('Hata', `Yeterli stok yok. Mevcut: ${product.quantity}`);
+
+    // Kaynak depodaki stok kontrolü
+    const fromStockEntry = stockLocations.find(
+      sl => sl.product_id === product_id && sl.warehouse_name === from_warehouse
+    );
+    const fromQty = fromStockEntry ? fromStockEntry.quantity : 0;
+
+    if (fromQty < quantity) {
+      const msg = `${from_warehouse} deposunda yeterli stok yok. Mevcut: ${fromQty}`;
+      if (Platform.OS === 'web') window.alert(msg);
+      else Alert.alert('Hata', msg);
       return false;
     }
 
     try {
+      const userId = session.user.id;
+      const newFromQty = fromQty - quantity;
+
+      // Hedef depodaki mevcut stoku bul
+      const toStockEntry = stockLocations.find(
+        sl => sl.product_id === product_id && sl.warehouse_name === to_warehouse
+      );
+      const newToQty = (toStockEntry ? toStockEntry.quantity : 0) + quantity;
+
       // Transfer kaydı ekle
       const toInsert = {
-        user_id: session.user.id,
+        user_id: userId,
         product_id,
         product_name: product.name,
         quantity,
@@ -1067,31 +1222,76 @@ export function AppProvider({ children }) {
         .insert(toInsert)
         .select();
       if (transferError) {
-        Alert.alert('Hata', transferError.message);
+        if (Platform.OS === 'web') window.alert(transferError.message);
+        else Alert.alert('Hata', transferError.message);
         return false;
       }
 
-      // Ürünün depo konumunu hedef depoya güncelle (tam transfer)
-      const { data: productData, error: productError } = await supabase
-        .from('products')
-        .update({ warehouseLocation: to_warehouse })
-        .eq('id', product_id)
-        .select();
-      if (productError) {
-        Alert.alert('Hata', productError.message);
-        return false;
-      }
-      if (productData && productData[0]) {
-        setProducts(prev => prev.map(p => p.id === product_id ? productData[0] : p));
+      // Kaynak depo stokunu güncelle
+      const fromOk = await upsertStockLocation(userId, product_id, from_warehouse, newFromQty);
+      if (!fromOk) return false;
+
+      // Hedef depo stokunu güncelle
+      const toOk = await upsertStockLocation(userId, product_id, to_warehouse, newToQty);
+      if (!toOk) return false;
+
+      // products tablosundaki toplam quantity'yi güncelle (tüm depolar toplamı)
+      // ve warehouseLocation'ı ana depoya (en fazla stoğu olan) güncelle
+      const allLocs = stockLocations
+        .filter(sl => sl.product_id === product_id && !(sl.warehouse_name === from_warehouse))
+        .concat([
+          { product_id, warehouse_name: from_warehouse, quantity: newFromQty },
+          ...(toStockEntry ? [] : [{ product_id, warehouse_name: to_warehouse, quantity }])
+        ]);
+
+      // Daha kesin hesap için yeniden çek
+      const { data: freshLocs } = await supabase
+        .from('stock_locations')
+        .select('*')
+        .eq('product_id', product_id)
+        .gt('quantity', 0);
+
+      if (freshLocs) {
+        const totalQty = freshLocs.reduce((sum, sl) => sum + (sl.quantity || 0), 0);
+        const primaryWarehouse = freshLocs.reduce(
+          (max, sl) => sl.quantity > (max?.quantity || 0) ? sl : max, null
+        );
+        await supabase
+          .from('products')
+          .update({
+            quantity: totalQty,
+            warehouseLocation: primaryWarehouse?.warehouse_name || to_warehouse
+          })
+          .eq('id', product_id);
+        setProducts(prev => prev.map(p => p.id === product_id
+          ? { ...p, quantity: totalQty, warehouseLocation: primaryWarehouse?.warehouse_name || to_warehouse }
+          : p
+        ));
+        // state'i de güncelle
+        setStockLocations(prev => {
+          const filtered = prev.filter(sl => sl.product_id !== product_id);
+          return [...filtered, ...freshLocs];
+        });
       }
 
       setWarehouseTransfers(prev => [transferData[0], ...prev]);
       return true;
     } catch (e) {
       console.error('Transfer hatası:', e);
-      Alert.alert('Hata', 'Transfer gerçekleştirilemedi.');
+      if (Platform.OS === 'web') window.alert('Transfer gerçekleştirilemedi: ' + e.message);
+      else Alert.alert('Hata', 'Transfer gerçekleştirilemedi.');
       return false;
     }
+  };
+
+  // Ürüne yeni depo konumu ekle / stok dağıt
+  const addStockToWarehouse = async (productId, warehouseName, quantity) => {
+    if (!session || !supabase) return false;
+    const product = products.find(p => p.id === productId);
+    if (!product) return false;
+    const existing = stockLocations.find(sl => sl.product_id === productId && sl.warehouse_name === warehouseName);
+    const newQty = (existing?.quantity || 0) + quantity;
+    return await upsertStockLocation(session.user.id, productId, warehouseName, newQty);
   };
 
   // --- BOM (BILL OF MATERIALS) YÖNETİMİ ---
@@ -1453,6 +1653,7 @@ export function AppProvider({ children }) {
         products, addProduct, updateProduct, deleteProduct,
         sales, addSale, updateSale, removeSale, recreateProductFromSale, generateInvoiceNumber,
         personnel, addPersonnel, updatePersonnel, deletePersonnel,
+        leaveHistory, addLeaveRecord, deleteLeaveRecord, fetchLeaveHistory,
         vehicles, addVehicle, updateVehicle, deleteVehicle,
         purchases, addPurchase, updatePurchase, deletePurchase, markPurchaseDelivered,
         assets, addAsset, updateAsset, deleteAsset, assignAsset, unassignAsset,
@@ -1460,6 +1661,7 @@ export function AppProvider({ children }) {
         processTemplates, addProcessTemplate, deleteProcessTemplate,
         maintenanceRequests, addMaintenanceRequest, updateMaintenanceRequest, closeMaintenanceRequest, deleteMaintenanceRequest,
         quotations, addQuotation, updateQuotation, cancelQuotation, approveQuotation, convertQuotationToSale, deleteQuotation,
+        stockLocations, getProductStockLocations, getStockAtWarehouse, getAllWarehouses, addStockToWarehouse, upsertStockLocation,
         warehouseTransfers, addWarehouseTransfer,
         boms, addBom, updateBom, deleteBom, produceFromBom,
         company, updateCompanyInfo,

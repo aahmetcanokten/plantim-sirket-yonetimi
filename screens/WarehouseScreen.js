@@ -1,17 +1,8 @@
-import React, { useContext, useState, useMemo, useRef } from 'react';
+import React, { useContext, useState, useMemo } from 'react';
 import {
-    View,
-    Text,
-    StyleSheet,
-    Platform,
-    ScrollView,
-    TouchableOpacity,
-    TextInput,
-    Modal,
-    FlatList,
-    Alert,
-    Dimensions,
-    ActivityIndicator,
+    View, Text, StyleSheet, Platform, ScrollView,
+    TouchableOpacity, TextInput, Modal, FlatList,
+    Alert, Dimensions, ActivityIndicator,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { AppContext } from '../AppContext';
@@ -22,9 +13,7 @@ import { useToast } from '../components/ToastProvider';
 const isWeb = Platform.OS === 'web';
 const { width } = Dimensions.get('window');
 
-// ───────────────────────────────────────────────
-// YARDIMCI BİLEŞENLER
-// ───────────────────────────────────────────────
+// ── Küçük yardımcı bileşenler ──────────────────────────────────────
 
 const StatCard = ({ icon, label, value, color, bg }) => (
     <View style={[styles.statCard, { backgroundColor: bg || '#F8FAFC' }]}>
@@ -55,45 +44,91 @@ const FilterTab = ({ label, active, onPress, count }) => (
     </TouchableOpacity>
 );
 
-// ───────────────────────────────────────────────
-// ANA EKRAN
-// ───────────────────────────────────────────────
+// Bir ürünün tüm depolardaki dağılımını gösteren mini tablo
+const StockLocationBreakdown = ({ locations }) => {
+    if (!locations || locations.length === 0) return null;
+    return (
+        <View style={styles.breakdownContainer}>
+            {locations.map((loc, i) => (
+                <View key={loc.id || i} style={styles.breakdownRow}>
+                    <View style={styles.breakdownWarehouse}>
+                        <Ionicons name="business-outline" size={10} color="#6366F1" style={{ marginRight: 4 }} />
+                        <Text style={styles.breakdownWarehouseName} numberOfLines={1}>{loc.warehouse_name}</Text>
+                    </View>
+                    <View style={[
+                        styles.breakdownQtyBadge,
+                        loc.quantity <= 0 ? styles.qtyZero : loc.quantity <= 5 ? styles.qtyLow : styles.qtyOk
+                    ]}>
+                        <Text style={[
+                            styles.breakdownQtyText,
+                            loc.quantity <= 0 ? { color: '#B91C1C' } : loc.quantity <= 5 ? { color: '#92400E' } : { color: '#166534' }
+                        ]}>{loc.quantity}</Text>
+                    </View>
+                </View>
+            ))}
+        </View>
+    );
+};
+
+// ── Ana Ekran ──────────────────────────────────────────────────────
 
 export default function WarehouseScreen() {
-    const { products, warehouseTransfers, addWarehouseTransfer, appDataLoading } = useContext(AppContext);
+    const {
+        products, warehouseTransfers, addWarehouseTransfer,
+        stockLocations, getProductStockLocations, getAllWarehouses,
+        appDataLoading
+    } = useContext(AppContext);
     const toast = useToast();
 
-    // State
     const [searchQuery, setSearchQuery] = useState('');
     const [selectedWarehouse, setSelectedWarehouse] = useState('ALL');
-    const [activeTab, setActiveTab] = useState('stock'); // 'stock' | 'history'
+    const [activeTab, setActiveTab] = useState('stock');
     const [transferModalVisible, setTransferModalVisible] = useState(false);
     const [selectedProduct, setSelectedProduct] = useState(null);
+    const [selectedFromWarehouse, setSelectedFromWarehouse] = useState('');
     const [targetWarehouse, setTargetWarehouse] = useState('');
     const [transferQuantity, setTransferQuantity] = useState('');
     const [transferNote, setTransferNote] = useState('');
     const [isTransferring, setIsTransferring] = useState(false);
-    const [showWarehousePicker, setShowWarehousePicker] = useState(false);
+    const [expandedProductId, setExpandedProductId] = useState(null);
 
-    // Ürünleri depo konumuna göre grupla
-    const warehouses = useMemo(() => {
-        const locations = new Set();
+    // Tüm depo adları (stockLocations + ürünlerin warehouseLocation alanından)
+    const allWarehouses = useMemo(() => {
+        const warehouseSet = new Set();
+        stockLocations.forEach(sl => { if (sl.warehouse_name) warehouseSet.add(sl.warehouse_name); });
         products.forEach(p => {
-            if (p.warehouseLocation || p.warehouse_location) {
-                locations.add(p.warehouseLocation || p.warehouse_location);
-            }
+            const loc = p.warehouseLocation || p.warehouse_location;
+            if (loc) warehouseSet.add(loc);
         });
-        return Array.from(locations).sort();
-    }, [products]);
+        return Array.from(warehouseSet).sort();
+    }, [stockLocations, products]);
 
-    // Filtreli ürün listesi
+    // Her ürün için depo konumlarını al (stockLocations öncelikli, yoksa warehouseLocation fallback)
+    const getLocationsForProduct = (product) => {
+        const locs = stockLocations.filter(sl => sl.product_id === product.id);
+        if (locs.length > 0) return locs;
+        // Fallback: eski sistemden warehouseLocation varsa
+        const loc = product.warehouseLocation || product.warehouse_location;
+        if (loc && (product.quantity || 0) > 0) {
+            return [{ id: 'fallback_' + product.id, product_id: product.id, warehouse_name: loc, quantity: product.quantity || 0 }];
+        }
+        return [];
+    };
+
+    // Seçili depoya göre filtrelenmiş ürünler
     const filteredProducts = useMemo(() => {
         let list = [...products];
         // Depo filtresi
-        if (selectedWarehouse !== 'ALL') {
-            list = list.filter(p =>
-                (p.warehouseLocation || p.warehouse_location) === selectedWarehouse
-            );
+        if (selectedWarehouse === '__UNSET__') {
+            list = list.filter(p => {
+                const locs = getLocationsForProduct(p);
+                return locs.length === 0;
+            });
+        } else if (selectedWarehouse !== 'ALL') {
+            list = list.filter(p => {
+                return stockLocations.some(sl => sl.product_id === p.id && sl.warehouse_name === selectedWarehouse && sl.quantity > 0)
+                    || (p.warehouseLocation || p.warehouse_location) === selectedWarehouse;
+            });
         }
         // Arama filtresi
         if (searchQuery.trim()) {
@@ -105,7 +140,7 @@ export default function WarehouseScreen() {
             );
         }
         return list;
-    }, [products, selectedWarehouse, searchQuery]);
+    }, [products, stockLocations, selectedWarehouse, searchQuery]);
 
     // İstatistikler
     const stats = useMemo(() => {
@@ -113,63 +148,56 @@ export default function WarehouseScreen() {
         const todayTransfers = warehouseTransfers.filter(
             t => new Date(t.transferred_at || t.created_at).toDateString() === today
         );
+        // Her depodaki toplam stok değeri
+        const warehouseStats = {};
+        stockLocations.forEach(sl => {
+            if (!warehouseStats[sl.warehouse_name]) warehouseStats[sl.warehouse_name] = { qty: 0, productCount: 0 };
+            warehouseStats[sl.warehouse_name].qty += sl.quantity;
+            warehouseStats[sl.warehouse_name].productCount += 1;
+        });
         return {
-            warehouseCount: warehouses.length || 0,
+            warehouseCount: allWarehouses.length,
             productCount: filteredProducts.length,
             todayTransfers: todayTransfers.length,
         };
-    }, [warehouses, filteredProducts, warehouseTransfers]);
+    }, [allWarehouses, filteredProducts, warehouseTransfers, stockLocations]);
 
     // Transfer modalını aç
-    const openTransferModal = (product) => {
+    const openTransferModal = (product, fromWarehouse) => {
+        const locs = getLocationsForProduct(product);
+        const defaultFrom = fromWarehouse || (locs[0]?.warehouse_name) || (product.warehouseLocation || product.warehouse_location) || '';
         setSelectedProduct(product);
+        setSelectedFromWarehouse(defaultFrom);
+        const fromLoc = locs.find(l => l.warehouse_name === defaultFrom);
+        setTransferQuantity(String(fromLoc?.quantity || product.quantity || 1));
         setTargetWarehouse('');
-        setTransferQuantity(String(product.quantity || 1));
         setTransferNote('');
         setTransferModalVisible(true);
     };
 
     // Transfer gerçekleştir
     const handleTransfer = async () => {
-        const fromWarehouse = selectedProduct?.warehouseLocation || selectedProduct?.warehouse_location || '';
         if (!targetWarehouse.trim()) {
-            if (Platform.OS === 'web') {
-                window.alert('Lütfen hedef depo girin.');
-            } else {
-                Alert.alert('Hata', 'Lütfen hedef depo girin.');
-            }
+            const msg = 'Lütfen hedef depo girin.';
+            Platform.OS === 'web' ? window.alert(msg) : Alert.alert('Hata', msg);
             return;
         }
-        if (targetWarehouse.trim() === fromWarehouse.trim()) {
-            if (Platform.OS === 'web') {
-                window.alert('Kaynak ve hedef depo aynı olamaz.');
-            } else {
-                Alert.alert('Hata', 'Kaynak ve hedef depo aynı olamaz.');
-            }
+        if (targetWarehouse.trim() === selectedFromWarehouse.trim()) {
+            const msg = 'Kaynak ve hedef depo aynı olamaz.';
+            Platform.OS === 'web' ? window.alert(msg) : Alert.alert('Hata', msg);
             return;
         }
         const qty = parseFloat(transferQuantity);
         if (!qty || qty <= 0) {
-            if (Platform.OS === 'web') {
-                window.alert('Geçerli bir miktar girin.');
-            } else {
-                Alert.alert('Hata', 'Geçerli bir miktar girin.');
-            }
-            return;
-        }
-        if (qty > (selectedProduct?.quantity || 0)) {
-            if (Platform.OS === 'web') {
-                window.alert(`Stok yetersiz. Mevcut: ${selectedProduct.quantity}`);
-            } else {
-                Alert.alert('Hata', `Stok yetersiz. Mevcut: ${selectedProduct.quantity}`);
-            }
+            const msg = 'Geçerli bir miktar girin.';
+            Platform.OS === 'web' ? window.alert(msg) : Alert.alert('Hata', msg);
             return;
         }
 
         setIsTransferring(true);
         const result = await addWarehouseTransfer({
             product_id: selectedProduct.id,
-            from_warehouse: fromWarehouse,
+            from_warehouse: selectedFromWarehouse,
             to_warehouse: targetWarehouse.trim(),
             quantity: qty,
             note: transferNote,
@@ -182,24 +210,27 @@ export default function WarehouseScreen() {
         }
     };
 
-    // ───────────────────────────────────────────────
-    // RENDER
-    // ───────────────────────────────────────────────
+    // Seçili depo kaynak konumuna göre güncel stoku al
+    const fromLocationQty = useMemo(() => {
+        if (!selectedProduct || !selectedFromWarehouse) return 0;
+        const locs = getLocationsForProduct(selectedProduct);
+        const found = locs.find(l => l.warehouse_name === selectedFromWarehouse);
+        return found ? found.quantity : 0;
+    }, [selectedProduct, selectedFromWarehouse, stockLocations]);
+
+    // ── Tablolar ────────────────────────────────────────────────────
 
     const renderStockTable = () => {
         if (isWeb && width > 768) {
-            // Web tablo görünümü
             return (
                 <View style={styles.tableContainer}>
-                    {/* Tablo başlığı */}
                     <View style={styles.tableHeader}>
-                        <Text style={[styles.thCell, { flex: 2.5 }]}>Ürün Adı</Text>
-                        <Text style={[styles.thCell, { flex: 1 }]}>Kod</Text>
-                        <Text style={[styles.thCell, { flex: 1.2 }]}>Kategori</Text>
-                        <Text style={[styles.thCell, { flex: 0.8, textAlign: 'center' }]}>Stok</Text>
-                        <Text style={[styles.thCell, { flex: 0.6, textAlign: 'center' }]}>Birim</Text>
-                        <Text style={[styles.thCell, { flex: 1.5 }]}>Depo Konumu</Text>
-                        <Text style={[styles.thCell, { flex: 1, textAlign: 'center' }]}>İşlem</Text>
+                        <View style={[styles.thCell, { flex: 2.5 }]}><Text style={styles.thCellText}>Ürün Adı</Text></View>
+                        <View style={[styles.thCell, { flex: 1 }]}><Text style={styles.thCellText}>Kod</Text></View>
+                        <View style={[styles.thCell, { flex: 1.2 }]}><Text style={styles.thCellText}>Kategori</Text></View>
+                        <View style={[styles.thCell, { flex: 0.7, alignItems: 'flex-end' }]}><Text style={styles.thCellText}>Toplam</Text></View>
+                        <View style={[styles.thCell, { flex: 2.5 }]}><Text style={styles.thCellText}>Depo Dağılımı</Text></View>
+                        <View style={[styles.thCellLast, { flex: 0.8, alignItems: 'center' }]}><Text style={styles.thCellText}>İşlem</Text></View>
                     </View>
 
                     {appDataLoading ? (
@@ -218,61 +249,60 @@ export default function WarehouseScreen() {
                             keyExtractor={i => i.id}
                             scrollEnabled={false}
                             renderItem={({ item, index }) => {
-                                const location = item.warehouseLocation || item.warehouse_location || '';
-                                const isLow = item.quantity <= (item.criticalStockLimit || item.critical_stock_limit || 0);
-                                const isZero = item.quantity <= 0;
+                                const locs = getLocationsForProduct(item);
+                                const totalQty = locs.reduce((s, l) => s + l.quantity, 0) || item.quantity || 0;
+                                const isLow = totalQty > 0 && totalQty <= (item.criticalStockLimit || item.critical_stock_limit || 0);
+                                const isZero = totalQty <= 0;
                                 return (
                                     <View style={[styles.tableRow, index % 2 === 0 ? styles.tableRowEven : styles.tableRowOdd]}>
-                                        {/* Ürün Adı */}
-                                        <View style={{ flex: 2.5, justifyContent: 'center' }}>
+                                        <View style={[styles.tdCell, { flex: 2.5 }]}>
                                             <Text style={styles.tdBold} numberOfLines={1}>{item.name}</Text>
                                             {item.brand ? <Text style={styles.tdSub}>{item.brand}</Text> : null}
                                         </View>
-                                        {/* Kod */}
-                                        <View style={{ flex: 1, justifyContent: 'center' }}>
+                                        <View style={[styles.tdCell, { flex: 1 }]}>
                                             <Text style={styles.tdText}>{item.code || '-'}</Text>
                                         </View>
-                                        {/* Kategori */}
-                                        <View style={{ flex: 1.2, justifyContent: 'center' }}>
+                                        <View style={[styles.tdCell, { flex: 1.2 }]}>
                                             <Text style={styles.tdText} numberOfLines={1}>{item.category || '-'}</Text>
                                         </View>
-                                        {/* Stok */}
-                                        <View style={{ flex: 0.8, justifyContent: 'center', alignItems: 'center' }}>
-                                            <View style={[
-                                                styles.stockBadge,
-                                                isZero ? styles.stockBadgeZero : isLow ? styles.stockBadgeLow : styles.stockBadgeOk
+                                        <View style={[styles.tdCell, { flex: 0.7, alignItems: 'flex-end' }]}>
+                                            <Text style={[
+                                                styles.tdQtyText,
+                                                isZero ? { color: '#DC2626' } : isLow ? { color: '#D97706' } : { color: '#059669' }
                                             ]}>
-                                                <Text style={[
-                                                    styles.stockBadgeText,
-                                                    isZero ? { color: '#B91C1C' } : isLow ? { color: '#92400E' } : { color: '#166534' }
-                                                ]}>
-                                                    {item.quantity || 0}
-                                                </Text>
-                                            </View>
+                                                {totalQty}
+                                            </Text>
                                         </View>
-                                        {/* Birim */}
-                                        <View style={{ flex: 0.6, justifyContent: 'center', alignItems: 'center' }}>
-                                            <Text style={styles.tdText}>{item.unit || 'Adet'}</Text>
-                                        </View>
-                                        {/* Depo Konumu */}
-                                        <View style={{ flex: 1.5, justifyContent: 'center' }}>
-                                            {location ? (
-                                                <View style={styles.locationBadge}>
-                                                    <Ionicons name="location-outline" size={12} color={Colors.primary} style={{ marginRight: 4 }} />
-                                                    <Text style={styles.locationText} numberOfLines={1}>{location}</Text>
-                                                </View>
+                                        {/* Depo Dağılımı */}
+                                        <View style={[styles.tdCell, { flex: 2.5 }]}>
+                                            {locs.length === 0 ? (
+                                                <Text style={styles.tdSub}>Depo tanımsız</Text>
                                             ) : (
-                                                <Text style={styles.tdSub}>Belirsiz</Text>
+                                                <View style={{ gap: 4 }}>
+                                                    {locs.map((loc, li) => (
+                                                        <View key={loc.id || li} style={styles.excelLocRow}>
+                                                            <View style={styles.excelLocNameWrap}>
+                                                                <View style={styles.excelLocDot} />
+                                                                <Text style={styles.excelLocName} numberOfLines={1}>{loc.warehouse_name}</Text>
+                                                            </View>
+                                                            <View style={styles.excelLocRight}>
+                                                                <Text style={[styles.excelLocQty,
+                                                                    loc.quantity <= 0 ? { color: '#DC2626' } : loc.quantity <= 5 ? { color: '#D97706' } : { color: '#059669' }
+                                                                ]}>
+                                                                    {loc.quantity} <Text style={{ fontSize: 10, color: '#64748B', fontWeight: '500' }}>{item.unit || ''}</Text>
+                                                                </Text>
+                                                            </View>
+                                                        </View>
+                                                    ))}
+                                                </View>
                                             )}
                                         </View>
-                                        {/* İşlem */}
-                                        <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}>
+                                        <View style={[styles.tdCellLast, { flex: 0.8, alignItems: 'center' }]}>
                                             <TouchableOpacity
-                                                style={styles.transferBtn}
-                                                onPress={() => openTransferModal(item)}
+                                                style={styles.cellTransferIconButton}
+                                                onPress={() => openTransferModal(item, null)}
                                             >
-                                                <Ionicons name="swap-horizontal-outline" size={14} color="#fff" />
-                                                <Text style={styles.transferBtnText}>Transfer Et</Text>
+                                                <Ionicons name="swap-horizontal" size={16} color="#475569" />
                                             </TouchableOpacity>
                                         </View>
                                     </View>
@@ -293,33 +323,54 @@ export default function WarehouseScreen() {
                 </View>
             );
         }
-        return filteredProducts.map((item, index) => {
-            const location = item.warehouseLocation || item.warehouse_location || '';
+        return filteredProducts.map((item) => {
+            const locs = getLocationsForProduct(item);
+            const totalQty = locs.reduce((s, l) => s + l.quantity, 0) || item.quantity || 0;
+            const isExpanded = expandedProductId === item.id;
             return (
                 <View key={item.id} style={styles.mobileCard}>
-                    <View style={styles.mobileCardHeader}>
+                    <TouchableOpacity
+                        style={styles.mobileCardHeader}
+                        onPress={() => setExpandedProductId(isExpanded ? null : item.id)}
+                        activeOpacity={0.7}
+                    >
                         <View style={{ flex: 1 }}>
                             <Text style={styles.mobileCardTitle} numberOfLines={1}>{item.name}</Text>
                             {item.code && <Text style={styles.mobileCardCode}>{item.code}</Text>}
                         </View>
-                        <TouchableOpacity style={styles.transferBtnSmall} onPress={() => openTransferModal(item)}>
-                            <Ionicons name="swap-horizontal-outline" size={14} color={Colors.primary} />
-                        </TouchableOpacity>
-                    </View>
-                    <View style={styles.mobileCardBody}>
-                        <View style={styles.mobileMetric}>
-                            <Text style={styles.mobileMetricLabel}>Stok</Text>
-                            <Text style={styles.mobileMetricValue}>{item.quantity || 0}</Text>
+                        <View style={styles.mobileTotalBadge}>
+                            <Text style={styles.mobileTotalText}>Toplam: {totalQty}</Text>
                         </View>
-                        <View style={styles.mobileMetric}>
-                            <Text style={styles.mobileMetricLabel}>Kategori</Text>
-                            <Text style={styles.mobileMetricValue}>{item.category || '-'}</Text>
+                        <Ionicons
+                            name={isExpanded ? 'chevron-up' : 'chevron-down'}
+                            size={16} color="#94A3B8" style={{ marginLeft: 8 }}
+                        />
+                    </TouchableOpacity>
+                    {isExpanded && (
+                        <View style={styles.mobileExpandedBody}>
+                            {locs.length === 0 ? (
+                                <Text style={styles.tdSub}>Depo konumu tanımsız</Text>
+                            ) : (
+                                locs.map((loc, li) => (
+                                    <View key={loc.id || li} style={styles.mobileLocRow}>
+                                        <View style={{ flex: 1 }}>
+                                            <Text style={styles.mobileLocName}>{loc.warehouse_name}</Text>
+                                            <Text style={[styles.mobileLocQty, { color: loc.quantity <= 0 ? '#B91C1C' : '#166534' }]}>
+                                                {loc.quantity} {item.unit || 'Adet'}
+                                            </Text>
+                                        </View>
+                                        <TouchableOpacity
+                                            style={styles.mobileTransferBtn}
+                                            onPress={() => openTransferModal(item, loc.warehouse_name)}
+                                        >
+                                            <Ionicons name="swap-horizontal-outline" size={14} color={Colors.primary} />
+                                            <Text style={styles.mobileTransferBtnText}>Transfer</Text>
+                                        </TouchableOpacity>
+                                    </View>
+                                ))
+                            )}
                         </View>
-                        <View style={styles.mobileMetric}>
-                            <Text style={styles.mobileMetricLabel}>Depo</Text>
-                            <Text style={[styles.mobileMetricValue, { color: Colors.primary }]}>{location || 'Belirsiz'}</Text>
-                        </View>
-                    </View>
+                    )}
                 </View>
             );
         });
@@ -330,12 +381,12 @@ export default function WarehouseScreen() {
             return (
                 <View style={styles.tableContainer}>
                     <View style={styles.tableHeader}>
-                        <Text style={[styles.thCell, { flex: 1.2 }]}>Tarih</Text>
-                        <Text style={[styles.thCell, { flex: 2 }]}>Ürün</Text>
-                        <Text style={[styles.thCell, { flex: 0.8, textAlign: 'center' }]}>Miktar</Text>
-                        <Text style={[styles.thCell, { flex: 1.5 }]}>Kaynak Depo</Text>
-                        <Text style={[styles.thCell, { flex: 1.5 }]}>Hedef Depo</Text>
-                        <Text style={[styles.thCell, { flex: 2 }]}>Not</Text>
+                        <View style={[styles.thCell, { flex: 1.2 }]}><Text style={styles.thCellText}>Tarih</Text></View>
+                        <View style={[styles.thCell, { flex: 2 }]}><Text style={styles.thCellText}>Ürün</Text></View>
+                        <View style={[styles.thCell, { flex: 0.8, alignItems: 'center' }]}><Text style={styles.thCellText}>Miktar</Text></View>
+                        <View style={[styles.thCell, { flex: 1.5 }]}><Text style={styles.thCellText}>Kaynak Depo</Text></View>
+                        <View style={[styles.thCell, { flex: 1.5 }]}><Text style={styles.thCellText}>Hedef Depo</Text></View>
+                        <View style={[styles.thCellLast, { flex: 2 }]}><Text style={styles.thCellText}>Not</Text></View>
                     </View>
                     {warehouseTransfers.length === 0 ? (
                         <View style={styles.emptyRow}>
@@ -353,32 +404,22 @@ export default function WarehouseScreen() {
                                     : '-';
                                 return (
                                     <View style={[styles.tableRow, index % 2 === 0 ? styles.tableRowEven : styles.tableRowOdd]}>
-                                        <View style={{ flex: 1.2, justifyContent: 'center' }}>
-                                            <Text style={styles.tdText}>{dateStr}</Text>
+                                        <View style={[styles.tdCell, { flex: 1.2 }]}><Text style={styles.tdText}>{dateStr}</Text></View>
+                                        <View style={[styles.tdCell, { flex: 2 }]}><Text style={styles.tdBold} numberOfLines={1}>{item.product_name || '-'}</Text></View>
+                                        <View style={[styles.tdCell, { flex: 0.8, alignItems: 'center' }]}>
+                                            <Text style={styles.tdQtyTextDark}>{item.quantity}</Text>
                                         </View>
-                                        <View style={{ flex: 2, justifyContent: 'center' }}>
-                                            <Text style={styles.tdBold} numberOfLines={1}>{item.product_name || '-'}</Text>
-                                        </View>
-                                        <View style={{ flex: 0.8, justifyContent: 'center', alignItems: 'center' }}>
-                                            <View style={styles.qtyBadge}>
-                                                <Text style={styles.qtyBadgeText}>{item.quantity}</Text>
+                                        <View style={[styles.tdCell, { flex: 1.5 }]}>
+                                            <View style={styles.excelWarehouseBadgeRef}>
+                                                <Text style={[styles.excelWarehouseBadgeText, { color: '#B91C1C' }]} numberOfLines={1}>{item.from_warehouse || '-'}</Text>
                                             </View>
                                         </View>
-                                        <View style={{ flex: 1.5, justifyContent: 'center' }}>
-                                            <View style={styles.warehouseChip}>
-                                                <Ionicons name="exit-outline" size={12} color="#DC2626" style={{ marginRight: 4 }} />
-                                                <Text style={[styles.warehouseChipText, { color: '#DC2626' }]} numberOfLines={1}>{item.from_warehouse || '-'}</Text>
+                                        <View style={[styles.tdCell, { flex: 1.5 }]}>
+                                            <View style={[styles.excelWarehouseBadgeRef, { backgroundColor: '#DCFCE7' }]}>
+                                                <Text style={[styles.excelWarehouseBadgeText, { color: '#15803D' }]} numberOfLines={1}>{item.to_warehouse || '-'}</Text>
                                             </View>
                                         </View>
-                                        <View style={{ flex: 1.5, justifyContent: 'center' }}>
-                                            <View style={[styles.warehouseChip, { backgroundColor: '#DCFCE7' }]}>
-                                                <Ionicons name="enter-outline" size={12} color="#16A34A" style={{ marginRight: 4 }} />
-                                                <Text style={[styles.warehouseChipText, { color: '#16A34A' }]} numberOfLines={1}>{item.to_warehouse || '-'}</Text>
-                                            </View>
-                                        </View>
-                                        <View style={{ flex: 2, justifyContent: 'center' }}>
-                                            <Text style={styles.tdSub} numberOfLines={1}>{item.note || '-'}</Text>
-                                        </View>
+                                        <View style={[styles.tdCellLast, { flex: 2 }]}><Text style={styles.tdSub} numberOfLines={1}>{item.note || '-'}</Text></View>
                                     </View>
                                 );
                             }}
@@ -388,7 +429,6 @@ export default function WarehouseScreen() {
             );
         }
 
-        // Mobil geçmiş
         if (warehouseTransfers.length === 0) {
             return (
                 <View style={styles.emptyRow}>
@@ -397,17 +437,13 @@ export default function WarehouseScreen() {
                 </View>
             );
         }
-        return warehouseTransfers.map((item, index) => {
-            const dateStr = item.transferred_at
-                ? new Date(item.transferred_at).toLocaleString('tr-TR')
-                : '-';
+        return warehouseTransfers.map((item) => {
+            const dateStr = item.transferred_at ? new Date(item.transferred_at).toLocaleString('tr-TR') : '-';
             return (
                 <View key={item.id} style={styles.historyCard}>
                     <View style={{ flexDirection: 'row', justifyContent: 'space-between', marginBottom: 8 }}>
                         <Text style={styles.historyProduct} numberOfLines={1}>{item.product_name}</Text>
-                        <View style={styles.qtyBadge}>
-                            <Text style={styles.qtyBadgeText}>{item.quantity}</Text>
-                        </View>
+                        <View style={styles.qtyBadge}><Text style={styles.qtyBadgeText}>{item.quantity}</Text></View>
                     </View>
                     <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
                         <View style={[styles.warehouseChip, { backgroundColor: '#FEE2E2' }]}>
@@ -427,57 +463,34 @@ export default function WarehouseScreen() {
         });
     };
 
-    const existingWarehouses = useMemo(() => {
-        const locs = new Set();
-        products.forEach(p => {
-            const loc = p.warehouseLocation || p.warehouse_location;
-            if (loc) locs.add(loc);
-        });
-        return Array.from(locs).sort();
-    }, [products]);
+    // Mevcut kaynak depolardaki stoklar (modal için)
+    const fromLocationOptions = useMemo(() => {
+        if (!selectedProduct) return [];
+        return getLocationsForProduct(selectedProduct).filter(l => l.quantity > 0);
+    }, [selectedProduct, stockLocations]);
 
     return (
-        <ImmersiveLayout title="Depo ve Transfer" subtitle={`${stats.warehouseCount} depo · ${products.length} ürün`} noScrollView={false}>
+        <ImmersiveLayout
+            title="Depo ve Transfer"
+            subtitle={`${stats.warehouseCount} depo · ${products.length} ürün`}
+            noScrollView={false}
+        >
             <ScrollView contentContainerStyle={styles.container} showsVerticalScrollIndicator={false}>
 
-                {/* ── Özet Kartlar ── */}
+                {/* Özet Kartlar */}
                 <View style={styles.statsRow}>
-                    <StatCard
-                        icon="business-outline"
-                        label="Toplam Depo"
-                        value={stats.warehouseCount}
-                        color="#2563EB"
-                        bg="#EFF6FF"
-                    />
-                    <StatCard
-                        icon="cube-outline"
-                        label="Görüntülenen Ürün"
-                        value={filteredProducts.length}
-                        color="#7C3AED"
-                        bg="#F5F3FF"
-                    />
-                    <StatCard
-                        icon="swap-horizontal-outline"
-                        label="Bugünkü Transfer"
-                        value={stats.todayTransfers}
-                        color="#059669"
-                        bg="#ECFDF5"
-                    />
+                    <StatCard icon="business-outline" label="Toplam Depo" value={stats.warehouseCount} color="#2563EB" bg="#EFF6FF" />
+                    <StatCard icon="cube-outline" label="Görüntülenen Ürün" value={filteredProducts.length} color="#7C3AED" bg="#F5F3FF" />
+                    <StatCard icon="swap-horizontal-outline" label="Bugünkü Transfer" value={stats.todayTransfers} color="#059669" bg="#ECFDF5" />
                 </View>
 
-                {/* ── Sekme Geçişi ── */}
+                {/* Sekme Geçişi */}
                 <View style={styles.tabRow}>
-                    <TouchableOpacity
-                        style={[styles.tab, activeTab === 'stock' && styles.tabActive]}
-                        onPress={() => setActiveTab('stock')}
-                    >
+                    <TouchableOpacity style={[styles.tab, activeTab === 'stock' && styles.tabActive]} onPress={() => setActiveTab('stock')}>
                         <Ionicons name="cube-outline" size={16} color={activeTab === 'stock' ? '#fff' : '#64748B'} style={{ marginRight: 6 }} />
                         <Text style={[styles.tabText, activeTab === 'stock' && styles.tabTextActive]}>Depo Envanteri</Text>
                     </TouchableOpacity>
-                    <TouchableOpacity
-                        style={[styles.tab, activeTab === 'history' && styles.tabActive]}
-                        onPress={() => setActiveTab('history')}
-                    >
+                    <TouchableOpacity style={[styles.tab, activeTab === 'history' && styles.tabActive]} onPress={() => setActiveTab('history')}>
                         <Ionicons name="time-outline" size={16} color={activeTab === 'history' ? '#fff' : '#64748B'} style={{ marginRight: 6 }} />
                         <Text style={[styles.tabText, activeTab === 'history' && styles.tabTextActive]}>Transfer Geçmişi</Text>
                     </TouchableOpacity>
@@ -485,7 +498,7 @@ export default function WarehouseScreen() {
 
                 {activeTab === 'stock' && (
                     <>
-                        {/* ── Arama ── */}
+                        {/* Arama */}
                         <View style={styles.searchRow}>
                             <View style={styles.searchInputWrap}>
                                 <Ionicons name="search-outline" size={17} color="#94A3B8" style={{ marginRight: 8 }} />
@@ -505,39 +518,36 @@ export default function WarehouseScreen() {
                             </View>
                         </View>
 
-                        {/* ── Depo Filtresi ── */}
-                        <ScrollView
-                            horizontal
-                            showsHorizontalScrollIndicator={false}
-                            style={styles.filterScroll}
-                            contentContainerStyle={styles.filterScrollContent}
-                        >
-                            <FilterTab
-                                label="Tüm Depolar"
-                                active={selectedWarehouse === 'ALL'}
-                                onPress={() => setSelectedWarehouse('ALL')}
-                                count={products.length}
-                            />
-                            {warehouses.map(w => (
+                        {/* Depo Filtresi */}
+                        <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.filterScroll} contentContainerStyle={styles.filterScrollContent}>
+                            <FilterTab label="Tüm Depolar" active={selectedWarehouse === 'ALL'} onPress={() => setSelectedWarehouse('ALL')} count={products.length} />
+                            {allWarehouses.map(w => (
                                 <FilterTab
                                     key={w}
                                     label={w}
                                     active={selectedWarehouse === w}
                                     onPress={() => setSelectedWarehouse(w)}
-                                    count={products.filter(p => (p.warehouseLocation || p.warehouse_location) === w).length}
+                                    count={stockLocations.filter(sl => sl.warehouse_name === w && sl.quantity > 0).length}
                                 />
                             ))}
-                            {products.filter(p => !p.warehouseLocation && !p.warehouse_location).length > 0 && (
-                                <FilterTab
-                                    label="Konumsuz"
-                                    active={selectedWarehouse === '__UNSET__'}
-                                    onPress={() => setSelectedWarehouse('__UNSET__')}
-                                    count={products.filter(p => !p.warehouseLocation && !p.warehouse_location).length}
-                                />
+                            {products.filter(p => !p.warehouseLocation && !p.warehouse_location && !stockLocations.some(sl => sl.product_id === p.id)).length > 0 && (
+                                <FilterTab label="Konumsuz" active={selectedWarehouse === '__UNSET__'} onPress={() => setSelectedWarehouse('__UNSET__')} />
                             )}
                         </ScrollView>
 
-                        {/* ── Ürün Listesi ── */}
+                        {/* Ürün Listesi */}
+                        {selectedWarehouse !== 'ALL' && selectedWarehouse !== '__UNSET__' && (
+                            <View style={styles.warehouseSummaryBanner}>
+                                <Ionicons name="business-outline" size={16} color="#2563EB" />
+                                <Text style={styles.warehouseSummaryText}>
+                                    <Text style={{ fontWeight: '700' }}>{selectedWarehouse}</Text>
+                                    {' — '}
+                                    {stockLocations.filter(sl => sl.warehouse_name === selectedWarehouse && sl.quantity > 0).length} ürün kalemi,{' '}
+                                    toplam {stockLocations.filter(sl => sl.warehouse_name === selectedWarehouse).reduce((s, sl) => s + sl.quantity, 0)} adet stok
+                                </Text>
+                            </View>
+                        )}
+
                         <View style={styles.section}>
                             <View style={styles.sectionHeader}>
                                 <Text style={styles.sectionTitle}>Depo Envanteri</Text>
@@ -561,19 +571,12 @@ export default function WarehouseScreen() {
                         {renderHistoryTable()}
                     </View>
                 )}
-
             </ScrollView>
 
             {/* ══════════ TRANSFER MODALI ══════════ */}
-            <Modal
-                visible={transferModalVisible}
-                animationType="slide"
-                transparent
-                onRequestClose={() => setTransferModalVisible(false)}
-            >
+            <Modal visible={transferModalVisible} animationType="slide" transparent onRequestClose={() => setTransferModalVisible(false)}>
                 <View style={styles.modalOverlay}>
                     <View style={styles.modalBox}>
-                        {/* Başlık */}
                         <View style={styles.modalHeader}>
                             <View>
                                 <Text style={styles.modalTitle}>Depo Transferi</Text>
@@ -584,29 +587,53 @@ export default function WarehouseScreen() {
                             </TouchableOpacity>
                         </View>
 
-                        <ScrollView showsVerticalScrollIndicator={false} style={{ maxHeight: 420 }}>
-                            {/* Kaynak Depo */}
-                            <View style={styles.infoRow}>
-                                <Ionicons name="exit-outline" size={16} color="#DC2626" />
-                                <View style={{ marginLeft: 10 }}>
-                                    <Text style={styles.infoRowLabel}>Kaynak Depo</Text>
-                                    <Text style={styles.infoRowValue}>
-                                        {selectedProduct?.warehouseLocation || selectedProduct?.warehouse_location || 'Belirsiz'}
-                                    </Text>
+                        <ScrollView showsVerticalScrollIndicator={false} style={{ maxHeight: 480 }}>
+                            {/* Kaynak Depo Seçimi */}
+                            <Text style={styles.inputLabel}>Kaynak Depo *</Text>
+                            {fromLocationOptions.length === 0 ? (
+                                <View style={styles.noLocWarning}>
+                                    <Ionicons name="warning-outline" size={14} color="#D97706" />
+                                    <Text style={styles.noLocWarningText}>Bu ürün için kayıtlı depo konumu bulunamadı.</Text>
                                 </View>
-                            </View>
-
-                            {/* Stok Bilgisi */}
-                            <View style={styles.infoRow}>
-                                <Ionicons name="cube-outline" size={16} color={Colors.primary} />
-                                <View style={{ marginLeft: 10 }}>
-                                    <Text style={styles.infoRowLabel}>Mevcut Stok</Text>
-                                    <Text style={styles.infoRowValue}>{selectedProduct?.quantity || 0} {selectedProduct?.unit || 'Adet'}</Text>
+                            ) : (
+                                <View style={styles.quickChipRow}>
+                                    {fromLocationOptions.map(loc => (
+                                        <TouchableOpacity
+                                            key={loc.id}
+                                            style={[styles.quickChip, selectedFromWarehouse === loc.warehouse_name && styles.quickChipActive]}
+                                            onPress={() => {
+                                                setSelectedFromWarehouse(loc.warehouse_name);
+                                                setTransferQuantity(String(loc.quantity));
+                                            }}
+                                        >
+                                            <Text style={[styles.quickChipText, selectedFromWarehouse === loc.warehouse_name && styles.quickChipTextActive]}>
+                                                {loc.warehouse_name}
+                                            </Text>
+                                            <Text style={[styles.quickChipQty, selectedFromWarehouse === loc.warehouse_name && { color: 'rgba(255,255,255,0.8)' }]}>
+                                                {loc.quantity} {selectedProduct?.unit || 'ad.'}
+                                            </Text>
+                                        </TouchableOpacity>
+                                    ))}
                                 </View>
-                            </View>
+                            )}
 
-                            {/* Miktar */}
-                            <Text style={styles.inputLabel}>Transfer Miktarı</Text>
+                            {/* Seçili kaynak bilgisi */}
+                            {selectedFromWarehouse ? (
+                                <View style={styles.infoRow}>
+                                    <Ionicons name="exit-outline" size={16} color="#DC2626" />
+                                    <View style={{ marginLeft: 10 }}>
+                                        <Text style={styles.infoRowLabel}>Kaynak Depo</Text>
+                                        <Text style={styles.infoRowValue}>{selectedFromWarehouse}</Text>
+                                    </View>
+                                    <View style={{ marginLeft: 'auto' }}>
+                                        <Text style={styles.infoRowLabel}>Mevcut Stok</Text>
+                                        <Text style={[styles.infoRowValue, { color: '#16A34A' }]}>{fromLocationQty} {selectedProduct?.unit || 'Adet'}</Text>
+                                    </View>
+                                </View>
+                            ) : null}
+
+                            {/* Transfer Miktarı */}
+                            <Text style={styles.inputLabel}>Transfer Miktarı *</Text>
                             <TextInput
                                 style={styles.input}
                                 value={transferQuantity}
@@ -616,6 +643,19 @@ export default function WarehouseScreen() {
                                 placeholderTextColor="#94A3B8"
                                 selectTextOnFocus={isWeb}
                             />
+                            {fromLocationQty > 0 && (
+                                <View style={styles.quickQtyRow}>
+                                    {[0.25, 0.5, 0.75, 1].map(ratio => (
+                                        <TouchableOpacity
+                                            key={ratio}
+                                            style={styles.quickQtyChip}
+                                            onPress={() => setTransferQuantity(String(Math.floor(fromLocationQty * ratio)))}
+                                        >
+                                            <Text style={styles.quickQtyText}>{ratio === 1 ? 'Tümü' : `%${ratio * 100}`}</Text>
+                                        </TouchableOpacity>
+                                    ))}
+                                </View>
+                            )}
 
                             {/* Hedef Depo */}
                             <Text style={styles.inputLabel}>Hedef Depo *</Text>
@@ -628,13 +668,13 @@ export default function WarehouseScreen() {
                                 selectTextOnFocus={isWeb}
                             />
 
-                            {/* Mevcut Depolar */}
-                            {existingWarehouses.length > 0 && (
+                            {/* Mevcut Depolardan Seç */}
+                            {allWarehouses.filter(w => w !== selectedFromWarehouse).length > 0 && (
                                 <View style={styles.warehouseQuickSelect}>
                                     <Text style={styles.quickSelectLabel}>Mevcut Depolardan Seç:</Text>
                                     <View style={styles.quickChipRow}>
-                                        {existingWarehouses
-                                            .filter(w => w !== (selectedProduct?.warehouseLocation || selectedProduct?.warehouse_location))
+                                        {allWarehouses
+                                            .filter(w => w !== selectedFromWarehouse)
                                             .map(w => (
                                                 <TouchableOpacity
                                                     key={w}
@@ -652,7 +692,7 @@ export default function WarehouseScreen() {
                             {/* Not */}
                             <Text style={styles.inputLabel}>Not (opsiyonel)</Text>
                             <TextInput
-                                style={[styles.input, { height: 80, textAlignVertical: 'top', paddingTop: 12 }]}
+                                style={[styles.input, { height: 70, textAlignVertical: 'top', paddingTop: 10 }]}
                                 value={transferNote}
                                 onChangeText={setTransferNote}
                                 placeholder="Transfer açıklaması..."
@@ -662,7 +702,6 @@ export default function WarehouseScreen() {
                             />
                         </ScrollView>
 
-                        {/* Butonlar */}
                         <View style={styles.modalActions}>
                             <TouchableOpacity style={styles.cancelBtn} onPress={() => setTransferModalVisible(false)}>
                                 <Text style={styles.cancelBtnText}>İptal</Text>
@@ -689,556 +728,153 @@ export default function WarehouseScreen() {
     );
 }
 
-// ───────────────────────────────────────────────
-// STİLLER
-// ───────────────────────────────────────────────
+// ── Stiller ───────────────────────────────────────────────────────
 
 const styles = StyleSheet.create({
-    container: {
-        paddingBottom: 60,
-        paddingHorizontal: isWeb ? 0 : 16,
-    },
+    container: { paddingBottom: 60, paddingHorizontal: isWeb ? 0 : 16 },
 
-    // Stats
-    statsRow: {
-        flexDirection: 'row',
-        gap: 12,
-        marginBottom: 20,
-        marginTop: 6,
-    },
-    statCard: {
-        flex: 1,
-        borderRadius: 14,
-        padding: 16,
-        alignItems: 'flex-start',
-        borderWidth: 1,
-        borderColor: '#E2E8F0',
-    },
-    statIconWrap: {
-        width: 40,
-        height: 40,
-        borderRadius: 10,
-        alignItems: 'center',
-        justifyContent: 'center',
-        marginBottom: 10,
-    },
-    statValue: {
-        fontSize: 26,
-        fontWeight: '800',
-        color: '#0F172A',
-        letterSpacing: -0.5,
-    },
-    statLabel: {
-        fontSize: 12,
-        color: '#64748B',
-        fontWeight: '500',
-        marginTop: 2,
-    },
+    statsRow: { flexDirection: 'row', gap: 12, marginBottom: 20, marginTop: 6 },
+    statCard: { flex: 1, borderRadius: 14, padding: 16, alignItems: 'flex-start', borderWidth: 1, borderColor: '#E2E8F0' },
+    statIconWrap: { width: 40, height: 40, borderRadius: 10, alignItems: 'center', justifyContent: 'center', marginBottom: 10 },
+    statValue: { fontSize: 26, fontWeight: '800', color: '#0F172A', letterSpacing: -0.5 },
+    statLabel: { fontSize: 12, color: '#64748B', fontWeight: '500', marginTop: 2 },
 
-    // Sekme
-    tabRow: {
-        flexDirection: 'row',
-        backgroundColor: '#F1F5F9',
-        borderRadius: 12,
-        padding: 4,
-        marginBottom: 20,
-    },
-    tab: {
-        flex: 1,
-        flexDirection: 'row',
-        alignItems: 'center',
-        justifyContent: 'center',
-        paddingVertical: 10,
-        borderRadius: 10,
-    },
-    tabActive: {
-        backgroundColor: Colors.primary,
-        ...Platform.select({ web: { boxShadow: '0 2px 8px rgba(37,99,235,0.3)' } }),
-    },
-    tabText: {
-        fontSize: 14,
-        fontWeight: '600',
-        color: '#64748B',
-    },
-    tabTextActive: {
-        color: '#fff',
-    },
+    tabRow: { flexDirection: 'row', backgroundColor: '#F1F5F9', borderRadius: 12, padding: 4, marginBottom: 20 },
+    tab: { flex: 1, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', paddingVertical: 10, borderRadius: 10 },
+    tabActive: { backgroundColor: Colors.primary, ...Platform.select({ web: { boxShadow: '0 2px 8px rgba(37,99,235,0.3)' } }) },
+    tabText: { fontSize: 14, fontWeight: '600', color: '#64748B' },
+    tabTextActive: { color: '#fff' },
 
-    // Arama
-    searchRow: {
-        marginBottom: 14,
-    },
-    searchInputWrap: {
-        flexDirection: 'row',
-        alignItems: 'center',
-        backgroundColor: '#fff',
-        borderRadius: 12,
-        borderWidth: 1,
-        borderColor: '#E2E8F0',
-        paddingHorizontal: 14,
-        height: 46,
-    },
-    searchInput: {
-        flex: 1,
-        fontSize: 14,
-        color: '#1E293B',
-    },
+    searchRow: { marginBottom: 14 },
+    searchInputWrap: { flexDirection: 'row', alignItems: 'center', backgroundColor: '#fff', borderRadius: 12, borderWidth: 1, borderColor: '#E2E8F0', paddingHorizontal: 14, height: 46 },
+    searchInput: { flex: 1, fontSize: 14, color: '#1E293B' },
 
-    // Depo Filtre
-    filterScroll: {
-        marginBottom: 20,
-    },
-    filterScrollContent: {
-        paddingRight: 20,
-        gap: 8,
-    },
-    filterTab: {
-        flexDirection: 'row',
-        alignItems: 'center',
-        paddingHorizontal: 14,
-        paddingVertical: 8,
-        borderRadius: 20,
-        backgroundColor: '#F1F5F9',
-        borderWidth: 1,
-        borderColor: '#E2E8F0',
-    },
-    filterTabActive: {
-        backgroundColor: Colors.primary,
-        borderColor: Colors.primary,
-    },
-    filterTabText: {
-        fontSize: 13,
-        fontWeight: '600',
-        color: '#64748B',
-        maxWidth: 120,
-    },
-    filterTabTextActive: {
-        color: '#fff',
-    },
-    filterTabBadge: {
-        marginLeft: 6,
-        backgroundColor: '#E2E8F0',
-        borderRadius: 10,
-        paddingHorizontal: 6,
-        paddingVertical: 1,
-    },
-    filterTabBadgeActive: {
-        backgroundColor: 'rgba(255,255,255,0.25)',
-    },
-    filterTabBadgeText: {
-        fontSize: 11,
-        fontWeight: '700',
-        color: '#475569',
-    },
-    filterTabBadgeTextActive: {
-        color: '#fff',
-    },
+    filterScroll: { marginBottom: 14 },
+    filterScrollContent: { paddingRight: 20, gap: 8 },
+    filterTab: { flexDirection: 'row', alignItems: 'center', paddingHorizontal: 14, paddingVertical: 8, borderRadius: 20, backgroundColor: '#F1F5F9', borderWidth: 1, borderColor: '#E2E8F0' },
+    filterTabActive: { backgroundColor: Colors.primary, borderColor: Colors.primary },
+    filterTabText: { fontSize: 13, fontWeight: '600', color: '#64748B', maxWidth: 120 },
+    filterTabTextActive: { color: '#fff' },
+    filterTabBadge: { marginLeft: 6, backgroundColor: '#E2E8F0', borderRadius: 10, paddingHorizontal: 6, paddingVertical: 1 },
+    filterTabBadgeActive: { backgroundColor: 'rgba(255,255,255,0.25)' },
+    filterTabBadgeText: { fontSize: 11, fontWeight: '700', color: '#475569' },
+    filterTabBadgeTextActive: { color: '#fff' },
 
-    // Bölüm
-    section: {
-        backgroundColor: '#fff',
-        borderRadius: 16,
-        borderWidth: 1,
-        borderColor: '#E2E8F0',
-        overflow: 'hidden',
-        marginBottom: 20,
-        ...Platform.select({ web: { boxShadow: '0 1px 4px rgba(0,0,0,0.06)' } }),
+    warehouseSummaryBanner: {
+        flexDirection: 'row', alignItems: 'center', gap: 8,
+        backgroundColor: '#EFF6FF', borderRadius: 10, paddingHorizontal: 14, paddingVertical: 10,
+        marginBottom: 14, borderWidth: 1, borderColor: '#BFDBFE',
     },
-    sectionHeader: {
-        flexDirection: 'row',
-        alignItems: 'center',
-        justifyContent: 'space-between',
-        paddingHorizontal: 20,
-        paddingVertical: 14,
-        borderBottomWidth: 1,
-        borderBottomColor: '#F1F5F9',
-    },
-    sectionTitle: {
-        fontSize: 15,
-        fontWeight: '700',
-        color: '#1E293B',
-    },
-    countBadge: {
-        backgroundColor: '#EFF6FF',
-        paddingHorizontal: 10,
-        paddingVertical: 3,
-        borderRadius: 12,
-    },
-    countBadgeText: {
-        fontSize: 12,
-        fontWeight: '700',
-        color: Colors.primary,
-    },
+    warehouseSummaryText: { fontSize: 13, color: '#1E40AF', flex: 1 },
 
-    // Web Tablo
-    tableContainer: {
-        overflow: 'hidden',
-    },
-    tableHeader: {
-        flexDirection: 'row',
-        backgroundColor: '#F8FAFC',
-        paddingHorizontal: 20,
-        paddingVertical: 11,
-        borderBottomWidth: 1,
-        borderBottomColor: '#E2E8F0',
-    },
-    thCell: {
-        fontSize: 11,
-        fontWeight: '700',
-        color: '#64748B',
-        letterSpacing: 0.5,
-        textTransform: 'uppercase',
-        paddingRight: 12,
-    },
-    tableRow: {
-        flexDirection: 'row',
-        paddingHorizontal: 20,
-        paddingVertical: 14,
-        borderBottomWidth: 1,
-        borderBottomColor: '#F1F5F9',
-        alignItems: 'center',
-    },
-    tableRowEven: {
-        backgroundColor: '#fff',
-    },
-    tableRowOdd: {
-        backgroundColor: '#FAFBFC',
-    },
-    tdBold: {
-        fontSize: 14,
-        fontWeight: '600',
-        color: '#1E293B',
-    },
-    tdText: {
-        fontSize: 13,
-        color: '#475569',
-        paddingRight: 8,
-    },
-    tdSub: {
-        fontSize: 12,
-        color: '#94A3B8',
-        marginTop: 2,
-    },
+    section: { backgroundColor: '#fff', borderRadius: 16, borderWidth: 1, borderColor: '#E2E8F0', overflow: 'hidden', marginBottom: 20, ...Platform.select({ web: { boxShadow: '0 1px 4px rgba(0,0,0,0.06)' } }) },
+    sectionHeader: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: 20, paddingVertical: 14, borderBottomWidth: 1, borderBottomColor: '#F1F5F9' },
+    sectionTitle: { fontSize: 15, fontWeight: '700', color: '#1E293B' },
+    countBadge: { backgroundColor: '#EFF6FF', paddingHorizontal: 10, paddingVertical: 3, borderRadius: 12 },
+    countBadgeText: { fontSize: 12, fontWeight: '700', color: Colors.primary },
 
-    stockBadge: {
-        paddingHorizontal: 10,
-        paddingVertical: 4,
-        borderRadius: 20,
-    },
-    stockBadgeOk: { backgroundColor: '#DCFCE7' },
-    stockBadgeLow: { backgroundColor: '#FEF3C7' },
-    stockBadgeZero: { backgroundColor: '#FEE2E2' },
-    stockBadgeText: {
-        fontSize: 13,
-        fontWeight: '700',
-    },
-    locationBadge: {
-        flexDirection: 'row',
-        alignItems: 'center',
-        backgroundColor: '#EFF6FF',
-        paddingHorizontal: 10,
-        paddingVertical: 5,
-        borderRadius: 8,
-        alignSelf: 'flex-start',
-    },
-    locationText: {
-        fontSize: 12,
-        fontWeight: '600',
-        color: Colors.primary,
-    },
-    transferBtn: {
-        flexDirection: 'row',
-        alignItems: 'center',
-        backgroundColor: Colors.primary,
-        paddingHorizontal: 12,
-        paddingVertical: 7,
-        borderRadius: 8,
-        gap: 5,
-    },
-    transferBtnText: {
-        fontSize: 12,
-        fontWeight: '600',
-        color: '#fff',
-    },
+    // Web Tablo (Excel like)
+    tableContainer: { overflow: 'hidden', borderWidth: 1, borderColor: '#CBD5E1', borderRadius: 8, backgroundColor: '#FFF' },
+    tableHeader: { flexDirection: 'row', backgroundColor: '#F1F5F9', borderBottomWidth: 1, borderBottomColor: '#CBD5E1' },
+    thCell: { borderRightWidth: 1, borderRightColor: '#CBD5E1', justifyContent: 'center' },
+    thCellLast: { justifyContent: 'center' },
+    thCellText: { fontSize: 12, fontWeight: '700', color: '#334155', textTransform: 'uppercase', paddingHorizontal: 14, paddingVertical: 12 },
+    tableRow: { flexDirection: 'row', borderBottomWidth: 1, borderBottomColor: '#E2E8F0', alignItems: 'stretch' },
+    tableRowEven: { backgroundColor: '#fff' },
+    tableRowOdd: { backgroundColor: '#F8FAFC' },
+    tdCell: { borderRightWidth: 1, borderRightColor: '#E2E8F0', paddingHorizontal: 14, paddingVertical: 12, justifyContent: 'center' },
+    tdCellLast: { paddingHorizontal: 14, paddingVertical: 12, justifyContent: 'center' },
+    tdBold: { fontSize: 13, fontWeight: '600', color: '#1E293B' },
+    tdText: { fontSize: 13, color: '#475569' },
+    tdSub: { fontSize: 11, color: '#94A3B8', marginTop: 2 },
+    tdQtyText: { fontSize: 14, fontWeight: '700' },
+    tdQtyTextDark: { fontSize: 14, fontWeight: '600', color: '#1E293B' },
 
-    // Transfer geçmişi
-    qtyBadge: {
-        backgroundColor: '#EFF6FF',
-        paddingHorizontal: 10,
-        paddingVertical: 4,
-        borderRadius: 12,
-    },
-    qtyBadgeText: {
-        fontSize: 13,
-        fontWeight: '700',
-        color: Colors.primary,
-    },
-    warehouseChip: {
-        flexDirection: 'row',
-        alignItems: 'center',
-        backgroundColor: '#FEE2E2',
-        paddingHorizontal: 8,
-        paddingVertical: 4,
-        borderRadius: 6,
-    },
-    warehouseChipText: {
-        fontSize: 12,
-        fontWeight: '600',
-    },
-
-    // Loading / Empty
-    loadingRow: {
-        flexDirection: 'row',
-        alignItems: 'center',
-        justifyContent: 'center',
-        paddingVertical: 40,
-        gap: 10,
-    },
-    loadingText: {
-        fontSize: 14,
-        color: '#94A3B8',
-    },
-    emptyRow: {
-        alignItems: 'center',
-        justifyContent: 'center',
-        paddingVertical: 48,
-        gap: 10,
-    },
-    emptyText: {
-        fontSize: 14,
-        color: '#94A3B8',
-        fontStyle: 'italic',
-    },
+    // Excel like lokasyon görünümü
+    excelLocRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingVertical: 2 },
+    excelLocNameWrap: { flexDirection: 'row', alignItems: 'center', flex: 1, paddingRight: 8 },
+    excelLocDot: { width: 4, height: 4, borderRadius: 2, backgroundColor: '#94A3B8', marginRight: 6 },
+    excelLocName: { fontSize: 12, fontWeight: '500', color: '#475569' },
+    excelLocRight: { flexDirection: 'row', alignItems: 'center', gap: 8 },
+    excelLocQty: { fontSize: 12, fontWeight: '700', minWidth: 40, textAlign: 'right' },
+    
+    cellTransferIconButton: { padding: 6, borderRadius: 6, backgroundColor: '#F1F5F9', borderWidth: 1, borderColor: '#E2E8F0', alignItems: 'center', justifyContent: 'center' },
+    excelWarehouseBadgeRef: { backgroundColor: '#FEE2E2', paddingHorizontal: 8, paddingVertical: 3, borderRadius: 4, alignSelf: 'flex-start' },
+    excelWarehouseBadgeText: { fontSize: 12, fontWeight: '600' },
 
     // Mobil kart
-    mobileCard: {
-        backgroundColor: '#fff',
-        borderRadius: 12,
-        borderWidth: 1,
-        borderColor: '#E2E8F0',
-        marginBottom: 10,
-        overflow: 'hidden',
-    },
-    mobileCardHeader: {
-        flexDirection: 'row',
-        alignItems: 'center',
-        padding: 14,
-        borderBottomWidth: 1,
-        borderBottomColor: '#F1F5F9',
-    },
-    mobileCardTitle: {
-        fontSize: 15,
-        fontWeight: '700',
-        color: '#1E293B',
-    },
-    mobileCardCode: {
-        fontSize: 12,
-        color: '#94A3B8',
-        marginTop: 2,
-    },
-    transferBtnSmall: {
-        width: 36,
-        height: 36,
-        borderRadius: 10,
-        backgroundColor: '#EFF6FF',
-        alignItems: 'center',
-        justifyContent: 'center',
-        marginLeft: 10,
-    },
-    mobileCardBody: {
-        flexDirection: 'row',
-        padding: 14,
-        gap: 20,
-    },
-    mobileMetric: {
-        flex: 1,
-        alignItems: 'center',
-    },
-    mobileMetricLabel: {
-        fontSize: 11,
-        color: '#94A3B8',
-        marginBottom: 4,
-        fontWeight: '600',
-    },
-    mobileMetricValue: {
-        fontSize: 14,
-        fontWeight: '700',
-        color: '#1E293B',
-    },
+    mobileCard: { backgroundColor: '#fff', borderRadius: 12, borderWidth: 1, borderColor: '#E2E8F0', marginBottom: 10, overflow: 'hidden' },
+    mobileCardHeader: { flexDirection: 'row', alignItems: 'center', padding: 14, borderBottomWidth: 1, borderBottomColor: '#F1F5F9' },
+    mobileCardTitle: { fontSize: 15, fontWeight: '700', color: '#1E293B' },
+    mobileCardCode: { fontSize: 12, color: '#94A3B8', marginTop: 2 },
+    mobileTotalBadge: { backgroundColor: '#EFF6FF', paddingHorizontal: 10, paddingVertical: 4, borderRadius: 10 },
+    mobileTotalText: { fontSize: 12, fontWeight: '700', color: Colors.primary },
+    mobileExpandedBody: { padding: 14, gap: 10 },
+    mobileLocRow: { flexDirection: 'row', alignItems: 'center', backgroundColor: '#F8FAFC', borderRadius: 10, padding: 12, borderWidth: 1, borderColor: '#E2E8F0' },
+    mobileLocName: { fontSize: 14, fontWeight: '600', color: '#1E293B' },
+    mobileLocQty: { fontSize: 13, fontWeight: '700', marginTop: 2 },
+    mobileTransferBtn: { flexDirection: 'row', alignItems: 'center', backgroundColor: '#EFF6FF', paddingHorizontal: 10, paddingVertical: 6, borderRadius: 8, gap: 5 },
+    mobileTransferBtnText: { fontSize: 12, fontWeight: '600', color: Colors.primary },
 
-    // Mobil geçmiş kart
-    historyCard: {
-        backgroundColor: '#fff',
-        borderRadius: 12,
-        borderWidth: 1,
-        borderColor: '#E2E8F0',
-        marginBottom: 10,
-        padding: 14,
-    },
-    historyProduct: {
-        fontSize: 14,
-        fontWeight: '700',
-        color: '#1E293B',
-        flex: 1,
-        marginRight: 10,
-    },
-    historyDate: {
-        fontSize: 11,
-        color: '#94A3B8',
-        marginTop: 8,
-    },
-    historyNote: {
-        fontSize: 12,
-        color: '#64748B',
-        marginTop: 4,
-        fontStyle: 'italic',
-    },
+    // Mini breakdown
+    breakdownContainer: { gap: 4 },
+    breakdownRow: { flexDirection: 'row', alignItems: 'center', gap: 6 },
+    breakdownWarehouse: { flexDirection: 'row', alignItems: 'center', flex: 1 },
+    breakdownWarehouseName: { fontSize: 11, color: '#4F46E5', fontWeight: '600' },
+    breakdownQtyBadge: { paddingHorizontal: 6, paddingVertical: 2, borderRadius: 6 },
+    breakdownQtyText: { fontSize: 11, fontWeight: '700' },
+
+    // Transfer geçmişi
+    qtyBadge: { backgroundColor: '#EFF6FF', paddingHorizontal: 10, paddingVertical: 4, borderRadius: 12 },
+    qtyBadgeText: { fontSize: 13, fontWeight: '700', color: Colors.primary },
+    warehouseChip: { flexDirection: 'row', alignItems: 'center', backgroundColor: '#FEE2E2', paddingHorizontal: 8, paddingVertical: 4, borderRadius: 6 },
+    warehouseChipText: { fontSize: 12, fontWeight: '600' },
+    historyCard: { backgroundColor: '#fff', borderRadius: 12, borderWidth: 1, borderColor: '#E2E8F0', marginBottom: 10, padding: 14 },
+    historyProduct: { fontSize: 14, fontWeight: '700', color: '#1E293B', flex: 1, marginRight: 10 },
+    historyDate: { fontSize: 11, color: '#94A3B8', marginTop: 8 },
+    historyNote: { fontSize: 12, color: '#64748B', marginTop: 4, fontStyle: 'italic' },
+
+    // Loading/Empty
+    loadingRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', paddingVertical: 40, gap: 10 },
+    loadingText: { fontSize: 14, color: '#94A3B8' },
+    emptyRow: { alignItems: 'center', justifyContent: 'center', paddingVertical: 48, gap: 10 },
+    emptyText: { fontSize: 14, color: '#94A3B8', fontStyle: 'italic' },
 
     // Modal
-    modalOverlay: {
-        flex: 1,
-        backgroundColor: 'rgba(0,0,0,0.45)',
-        justifyContent: 'center',
-        alignItems: 'center',
-        padding: 20,
-    },
-    modalBox: {
-        backgroundColor: '#fff',
-        borderRadius: 20,
-        width: '100%',
-        maxWidth: 520,
-        padding: 24,
-        ...Platform.select({ web: { boxShadow: '0 20px 60px rgba(0,0,0,0.2)' } }),
-    },
-    modalHeader: {
-        flexDirection: 'row',
-        justifyContent: 'space-between',
-        alignItems: 'flex-start',
-        marginBottom: 20,
-    },
-    modalTitle: {
-        fontSize: 20,
-        fontWeight: '800',
-        color: '#0F172A',
-    },
-    modalSubtitle: {
-        fontSize: 13,
-        color: '#64748B',
-        marginTop: 3,
-    },
-    modalCloseBtn: {
-        width: 36,
-        height: 36,
-        borderRadius: 10,
-        backgroundColor: '#F1F5F9',
-        alignItems: 'center',
-        justifyContent: 'center',
-    },
-    infoRow: {
-        flexDirection: 'row',
-        alignItems: 'center',
-        backgroundColor: '#F8FAFC',
-        borderRadius: 10,
-        padding: 12,
-        marginBottom: 14,
-        borderWidth: 1,
-        borderColor: '#E2E8F0',
-    },
-    infoRowLabel: {
-        fontSize: 11,
-        color: '#94A3B8',
-        fontWeight: '600',
-        textTransform: 'uppercase',
-        letterSpacing: 0.5,
-    },
-    infoRowValue: {
-        fontSize: 15,
-        fontWeight: '700',
-        color: '#1E293B',
-        marginTop: 2,
-    },
-    inputLabel: {
-        fontSize: 13,
-        fontWeight: '600',
-        color: '#374151',
-        marginBottom: 7,
-        marginTop: 4,
-    },
-    input: {
-        backgroundColor: '#F8FAFC',
-        borderWidth: 1,
-        borderColor: '#E2E8F0',
-        borderRadius: 10,
-        paddingHorizontal: 14,
-        paddingVertical: 12,
-        fontSize: 14,
-        color: '#1E293B',
-        marginBottom: 14,
-    },
-    warehouseQuickSelect: {
-        marginBottom: 14,
-    },
-    quickSelectLabel: {
-        fontSize: 12,
-        color: '#94A3B8',
-        fontWeight: '600',
-        marginBottom: 8,
-    },
-    quickChipRow: {
-        flexDirection: 'row',
-        flexWrap: 'wrap',
-        gap: 8,
-    },
-    quickChip: {
-        paddingHorizontal: 12,
-        paddingVertical: 7,
-        borderRadius: 8,
-        backgroundColor: '#F1F5F9',
-        borderWidth: 1,
-        borderColor: '#E2E8F0',
-    },
-    quickChipActive: {
-        backgroundColor: Colors.primary,
-        borderColor: Colors.primary,
-    },
-    quickChipText: {
-        fontSize: 13,
-        fontWeight: '600',
-        color: '#475569',
-    },
-    quickChipTextActive: {
-        color: '#fff',
-    },
-    modalActions: {
-        flexDirection: 'row',
-        gap: 10,
-        marginTop: 20,
-    },
-    cancelBtn: {
-        flex: 1,
-        paddingVertical: 13,
-        borderRadius: 12,
-        backgroundColor: '#F1F5F9',
-        alignItems: 'center',
-    },
-    cancelBtnText: {
-        fontSize: 15,
-        fontWeight: '600',
-        color: '#64748B',
-    },
-    confirmBtn: {
-        flex: 2,
-        flexDirection: 'row',
-        justifyContent: 'center',
-        alignItems: 'center',
-        paddingVertical: 13,
-        borderRadius: 12,
-        backgroundColor: Colors.primary,
-        ...Platform.select({ web: { boxShadow: '0 4px 14px rgba(37,99,235,0.35)' } }),
-    },
-    confirmBtnText: {
-        fontSize: 15,
-        fontWeight: '700',
-        color: '#fff',
-    },
+    modalOverlay: { flex: 1, backgroundColor: 'rgba(0,0,0,0.45)', justifyContent: 'center', alignItems: 'center', padding: 20 },
+    modalBox: { backgroundColor: '#fff', borderRadius: 20, width: '100%', maxWidth: 540, padding: 24, ...Platform.select({ web: { boxShadow: '0 20px 60px rgba(0,0,0,0.2)' } }) },
+    modalHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 20 },
+    modalTitle: { fontSize: 20, fontWeight: '800', color: '#0F172A' },
+    modalSubtitle: { fontSize: 13, color: '#64748B', marginTop: 3 },
+    modalCloseBtn: { width: 36, height: 36, borderRadius: 10, backgroundColor: '#F1F5F9', alignItems: 'center', justifyContent: 'center' },
+
+    infoRow: { flexDirection: 'row', alignItems: 'center', backgroundColor: '#F8FAFC', borderRadius: 10, padding: 12, marginBottom: 14, borderWidth: 1, borderColor: '#E2E8F0' },
+    infoRowLabel: { fontSize: 11, color: '#94A3B8', fontWeight: '600', textTransform: 'uppercase', letterSpacing: 0.5 },
+    infoRowValue: { fontSize: 15, fontWeight: '700', color: '#1E293B', marginTop: 2 },
+
+    inputLabel: { fontSize: 13, fontWeight: '600', color: '#374151', marginBottom: 7, marginTop: 4 },
+    input: { backgroundColor: '#F8FAFC', borderWidth: 1, borderColor: '#E2E8F0', borderRadius: 10, paddingHorizontal: 14, paddingVertical: 12, fontSize: 14, color: '#1E293B', marginBottom: 14 },
+
+    noLocWarning: { flexDirection: 'row', alignItems: 'center', gap: 6, backgroundColor: '#FFFBEB', borderRadius: 8, padding: 10, marginBottom: 12, borderWidth: 1, borderColor: '#FDE68A' },
+    noLocWarningText: { fontSize: 12, color: '#92400E', flex: 1 },
+
+    quickChipRow: { flexDirection: 'row', flexWrap: 'wrap', gap: 8, marginBottom: 14 },
+    quickChip: { paddingHorizontal: 12, paddingVertical: 7, borderRadius: 8, backgroundColor: '#F1F5F9', borderWidth: 1, borderColor: '#E2E8F0' },
+    quickChipActive: { backgroundColor: Colors.primary, borderColor: Colors.primary },
+    quickChipText: { fontSize: 13, fontWeight: '600', color: '#475569' },
+    quickChipTextActive: { color: '#fff' },
+    quickChipQty: { fontSize: 11, color: '#94A3B8', marginTop: 2 },
+
+    quickQtyRow: { flexDirection: 'row', gap: 8, marginBottom: 14, marginTop: -8 },
+    quickQtyChip: { flex: 1, paddingVertical: 6, borderRadius: 8, backgroundColor: '#EFF6FF', alignItems: 'center', borderWidth: 1, borderColor: '#BFDBFE' },
+    quickQtyText: { fontSize: 12, fontWeight: '600', color: Colors.primary },
+
+    warehouseQuickSelect: { marginBottom: 14 },
+    quickSelectLabel: { fontSize: 12, color: '#94A3B8', fontWeight: '600', marginBottom: 8 },
+
+    modalActions: { flexDirection: 'row', gap: 10, marginTop: 20 },
+    cancelBtn: { flex: 1, paddingVertical: 13, borderRadius: 12, backgroundColor: '#F1F5F9', alignItems: 'center' },
+    cancelBtnText: { fontSize: 15, fontWeight: '600', color: '#64748B' },
+    confirmBtn: { flex: 2, flexDirection: 'row', justifyContent: 'center', alignItems: 'center', paddingVertical: 13, borderRadius: 12, backgroundColor: Colors.primary, ...Platform.select({ web: { boxShadow: '0 4px 14px rgba(37,99,235,0.35)' } }) },
+    confirmBtnText: { fontSize: 15, fontWeight: '700', color: '#fff' },
 });

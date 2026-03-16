@@ -40,6 +40,8 @@ export default function StockScreen({ navigation }) {
     sales,
     appDataLoading,
     boms,
+    stockLocations,
+    getProductStockLocations,
   } = useContext(AppContext);
   const { t } = useTranslation();
   const toast = useToast();
@@ -207,8 +209,9 @@ export default function StockScreen({ navigation }) {
       (b.product_code && item.code && b.product_code === item.code) ||
       (b.product_name && item.name && b.product_name.toLowerCase() === item.name.toLowerCase())
     );
-    return <StockListItem item={item} onSell={openCustomerSelection} onEdit={onEdit} onDelete={confirmDelete} hasBom={hasBom} />;
-  }, [openCustomerSelection, confirmDelete, onEdit, boms]);
+    const itemLocs = (stockLocations || []).filter(sl => sl.product_id === item.id && sl.quantity > 0);
+    return <StockListItem item={item} onSell={openCustomerSelection} onEdit={onEdit} onDelete={confirmDelete} hasBom={hasBom} stockLocs={itemLocs} />;
+  }, [openCustomerSelection, confirmDelete, onEdit, boms, stockLocations]);
 
   const navigateToDetailedStock = () => { if (navigation && navigation.navigate) { navigation.navigate('DetailedStockScreen'); } };
   const navigateToAddProduct = () => { if (navigation && navigation.navigate) { navigation.navigate('AddProductScreen'); } };
@@ -322,16 +325,46 @@ export default function StockScreen({ navigation }) {
           {renderHeader()}
           {Platform.OS === 'web' && Dimensions.get('window').width > 768 ? (
             <View style={styles.webTableContainer}>
-              <View style={styles.webTableHeader}>
-                <Text style={[styles.webHeaderCell, { flex: 2 }]}>{t('product_name')}</Text>
-                <Text style={[styles.webHeaderCell, { flex: 1 }]}>{t('product_code')}</Text>
-                <Text style={[styles.webHeaderCell, { flex: 1 }]}>{t('brand')}</Text>
-                <Text style={[styles.webHeaderCell, { flex: 1 }]}>{t('category')}</Text>
-                <Text style={[styles.webHeaderCell, { flex: 1, textAlign: 'center' }]}>{t('stock_quantity')}</Text>
-                <Text style={[styles.webHeaderCell, { flex: 1, textAlign: 'right' }]}>{t('sale_price')}</Text>
-                <Text style={[styles.webHeaderCell, { flex: 1 }]}>{t('warehouse_location')}</Text>
-                <Text style={[styles.webHeaderCell, { flex: 1, textAlign: 'center' }]}>{t('actions')}</Text>
+              {/* Tablo Başlık Bilgisi */}
+              <View style={styles.webTableTopBar}>
+                <View style={styles.webTableTopBarLeft}>
+                  <Ionicons name="cube-outline" size={16} color="#4F46E5" />
+                  <Text style={styles.webTableTopBarTitle}>{t('stock_list')}</Text>
+                  <View style={styles.webTableTopBarBadge}>
+                    <Text style={styles.webTableTopBarBadgeText}>{filteredAndSortedProducts.length} kayıt</Text>
+                  </View>
+                </View>
               </View>
+
+              {/* Tablo Başlık Satırı */}
+              <View style={styles.webTableHeader}>
+                <View style={[styles.webHeaderCellContainer, { flex: 2.2 }]}>
+                  <Text style={styles.webHeaderCell}>{t('product_name')}</Text>
+                </View>
+                <View style={[styles.webHeaderCellContainer, { flex: 0.9 }]}>
+                  <Text style={styles.webHeaderCell}>{t('product_code')}</Text>
+                </View>
+                <View style={[styles.webHeaderCellContainer, { flex: 0.8 }]}>
+                  <Text style={styles.webHeaderCell}>{t('brand')}</Text>
+                </View>
+                <View style={[styles.webHeaderCellContainer, { flex: 0.9 }]}>
+                  <Text style={styles.webHeaderCell}>{t('category')}</Text>
+                </View>
+                <View style={[styles.webHeaderCellContainer, { flex: 1 }]}>
+                  <Text style={[styles.webHeaderCell, { textAlign: 'center' }]}>{t('stock_quantity')}</Text>
+                </View>
+                <View style={[styles.webHeaderCellContainer, { flex: 0.9 }]}>
+                  <Text style={[styles.webHeaderCell, { textAlign: 'right' }]}>{t('sale_price')}</Text>
+                </View>
+                <View style={[styles.webHeaderCellContainer, { flex: 1.4 }]}>
+                  <Text style={styles.webHeaderCell}>Depo Dağılımı</Text>
+                </View>
+                <View style={[styles.webHeaderCellContainer, { flex: 1, borderRightWidth: 0 }]}>
+                  <Text style={[styles.webHeaderCell, { textAlign: 'center' }]}>{t('actions')}</Text>
+                </View>
+              </View>
+
+              {/* Tablo Satırları */}
               <FlatList
                 data={filteredAndSortedProducts}
                 keyExtractor={(i) => i.id}
@@ -340,61 +373,182 @@ export default function StockScreen({ navigation }) {
                     (b.product_code && item.code && b.product_code === item.code) ||
                     (b.product_name && item.name && b.product_name.toLowerCase() === item.name.toLowerCase())
                   );
+                  const isCritical = item.quantity <= (item.criticalStockLimit || 0);
+                  const isZeroStock = item.quantity <= 0;
+                  const locs = (stockLocations || []).filter(sl => sl.product_id === item.id && sl.quantity > 0);
                   return (
-                    <View style={[styles.webTableRow, index % 2 === 0 ? styles.webTableRowEven : styles.webTableRowOdd]}>
-                      <View style={{ flex: 2, justifyContent: 'center' }}>
-                        <View style={{ flexDirection: 'row', alignItems: 'center' }}>
-                          <Text style={styles.webCellTextBold}>{item.name}</Text>
+                    <View style={[
+                      styles.webTableRow,
+                      index % 2 === 0 ? styles.webTableRowEven : styles.webTableRowOdd,
+                      isZeroStock ? styles.webTableRowZero : null,
+                    ]}>
+                      {/* Ürün Adı */}
+                      <View style={[styles.webCell, { flex: 2.2 }]}>
+                        <View style={{ flexDirection: 'row', alignItems: 'center', flexWrap: 'wrap', gap: 6 }}>
+                          <Text style={styles.webCellTextBold} numberOfLines={2}>{item.name}</Text>
                           {hasBom && (
-                            <View style={{ backgroundColor: '#F5F3FF', paddingHorizontal: 6, paddingVertical: 2, borderRadius: 10, marginLeft: 8, borderWidth: 1, borderColor: '#DDD6FE' }}>
-                              <Text style={{ fontSize: 10, fontWeight: '700', color: '#6D28D9' }}>BOM</Text>
+                            <View style={styles.webBomBadge}>
+                              <Text style={styles.webBomBadgeText}>BOM</Text>
                             </View>
                           )}
                         </View>
+                        {item.serialNumber ? (
+                          <Text style={styles.webCellSubText} numberOfLines={1}>SN: {item.serialNumber}</Text>
+                        ) : null}
                       </View>
-                      <View style={{ flex: 1, justifyContent: 'center' }}>
+
+                      {/* Ürün Kodu */}
+                      <View style={[styles.webCell, { flex: 0.9 }]}>
                         {item.code ? (
                           <View style={styles.webCodeBadge}>
-                            <Ionicons name="barcode-outline" size={12} color={'#6366F1'} style={{ marginRight: 4 }} />
-                            <Text style={styles.webCodeText}>{item.code}</Text>
+                            <Ionicons name="barcode-outline" size={11} color={'#6366F1'} style={{ marginRight: 3 }} />
+                            <Text style={styles.webCodeText} numberOfLines={1}>{item.code}</Text>
                           </View>
                         ) : (
-                          <Text style={styles.webCellText}>-</Text>
+                          <Text style={styles.webCellMuted}>—</Text>
                         )}
                       </View>
-                      <View style={{ flex: 1, justifyContent: 'center' }}>
-                        <Text style={styles.webCellText}>{item.brand || '-'}</Text>
+
+                      {/* Marka */}
+                      <View style={[styles.webCell, { flex: 0.8 }]}>
+                        <Text style={styles.webCellText} numberOfLines={1}>{item.brand || '—'}</Text>
                       </View>
-                      <View style={{ flex: 1, justifyContent: 'center' }}>
-                        <Text style={styles.webCellText}>{item.category || '-'}</Text>
+
+                      {/* Kategori */}
+                      <View style={[styles.webCell, { flex: 0.9 }]}>
+                        {item.category ? (
+                          <View style={styles.webCategoryChip}>
+                            <Text style={styles.webCategoryChipText} numberOfLines={1}>{item.category}</Text>
+                          </View>
+                        ) : (
+                          <Text style={styles.webCellMuted}>—</Text>
+                        )}
                       </View>
-                      <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}>
-                        <View style={[styles.webStatusBadge, item.quantity <= (item.criticalStockLimit || 0) ? styles.webStatusCritical : styles.webStatusNormal]}>
-                          <Text style={[styles.webStatusText, item.quantity <= (item.criticalStockLimit || 0) ? { color: '#B91C1C' } : { color: '#15803D' }]}>{item.quantity} {t(item.unit || 'uom_pcs')}</Text>
+
+                      {/* Stok Miktarı */}
+                      <View style={[styles.webCell, { flex: 1, alignItems: 'center' }]}>
+                        <View style={[
+                          styles.webStockBadge,
+                          isZeroStock ? styles.webStockBadgeZero : isCritical ? styles.webStockBadgeCritical : styles.webStockBadgeOk
+                        ]}>
+                          <View style={[
+                            styles.webStockDot,
+                            isZeroStock ? { backgroundColor: '#DC2626' } : isCritical ? { backgroundColor: '#D97706' } : { backgroundColor: '#16A34A' }
+                          ]} />
+                          <Text style={[
+                            styles.webStockBadgeText,
+                            isZeroStock ? { color: '#B91C1C' } : isCritical ? { color: '#92400E' } : { color: '#15803D' }
+                          ]}>{item.quantity} {t(item.unit || 'uom_pcs')}</Text>
                         </View>
                       </View>
-                      <View style={{ flex: 1, justifyContent: 'center', alignItems: 'flex-end' }}>
-                        <Text style={styles.webCellText}>{Number(item.price ?? 0).toLocaleString('tr-TR', { minimumFractionDigits: 2 })} ₺</Text>
+
+                      {/* Satış Fiyatı */}
+                      <View style={[styles.webCell, { flex: 0.9, alignItems: 'flex-end' }]}>
+                        <Text style={styles.webPriceText}>
+                          {Number(item.price ?? 0).toLocaleString('tr-TR', { minimumFractionDigits: 2 })} ₺
+                        </Text>
+                        {item.cost ? (
+                          <Text style={styles.webCostText}>
+                            Maliyet: {Number(item.cost ?? 0).toLocaleString('tr-TR', { minimumFractionDigits: 2 })} ₺
+                          </Text>
+                        ) : null}
                       </View>
-                      <View style={{ flex: 1, justifyContent: 'center', paddingLeft: 10 }}>
-                        <Text style={styles.webCellText}>{item.warehouseLocation || '-'}</Text>
+
+                      {/* Depo Dağılımı */}
+                      <View style={[styles.webCell, { flex: 1.4 }]}>
+                        {locs.length === 0 ? (
+                          (() => {
+                            const fallback = item.warehouseLocation || item.warehouse_location;
+                            return fallback ? (
+                              <View style={styles.webLocChip}>
+                                <Ionicons name="location-outline" size={10} color="#6366F1" style={{ marginRight: 3 }} />
+                                <Text style={styles.webLocChipText} numberOfLines={1}>{fallback}</Text>
+                              </View>
+                            ) : (
+                              <Text style={styles.webCellMuted}>—</Text>
+                            );
+                          })()
+                        ) : (
+                          <View style={{ gap: 4 }}>
+                            {locs.slice(0, 3).map((loc, li) => (
+                              <View key={loc.id || li} style={styles.webLocRow}>
+                                <View style={styles.webLocChip}>
+                                  <Ionicons name="business-outline" size={10} color="#6366F1" style={{ marginRight: 3 }} />
+                                  <Text style={styles.webLocChipText} numberOfLines={1}>{loc.warehouse_name}</Text>
+                                </View>
+                                <View style={[
+                                  styles.webLocQtyBadge,
+                                  loc.quantity <= 0 ? { backgroundColor: '#FEE2E2' } :
+                                  loc.quantity <= 5 ? { backgroundColor: '#FEF3C7' } :
+                                  { backgroundColor: '#DCFCE7' }
+                                ]}>
+                                  <Text style={[
+                                    styles.webLocQtyText,
+                                    loc.quantity <= 0 ? { color: '#B91C1C' } :
+                                    loc.quantity <= 5 ? { color: '#92400E' } :
+                                    { color: '#166534' }
+                                  ]}>{loc.quantity}</Text>
+                                </View>
+                              </View>
+                            ))}
+                            {locs.length > 3 && (
+                              <Text style={styles.webLocMoreText}>+{locs.length - 3} depo</Text>
+                            )}
+                          </View>
+                        )}
                       </View>
-                      <View style={{ flex: 1, flexDirection: 'row', justifyContent: 'center', alignItems: 'center', gap: 8 }}>
-                        <TouchableOpacity onPress={() => onEdit(item)} style={styles.webActionBtn}>
-                          <Ionicons name="create-outline" size={18} color={Colors.iosBlue} />
+
+                      {/* Aksiyonlar */}
+                      <View style={[styles.webCell, { flex: 1, flexDirection: 'row', justifyContent: 'center', alignItems: 'center', gap: 6, borderRightWidth: 0 }]}>
+                        <TouchableOpacity
+                          onPress={() => onEdit(item)}
+                          style={[styles.webActionBtn, styles.webActionBtnEdit]}
+                          title="Düzenle"
+                        >
+                          <Ionicons name="create-outline" size={15} color={Colors.iosBlue} />
                         </TouchableOpacity>
-                        <TouchableOpacity onPress={() => openCustomerSelection(item)} style={[styles.webActionBtn, { backgroundColor: Colors.iosGreen }]}>
-                          <Ionicons name="cart-outline" size={18} color="#fff" />
+                        <TouchableOpacity
+                          onPress={() => openCustomerSelection(item)}
+                          style={[styles.webActionBtn, styles.webActionBtnSell]}
+                          disabled={isZeroStock}
+                        >
+                          <Ionicons name="cart-outline" size={15} color="#fff" />
                         </TouchableOpacity>
-                        <TouchableOpacity onPress={() => confirmDelete(item.id, item.name)} style={[styles.webActionBtn, { backgroundColor: '#FFEEF2' }]}>
-                          <Ionicons name="trash-outline" size={18} color={Colors.critical} />
+                        <TouchableOpacity
+                          onPress={() => confirmDelete(item.id, item.name)}
+                          style={[styles.webActionBtn, styles.webActionBtnDelete]}
+                        >
+                          <Ionicons name="trash-outline" size={15} color={Colors.critical} />
                         </TouchableOpacity>
                       </View>
                     </View>
                   );
                 }}
+                ListEmptyComponent={
+                  <View style={styles.webTableEmpty}>
+                    <Ionicons name="cube-outline" size={40} color="#CBD5E1" />
+                    <Text style={styles.webTableEmptyText}>{t('no_products_in_stock')}</Text>
+                  </View>
+                }
                 scrollEnabled={false}
               />
+
+              {/* Tablo Alt Bilgisi */}
+              {filteredAndSortedProducts.length > 0 && (
+                <View style={styles.webTableFooter}>
+                  <Text style={styles.webTableFooterText}>
+                    Toplam {filteredAndSortedProducts.length} ürün listeleniyor
+                  </Text>
+                  <Text style={styles.webTableFooterText}>
+                    Toplam Stok Değeri:{' '}
+                    <Text style={styles.webTableFooterValue}>
+                      {filteredAndSortedProducts
+                        .reduce((sum, p) => sum + (p.quantity || 0) * (p.cost || 0), 0)
+                        .toLocaleString('tr-TR', { minimumFractionDigits: 2 })} ₺
+                    </Text>
+                  </Text>
+                </View>
+              )}
             </View>
           ) : (
             <FlatList
@@ -478,22 +632,28 @@ export default function StockScreen({ navigation }) {
 // ... (SortButton ve StockListItem aynı) ...
 const SortButton = ({ title, currentSort, targetSort, onPress }) => (<TouchableOpacity style={[styles.sortButton, currentSort === targetSort && styles.sortButtonActive]} onPress={() => onPress(targetSort)}><Text style={[styles.sortButtonText, currentSort === targetSort && styles.sortButtonActiveText]}>{title}</Text></TouchableOpacity>);
 
-const StockListItem = ({ item, onSell, onEdit, onDelete, hasBom }) => {
+const StockListItem = ({ item, onSell, onEdit, onDelete, hasBom, stockLocs }) => {
   const currentQuantity = item.quantity ?? 0;
   const criticalLimit = item.criticalStockLimit ?? 0;
   const isCritical = currentQuantity > 0 && currentQuantity <= criticalLimit;
   const isZero = currentQuantity <= 0;
 
-  // Durum Renkleri ve Metinleri
   const statusColor = isZero ? Colors.critical : (isCritical ? Colors.warning : Colors.profit);
   const statusBg = isZero ? '#FFF5F5' : (isCritical ? '#FFFBEB' : '#F0FDF4');
   const { t } = useTranslation();
   const statusText = isZero ? t('out_of_stock') : (isCritical ? t('critical') : t('in_stock'));
   const statusBorder = isZero ? '#FEE2E2' : (isCritical ? '#FEF3C7' : '#DCFCE7');
 
+  // Depo dağılımı: stockLocs varsa onları, yoksa warehouseLocation fallback
+  const locationChips = stockLocs && stockLocs.length > 0
+    ? stockLocs
+    : (item.warehouseLocation || item.warehouse_location)
+      ? [{ warehouse_name: item.warehouseLocation || item.warehouse_location, quantity: currentQuantity }]
+      : [];
+
   return (
     <View style={styles.card}>
-      {/* Üst Kısım: Başlık ve SKU/Kod */}
+      {/* Üst Kısım */}
       <View style={styles.cardHeader}>
         <View style={styles.headerLeft}>
           <View style={styles.titleRow}>
@@ -503,12 +663,6 @@ const StockListItem = ({ item, onSell, onEdit, onDelete, hasBom }) => {
             <View style={styles.categoryBadge}>
               <Text style={styles.categoryText}>{item.brand ? `${item.brand} / ` : ''}{item.category || 'Genel'}</Text>
             </View>
-            {item.warehouseLocation && (
-              <View style={[styles.categoryBadge, { backgroundColor: '#F0F9FF' }]}>
-                <Ionicons name="location-outline" size={10} color={Colors.iosBlue} style={{ marginRight: 3 }} />
-                <Text style={[styles.categoryText, { color: Colors.iosBlue }]}>{item.warehouseLocation}</Text>
-              </View>
-            )}
             {hasBom && (
               <View style={[styles.categoryBadge, { backgroundColor: '#F5F3FF' }]}>
                 <Ionicons name="layers-outline" size={10} color="#6D28D9" style={{ marginRight: 3 }} />
@@ -525,7 +679,7 @@ const StockListItem = ({ item, onSell, onEdit, onDelete, hasBom }) => {
 
       <View style={styles.divider} />
 
-      {/* Orta Kısım: Temel Metrikler (Grid) */}
+      {/* Orta Kısım: Metrikler */}
       <View style={styles.cardBody}>
         <View style={styles.metricsRow}>
           <View style={styles.metricItem}>
@@ -557,7 +711,28 @@ const StockListItem = ({ item, onSell, onEdit, onDelete, hasBom }) => {
           </View>
         </View>
 
-        {/* İkincil Bilgiler */}
+        {/* Depo Dağılımı */}
+        {locationChips.length > 0 && (
+          <View style={styles.locationChipsRow}>
+            <Ionicons name="business-outline" size={11} color="#6366F1" style={{ marginRight: 4 }} />
+            <View style={{ flex: 1, flexDirection: 'row', flexWrap: 'wrap', gap: 6 }}>
+              {locationChips.map((loc, li) => (
+                <View key={li} style={styles.locationChip}>
+                  <Text style={styles.locationChipName} numberOfLines={1}>{loc.warehouse_name}</Text>
+                  <View style={[styles.locationChipQty,
+                    loc.quantity <= 0 ? { backgroundColor: '#FEE2E2' } : loc.quantity <= 5 ? { backgroundColor: '#FEF3C7' } : { backgroundColor: '#DCFCE7' }
+                  ]}>
+                    <Text style={[styles.locationChipQtyText,
+                      loc.quantity <= 0 ? { color: '#B91C1C' } : loc.quantity <= 5 ? { color: '#92400E' } : { color: '#166534' }
+                    ]}>{loc.quantity}</Text>
+                  </View>
+                </View>
+              ))}
+            </View>
+          </View>
+        )}
+
+        {/* Seri No */}
         {(item.serialNumber || item.code) && (
           <View style={styles.secondaryInfoRow}>
             <View style={styles.secondaryInfoItem}>
@@ -869,110 +1044,272 @@ const styles = StyleSheet.create({
     borderTopColor: '#F1F5F9',
   },
 
-  // --- WEB TABLE STYLES ---
+  // --- WEB TABLE STYLES (ERP Kurumsal) ---
   webTableContainer: {
     backgroundColor: '#fff',
-    borderRadius: 16,
+    borderRadius: 12,
     borderWidth: 1,
-    borderColor: '#E2E8F0',
+    borderColor: '#D1D5DB',
     overflow: 'hidden',
-    marginTop: 10,
+    marginTop: 8,
     marginBottom: 50,
-    boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06)',
+    boxShadow: '0 1px 3px rgba(0,0,0,0.08), 0 4px 12px rgba(0,0,0,0.04)',
   },
+  // Tablo üst info bar
+  webTableTopBar: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingHorizontal: 16,
+    paddingVertical: 10,
+    backgroundColor: '#4F46E5',
+    borderBottomWidth: 1,
+    borderBottomColor: '#4338CA',
+  },
+  webTableTopBarLeft: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+  },
+  webTableTopBarTitle: {
+    fontSize: 13,
+    fontWeight: '700',
+    color: '#fff',
+    letterSpacing: 0.3,
+  },
+  webTableTopBarBadge: {
+    backgroundColor: 'rgba(255,255,255,0.2)',
+    paddingHorizontal: 8,
+    paddingVertical: 2,
+    borderRadius: 10,
+    borderWidth: 1,
+    borderColor: 'rgba(255,255,255,0.3)',
+  },
+  webTableTopBarBadgeText: {
+    fontSize: 11,
+    fontWeight: '700',
+    color: '#fff',
+  },
+  // Tablo başlık satırı
   webTableHeader: {
     flexDirection: 'row',
-    backgroundColor: '#F8FAFC',
-    borderBottomWidth: 1,
-    borderBottomColor: '#E2E8F0',
-    paddingVertical: 16,
-    paddingHorizontal: 20,
+    backgroundColor: '#F1F5F9',
+    borderBottomWidth: 2,
+    borderBottomColor: '#CBD5E1',
+  },
+  webHeaderCellContainer: {
+    paddingVertical: 11,
+    paddingHorizontal: 12,
+    borderRightWidth: 1,
+    borderRightColor: '#CBD5E1',
+    justifyContent: 'center',
   },
   webHeaderCell: {
-    fontSize: 12,
+    fontSize: 11,
     fontWeight: '700',
-    color: '#475569',
+    color: '#374151',
     textTransform: 'uppercase',
-    letterSpacing: 0.5,
+    letterSpacing: 0.6,
   },
+  // Hücre container (border sag ile ayrım)
+  webCell: {
+    paddingVertical: 10,
+    paddingHorizontal: 12,
+    borderRightWidth: 1,
+    borderRightColor: '#E5E7EB',
+    justifyContent: 'center',
+  },
+  // Tablo satırları
   webTableRow: {
     flexDirection: 'row',
-    paddingVertical: 12,
-    paddingHorizontal: 16,
     borderBottomWidth: 1,
-    borderBottomColor: '#F1F5F9',
+    borderBottomColor: '#E5E7EB',
+    minHeight: 52,
+    ...Platform.select({
+      web: {
+        transition: 'background-color 0.12s ease',
+      }
+    }),
   },
   webTableRowEven: {
     backgroundColor: '#FFFFFF',
   },
   webTableRowOdd: {
-    backgroundColor: '#F9FAFB', // Çok hafif gri
+    backgroundColor: '#F9FAFB',
   },
+  webTableRowZero: {
+    backgroundColor: '#FFFBFB',
+  },
+  // Metin stilleri
   webCellText: {
-    fontSize: 14,
-    color: '#334155',
+    fontSize: 13,
+    color: '#374151',
+    lineHeight: 18,
   },
   webCellTextBold: {
-    fontSize: 14,
-    fontWeight: '600',
-    color: '#0F172A',
+    fontSize: 13,
+    fontWeight: '700',
+    color: '#111827',
+    lineHeight: 18,
   },
   webCellSubText: {
-    fontSize: 12,
-    color: '#94A3B8',
+    fontSize: 11,
+    color: '#9CA3AF',
+    marginTop: 2,
   },
-  webStatusBadge: {
+  webCellMuted: {
+    fontSize: 13,
+    color: '#D1D5DB',
+  },
+  webPriceText: {
+    fontSize: 13,
+    fontWeight: '700',
+    color: '#111827',
+    textAlign: 'right',
+  },
+  webCostText: {
+    fontSize: 10,
+    color: '#9CA3AF',
+    marginTop: 2,
+    textAlign: 'right',
+  },
+  // Kategori chip
+  webCategoryChip: {
+    backgroundColor: '#F3F4F6',
+    borderWidth: 1,
+    borderColor: '#E5E7EB',
+    paddingHorizontal: 7,
+    paddingVertical: 2,
+    borderRadius: 5,
+    alignSelf: 'flex-start',
+  },
+  webCategoryChipText: {
+    fontSize: 11,
+    fontWeight: '600',
+    color: '#4B5563',
+  },
+  // Stok Durumu Badge
+  webStockBadge: {
+    flexDirection: 'row',
+    alignItems: 'center',
     paddingHorizontal: 8,
     paddingVertical: 4,
-    borderRadius: 12,
-    backgroundColor: '#E2E8F0',
-  },
-  webStatusCritical: {
-    backgroundColor: '#FEF2F2',
+    borderRadius: 6,
     borderWidth: 1,
-    borderColor: '#FECACA',
+    gap: 5,
   },
-  webStatusNormal: {
-    backgroundColor: '#DCFCE7',
-    borderWidth: 1,
-    borderColor: '#86EFAC',
+  webStockDot: {
+    width: 6,
+    height: 6,
+    borderRadius: 3,
   },
-  webStatusText: {
+  webStockBadgeText: {
     fontSize: 12,
     fontWeight: '700',
   },
+  webStockBadgeOk: {
+    backgroundColor: '#F0FDF4',
+    borderColor: '#86EFAC',
+  },
+  webStockBadgeCritical: {
+    backgroundColor: '#FFFBEB',
+    borderColor: '#FDE68A',
+  },
+  webStockBadgeZero: {
+    backgroundColor: '#FEF2F2',
+    borderColor: '#FECACA',
+  },
+  // BOM Badge
+  webBomBadge: {
+    backgroundColor: '#F5F3FF',
+    paddingHorizontal: 6,
+    paddingVertical: 1,
+    borderRadius: 4,
+    borderWidth: 1,
+    borderColor: '#DDD6FE',
+  },
+  webBomBadgeText: {
+    fontSize: 9,
+    fontWeight: '800',
+    color: '#6D28D9',
+    letterSpacing: 0.5,
+  },
+  // Ürün kodu badge
   webCodeBadge: {
     flexDirection: 'row',
     alignItems: 'center',
     backgroundColor: '#EEF2FF',
     borderWidth: 1,
     borderColor: '#C7D2FE',
-    paddingHorizontal: 7,
-    paddingVertical: 3,
-    borderRadius: 6,
+    paddingHorizontal: 6,
+    paddingVertical: 2,
+    borderRadius: 5,
     alignSelf: 'flex-start',
+    ...Platform.select({ web: { fontFamily: 'monospace' } }),
   },
   webCodeText: {
-    fontSize: 12,
+    fontSize: 11,
     fontWeight: '600',
     color: '#4338CA',
-    fontFamily: 'monospace',
   },
+  // Aksiyon butonları
   webActionBtn: {
-    width: 32,
-    height: 32,
+    width: 30,
+    height: 30,
     borderRadius: 6,
-    borderWidth: 1,
-    borderColor: '#E2E8F0',
     alignItems: 'center',
     justifyContent: 'center',
-    backgroundColor: '#fff',
+    borderWidth: 1,
     ...Platform.select({
       web: {
         cursor: 'pointer',
         userSelect: 'none',
+        transition: 'all 0.15s ease',
       }
     }),
+  },
+  webActionBtnEdit: {
+    backgroundColor: '#EFF6FF',
+    borderColor: '#BFDBFE',
+  },
+  webActionBtnSell: {
+    backgroundColor: '#059669',
+    borderColor: '#047857',
+  },
+  webActionBtnDelete: {
+    backgroundColor: '#FEF2F2',
+    borderColor: '#FECACA',
+  },
+  // Boş durum
+  webTableEmpty: {
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: 48,
+    gap: 12,
+  },
+  webTableEmptyText: {
+    fontSize: 14,
+    color: '#9CA3AF',
+    fontStyle: 'italic',
+  },
+  // Tablo alt bilgi
+  webTableFooter: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingHorizontal: 16,
+    paddingVertical: 10,
+    backgroundColor: '#F8FAFC',
+    borderTopWidth: 1,
+    borderTopColor: '#E5E7EB',
+  },
+  webTableFooterText: {
+    fontSize: 12,
+    color: '#6B7280',
+  },
+  webTableFooterValue: {
+    fontWeight: '700',
+    color: '#111827',
   },
   secondaryInfoItem: {
     flexDirection: 'row',
@@ -1107,4 +1444,16 @@ const styles = StyleSheet.create({
   saveButtonText: { color: '#fff', fontWeight: '800', fontSize: 16 },
   cancelButton: { alignSelf: "center", marginTop: 15, padding: 10, marginBottom: 10 },
   cancelButtonText: { color: Colors.critical, fontWeight: "700", fontSize: 15 },
+  // Depo Dağılımı (çoklu depo)
+  webLocRow: { flexDirection: 'row', alignItems: 'center', gap: 5, marginBottom: 3 },
+  webLocChip: { flexDirection: 'row', alignItems: 'center', backgroundColor: '#EEF2FF', paddingHorizontal: 6, paddingVertical: 2, borderRadius: 5 },
+  webLocChipText: { fontSize: 10, fontWeight: '600', color: '#4F46E5' },
+  webLocQtyBadge: { paddingHorizontal: 6, paddingVertical: 2, borderRadius: 5 },
+  webLocQtyText: { fontSize: 10, fontWeight: '700' },
+  // Mobil depo dağılım chip
+  locationChipsRow: { flexDirection: 'row', alignItems: 'flex-start', marginTop: 8, paddingTop: 8, borderTopWidth: 1, borderTopColor: '#F1F5F9' },
+  locationChip: { flexDirection: 'row', alignItems: 'center', backgroundColor: '#EEF2FF', borderRadius: 6, paddingLeft: 6, paddingRight: 2, paddingVertical: 3, borderWidth: 1, borderColor: '#C7D2FE' },
+  locationChipName: { fontSize: 11, fontWeight: '600', color: '#4F46E5', maxWidth: 80 },
+  locationChipQty: { marginLeft: 4, paddingHorizontal: 5, paddingVertical: 2, borderRadius: 4 },
+  locationChipQtyText: { fontSize: 10, fontWeight: '700' },
 });
