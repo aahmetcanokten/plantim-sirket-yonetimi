@@ -70,12 +70,14 @@ const BrandingContent = ({ t, isMobileWeb, isVerySmall, setIsLoginView }) => (
 
 export default function LoginScreen() {
   const [email, setEmail] = useState('');
+  const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
   const [errorMsg, setErrorMsg] = useState(null); // YENİ: Hata mesajı state'i
 
   // YENİ: Ekranın "giriş" mi yoksa "kayıt" modunda mı olduğunu tutan state
   const [isLoginView, setIsLoginView] = useState(true);
+  const [loginType, setLoginType] = useState('admin'); // 'admin' | 'personnel'
 
   // YENİ: Web sayfasındaki aktif sekme (login, about, solutions, pricing)
   const [activeTab, setActiveTab] = useState('login');
@@ -83,8 +85,33 @@ export default function LoginScreen() {
   const [loading, setLoading] = useState(false);
 
 
-  const { signIn, signUp, resetPassword } = useAuth();
+  const { signIn, signUp, resetPassword, signInPersonnel } = useAuth();
   const { t } = useTranslation();
+
+  const handlePersonnelLogin = async () => {
+    if (!username || !password) {
+      Alert.alert(t("missing_info_title"), "Kullanıcı adı ve şifre gereklidir.");
+      return;
+    }
+    setLoading(true);
+    setErrorMsg(null);
+    try {
+      const { error } = await signInPersonnel(username, password);
+      if (error) {
+        if (error.message.includes("Invalid login credentials")) {
+          setErrorMsg("Giriş bilgileri hatalı.");
+        } else {
+          setErrorMsg(error.message);
+        }
+        Alert.alert("Giriş Başarısız", "Giriş bilgileri hatalı.");
+      }
+    } catch (error) {
+      setErrorMsg(error.message);
+      Alert.alert(t("error"), "Giriş Hatası: " + error.message);
+    } finally {
+      setLoading(false);
+    }
+  };
 
   const handleLogin = async () => {
     if (!email || !password) {
@@ -241,10 +268,12 @@ export default function LoginScreen() {
 
             <LoginForm
               email={email} setEmail={setEmail}
+              username={username} setUsername={setUsername}
               password={password} setPassword={setPassword}
               confirmPassword={confirmPassword} setConfirmPassword={setConfirmPassword}
               isLoginView={isLoginView} setIsLoginView={setIsLoginView}
-              loading={loading} handleLogin={handleLogin} handleSignUp={handleSignUp}
+              loginType={loginType} setLoginType={setLoginType}
+              loading={loading} handleLogin={handleLogin} handlePersonnelLogin={handlePersonnelLogin} handleSignUp={handleSignUp}
               handlePasswordReset={handlePasswordReset} toggleView={toggleView}
               t={t}
               errorMsg={errorMsg}
@@ -278,10 +307,12 @@ export default function LoginScreen() {
 
           <LoginForm
             email={email} setEmail={setEmail}
+            username={username} setUsername={setUsername}
             password={password} setPassword={setPassword}
             confirmPassword={confirmPassword} setConfirmPassword={setConfirmPassword}
             isLoginView={isLoginView} setIsLoginView={setIsLoginView}
-            loading={loading} handleLogin={handleLogin} handleSignUp={handleSignUp}
+            loginType={loginType} setLoginType={setLoginType}
+            loading={loading} handleLogin={handleLogin} handlePersonnelLogin={handlePersonnelLogin} handleSignUp={handleSignUp}
             handlePasswordReset={handlePasswordReset} toggleView={toggleView}
             t={t}
             errorMsg={errorMsg}
@@ -514,8 +545,8 @@ const FaqItem = ({ q, a }) => (
 );
 
 const LoginForm = ({
-  email, setEmail, password, setPassword, confirmPassword, setConfirmPassword,
-  isLoginView, loading, handleLogin, handleSignUp, handlePasswordReset, toggleView, t, errorMsg
+  email, setEmail, username, setUsername, password, setPassword, confirmPassword, setConfirmPassword,
+  isLoginView, loginType, setLoginType, loading, handleLogin, handlePersonnelLogin, handleSignUp, handlePasswordReset, toggleView, t, errorMsg
 }) => (
   <View style={{ width: '100%' }}>
     {errorMsg && (
@@ -525,22 +556,57 @@ const LoginForm = ({
       </View>
     )}
 
-    <View style={styles.inputGroup}>
-      <Text style={styles.inputLabel}>{t("email")}</Text>
-      <View style={styles.inputWrapper}>
-        <Ionicons name="mail-outline" size={20} color={Colors.muted} style={styles.inputIcon} />
-        <TextInput
-          style={styles.webInput}
-          placeholder="email@sirketiniz.com"
-          placeholderTextColor={Colors.muted}
-          value={email}
-          onChangeText={setEmail}
-          keyboardType="email-address"
-          autoCapitalize="none"
-          selectTextOnFocus={Platform.OS === 'web'}
-        />
+    {isLoginView && (
+      <View style={{ flexDirection: 'row', marginBottom: 24, padding: 4, backgroundColor: '#F1F5F9', borderRadius: 12 }}>
+        <TouchableOpacity 
+          style={[{ flex: 1, paddingVertical: 10, alignItems: 'center', borderRadius: 8 }, loginType === 'admin' && { backgroundColor: '#fff', shadowColor: '#000', shadowOpacity: 0.05, shadowRadius: 4 }]} 
+          onPress={() => setLoginType('admin')}
+        >
+          <Text style={{ fontWeight: loginType === 'admin' ? '600' : '500', color: loginType === 'admin' ? Colors.iosBlue : '#64748B' }}>Yönetici</Text>
+        </TouchableOpacity>
+        <TouchableOpacity 
+          style={[{ flex: 1, paddingVertical: 10, alignItems: 'center', borderRadius: 8 }, loginType === 'personnel' && { backgroundColor: '#fff', shadowColor: '#000', shadowOpacity: 0.05, shadowRadius: 4 }]} 
+          onPress={() => setLoginType('personnel')}
+        >
+          <Text style={{ fontWeight: loginType === 'personnel' ? '600' : '500', color: loginType === 'personnel' ? Colors.iosBlue : '#64748B' }}>Personel</Text>
+        </TouchableOpacity>
       </View>
-    </View>
+    )}
+
+    {(!isLoginView || loginType === 'admin') ? (
+      <View style={styles.inputGroup}>
+        <Text style={styles.inputLabel}>{t("email")}</Text>
+        <View style={styles.inputWrapper}>
+          <Ionicons name="mail-outline" size={20} color={Colors.muted} style={styles.inputIcon} />
+          <TextInput
+            style={styles.webInput}
+            placeholder="email@sirketiniz.com"
+            placeholderTextColor={Colors.muted}
+            value={email}
+            onChangeText={setEmail}
+            keyboardType="email-address"
+            autoCapitalize="none"
+            selectTextOnFocus={Platform.OS === 'web'}
+          />
+        </View>
+      </View>
+    ) : (
+      <View style={styles.inputGroup}>
+        <Text style={styles.inputLabel}>Kullanıcı Adı</Text>
+        <View style={styles.inputWrapper}>
+          <Ionicons name="person-outline" size={20} color={Colors.muted} style={styles.inputIcon} />
+          <TextInput
+            style={styles.webInput}
+            placeholder="ahmetcan"
+            placeholderTextColor={Colors.muted}
+            value={username}
+            onChangeText={setUsername}
+            autoCapitalize="none"
+            selectTextOnFocus={Platform.OS === 'web'}
+          />
+        </View>
+      </View>
+    )}
 
     <View style={styles.inputGroup}>
       <Text style={styles.inputLabel}>{t("password")}</Text>
@@ -576,15 +642,15 @@ const LoginForm = ({
       </View>
     )}
 
-    {isLoginView && (
+    {isLoginView && loginType === 'admin' && (
       <TouchableOpacity style={styles.forgotPasswordLink} onPress={handlePasswordReset} disabled={loading}>
         <Text style={styles.forgotPasswordText}>{t("forgot_password")}</Text>
       </TouchableOpacity>
     )}
 
     <TouchableOpacity
-      style={[styles.mainButton, loading && styles.buttonDisabled]}
-      onPress={isLoginView ? handleLogin : handleSignUp}
+      style={[styles.mainButton, loading && styles.buttonDisabled, (isLoginView && loginType === 'admin' ? {} : { marginTop: 24 })]}
+      onPress={isLoginView ? (loginType === 'admin' ? handleLogin : handlePersonnelLogin) : handleSignUp}
       disabled={loading}
     >
       <Text style={styles.mainButtonText}>

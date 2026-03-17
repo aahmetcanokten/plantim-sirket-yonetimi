@@ -58,6 +58,9 @@ export function AppProvider({ children }) {
   // --- PERSONEL İZİN GEÇMİŞİ ---
   const [leaveHistory, setLeaveHistory] = useState([]);
 
+  // --- PERSONEL YETKİLENDİRMESİ ---
+  const [isRestrictedPersonnel, setIsRestrictedPersonnel] = useState(false);
+
   const [dbPremium, setDbPremium] = useState(false);
   const [rcPremium, setRcPremium] = useState(false);
   const isPremium = dbPremium || rcPremium;
@@ -136,6 +139,18 @@ export function AppProvider({ children }) {
             supabase.from('quotations').select('*').eq('user_id', userId).order('created_at', { ascending: false }),
             supabase.from('warehouse_transfers').select('*').eq('user_id', userId).order('transferred_at', { ascending: false })
           ]);
+
+          // Personel Check
+          try {
+            const { data: pUser } = await supabase.from('personnel_users').select('role').eq('user_id', userId).maybeSingle();
+            if (pUser && pUser.role === 'PERSONNEL') {
+              setIsRestrictedPersonnel(true);
+            } else {
+              setIsRestrictedPersonnel(false);
+            }
+          } catch(e) {
+            setIsRestrictedPersonnel(false);
+          }
 
           // Finans verilerini yükle
           try {
@@ -311,6 +326,7 @@ export function AppProvider({ children }) {
         setLeaveHistory([]);
         setDbPremium(false);
         setRcPremium(false);
+        setIsRestrictedPersonnel(false);
         setAppDataLoading(false);
       }
     };
@@ -1673,7 +1689,8 @@ export function AppProvider({ children }) {
           return offerings.current;
         },
         deleteUserAccount,
-        appDataLoading
+        appDataLoading,
+        isRestrictedPersonnel // YENİ EKLENDİ
       }}
     >
       {children}

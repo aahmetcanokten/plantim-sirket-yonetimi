@@ -166,6 +166,61 @@ export function AuthProvider({ children }) {
     };
 
     /**
+     * Personel girişi (Kullanıcı Adı ve Şifre ile)
+     * @param {string} username 
+     * @param {string} password 
+     * @returns {object} { user, session, error }
+     */
+    const signInPersonnel = async (username, password) => {
+        setLoading(true);
+        const email = `${username.toLowerCase().trim()}@plantim.local`;
+        console.log("Personel giriş denemesi yapılıyor:", email);
+        const { data, error } = await supabase.auth.signInWithPassword({
+            email,
+            password,
+        });
+        if (error) console.error("Personel Giriş Hatası:", error.message);
+        setLoading(false);
+        return { user: data?.user, session: data?.session, error };
+    };
+
+    /**
+     * Yeni personel hesabı oluşturur (Admin oturumunu bozmaz)
+     * @param {string} username 
+     * @param {string} password 
+     * @param {string} role 
+     * @returns {object} { data, error }
+     */
+    const createPersonnel = async (username, password, role = 'PERSONNEL') => {
+        const email = `${username.toLowerCase().trim()}@plantim.local`;
+        
+        // Ana oturumun bozulmaması için geçici bir client kullanıyoruz
+        const secondarySupabase = createClient(supabaseUrl, supabaseAnonKey, {
+            auth: { persistSession: false, autoRefreshToken: false }
+        });
+        
+        const { data, error } = await secondarySupabase.auth.signUp({
+            email,
+            password
+        });
+        
+        if (error) return { error };
+        
+        const adminId = session?.user?.id;
+        if (!adminId) return { error: new Error("Admin oturumu bulunamadı") };
+        
+        const { error: dbError } = await supabase.from('personnel_users').insert({
+            user_id: data.user.id,
+            admin_id: adminId,
+            username: username.toLowerCase().trim(),
+            role: role,
+            is_active: true
+        });
+        
+        return { data, error: dbError };
+    };
+
+    /**
      * Kullanıcının oturumunu kapatır
      * @returns {object} { error }
      */
@@ -226,7 +281,9 @@ export function AuthProvider({ children }) {
         loading, // Oturum durumu kontrol ediliyor mu?
         isPasswordReset, // YENİ: Şifre sıfırlama modunda mıyız?
         signIn,  // Giriş fonksiyonu
+        signInPersonnel, // YENİ: Personel girişi
         signUp,  // Kayıt fonksiyonu
+        createPersonnel, // YENİ: Personel hesabı oluşturma
         signOut, // Çıkış fonksiyonu
         updatePassword, // YENİ EKLENDİ
         resetPassword,  // YENİ EKLENDİ

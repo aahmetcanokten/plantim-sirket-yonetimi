@@ -40,9 +40,15 @@ export default function WebSettingsLayout({ navigation }) {
     updateGeneralPreferences
   } = useContext(AppContext);
 
-  const { session, signOut, updatePassword } = useAuth();
+  const { session, supabase, createPersonnel, signOut, updatePassword } = useAuth();
   
   const [activeTab, setActiveTab] = useState('company_profile');
+
+  // Personel Erişimi
+  const [personnelAccounts, setPersonnelAccounts] = useState([]);
+  const [newPersonnelUsername, setNewPersonnelUsername] = useState('');
+  const [newPersonnelPassword, setNewPersonnelPassword] = useState('');
+  const [loadingPersonnel, setLoadingPersonnel] = useState(false);
 
   // Firma Bilgileri
   const [cName, setCName] = useState(company?.name ?? "");
@@ -68,6 +74,21 @@ export default function WebSettingsLayout({ navigation }) {
   const [vehicleModal, setVehicleModal] = useState(false);
   const [editVehicle, setEditVehicle] = useState(null);
   const [vehicleForm, setVehicleForm] = useState({ model: "", plate: "", lastServiceDate: "" });
+
+  const loadPersonnelAccounts = async () => {
+    if (!supabase || !session) return;
+    const { data } = await supabase.from('personnel_users')
+      .select('*')
+      .eq('admin_id', session.user.id)
+      .order('created_at', { ascending: false });
+    if (data) setPersonnelAccounts(data);
+  };
+
+  useEffect(() => {
+    if (activeTab === 'personnel_access') {
+      loadPersonnelAccounts();
+    }
+  }, [activeTab]);
 
   useEffect(() => {
     setCName(company?.name ?? "");
@@ -154,6 +175,7 @@ export default function WebSettingsLayout({ navigation }) {
     { id: 'company_profile', icon: 'business-outline', label: t('company_profile') || 'Firma Bilgileri' },
     { id: 'general_prefs', icon: 'settings-outline', label: t('general_preferences') || 'Genel Tercihler' },
     { id: 'vehicles', icon: 'car-sport-outline', label: t('vehicles') || 'Araçlar' },
+    { id: 'personnel_access', icon: 'people-outline', label: 'Personel Erişimi' },
     { id: 'export_backup', icon: 'cloud-download-outline', label: t('export_and_backup') || 'Dışa Aktarım ve Yedekleme' },
     { id: 'security', icon: 'shield-checkmark-outline', label: t('security') || 'Güvenlik' },
     { id: 'subscription', icon: 'star-outline', label: t('subscription') || 'Abonelik' },
@@ -316,6 +338,82 @@ export default function WebSettingsLayout({ navigation }) {
             </View>
           </View>
         </Modal>
+      )}
+    </View>
+  );
+
+  const handleCreatePersonnel = async () => {
+    if (!newPersonnelUsername || !newPersonnelPassword) {
+      if(Platform.OS==='web') window.alert("Kullanıcı adı ve şifre giriniz.");
+      return;
+    }
+    setLoadingPersonnel(true);
+    const { error } = await createPersonnel(newPersonnelUsername, newPersonnelPassword, 'PERSONNEL');
+    if (error) {
+      if(Platform.OS==='web') window.alert("Hata: " + error.message);
+    } else {
+      if(Platform.OS==='web') window.alert("Personel hesabı oluşturuldu.");
+      setNewPersonnelUsername('');
+      setNewPersonnelPassword('');
+      loadPersonnelAccounts();
+    }
+    setLoadingPersonnel(false);
+  };
+
+  const handleDeletePersonnelAccount = async (id, authId) => {
+    if (Platform.OS === 'web' && window.confirm("Bu personel hesabını silmek istediğinize emin misiniz? (Erişimi kalıcı olarak iptal edilir)")) {
+      const { error } = await supabase.from('personnel_users').delete().eq('user_id', authId);
+      if (!error) loadPersonnelAccounts();
+      else window.alert("Hata: " + error.message);
+    }
+  };
+
+  const renderPersonnelAccess = () => (
+    <View style={styles.sectionContainer}>
+      <Text style={styles.sectionTitle}>Personel Erişimi</Text>
+      <Text style={[styles.textSecondary, {marginBottom: 16}]}>
+        Personelleriniz için özel kullanıcı adı ve şifre oluşturarak, şirket verilerinize kısıtlı erişim sağlamalarına izin verebilirsiniz. Personeller sadece giriş yapıp kendilerine izin verilen modülleri (Stok, Satış vb.) görebilir.
+      </Text>
+      
+      <View style={styles.row}>
+        <View style={[styles.inputGroup, { flex: 1, marginRight: 16 }]}>
+          <Text style={styles.label}>Kullanıcı Adı</Text>
+          <TextInput style={styles.input} value={newPersonnelUsername} onChangeText={setNewPersonnelUsername} placeholder="Örn: ahmet123" autoCapitalize="none" />
+        </View>
+        <View style={[styles.inputGroup, { flex: 1 }]}>
+          <Text style={styles.label}>Şifre</Text>
+          <TextInput style={styles.input} value={newPersonnelPassword} onChangeText={setNewPersonnelPassword} placeholder="••••••" secureTextEntry />
+        </View>
+      </View>
+      
+      <TouchableOpacity style={[styles.primaryBtn, {alignSelf: 'flex-start'}, loadingPersonnel && styles.buttonDisabled]} onPress={handleCreatePersonnel} disabled={loadingPersonnel}>
+        <Text style={styles.primaryBtnText}>{loadingPersonnel ? "Oluşturuluyor..." : "Hesap Oluştur"}</Text>
+      </TouchableOpacity>
+
+      <View style={styles.divider} />
+
+      <Text style={styles.sectionSubtitle}>Mevcut Personel Hesapları</Text>
+      {personnelAccounts.length === 0 ? (
+        <Text style={styles.textSecondary}>Henüz personel hesabı oluşturmadınız.</Text>
+      ) : (
+        <View style={styles.table}>
+          <View style={styles.tableHeader}>
+            <Text style={[styles.tableCell, {flex: 2, fontWeight: '600'}]}>Kullanıcı Adı</Text>
+            <Text style={[styles.tableCell, {flex: 1, fontWeight: '600'}]}>Oluşturulma Tarihi</Text>
+            <Text style={[styles.tableCell, {flex: 1, fontWeight: '600', textAlign: 'right'}]}>İşlem</Text>
+          </View>
+          {personnelAccounts.map(p => (
+            <View key={p.user_id} style={styles.tableRow}>
+              <Text style={[styles.tableCell, {flex: 2, fontWeight: '500'}]}>{p.username}</Text>
+              <Text style={[styles.tableCell, {flex: 1}]}>{new Date(p.created_at).toLocaleDateString()}</Text>
+              <View style={[styles.tableCell, {flex: 1, alignItems: 'flex-end'}]}>
+                <TouchableOpacity onPress={() => handleDeletePersonnelAccount(p.id, p.user_id)}>
+                  <Text style={{color: '#EF4444', fontWeight: '500'}}>Erişimi İptal Et</Text>
+                </TouchableOpacity>
+              </View>
+            </View>
+          ))}
+        </View>
       )}
     </View>
   );
@@ -498,6 +596,7 @@ export default function WebSettingsLayout({ navigation }) {
       case 'company_profile': return renderCompanyProfile();
       case 'general_prefs': return renderGeneralPrefs();
       case 'vehicles': return renderVehicles();
+      case 'personnel_access': return renderPersonnelAccess();
       case 'export_backup': return renderExportBackup();
       case 'security': return renderSecurity();
       case 'subscription': return renderSubscription();

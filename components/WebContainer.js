@@ -32,9 +32,16 @@ const MENU_ITEMS = [
 
 export default function WebContainer({ children, activeRoute }) {
     const navigation = useNavigation();
-    const { session } = useAuth();
+    const { session, signOut } = useAuth();
     const appContext = useContext(AppContext);
     const company = appContext?.company;
+    const isRestrictedPersonnel = appContext?.isRestrictedPersonnel;
+
+    const filteredMenuItems = MENU_ITEMS.filter(item => {
+        if (!isRestrictedPersonnel) return true;
+        const restricted = ['Ayarlar', 'FinanceScreen', 'AssetManagementScreen', 'PersonnelScreen', 'Analytics'];
+        return !restricted.includes(item.name);
+    });
 
     // Inject Google Fonts and Global Styles for Web
     useEffect(() => {
@@ -167,7 +174,7 @@ export default function WebContainer({ children, activeRoute }) {
 
                 <ScrollView style={styles.menuContainer} showsVerticalScrollIndicator={false}>
                     <Text style={styles.menuSectionHeader}>ANA MENÜ</Text>
-                    {MENU_ITEMS.map((item, index) => {
+                    {filteredMenuItems.map((item, index) => {
                         const active = isMenuSelected(item);
                         return (
                             <TouchableOpacity
@@ -218,7 +225,16 @@ export default function WebContainer({ children, activeRoute }) {
                         <TouchableOpacity style={styles.notificationBtn}>
                             <Ionicons name="notifications-outline" size={22} color="#64748B" />
                         </TouchableOpacity>
-                        <TouchableOpacity style={styles.userBadge} onPress={() => navigation.navigate('Ayarlar')}>
+                        <TouchableOpacity style={styles.userBadge} onPress={async () => {
+                            if (isRestrictedPersonnel) {
+                                if (Platform.OS === 'web' && window.confirm("Çıkış yapmak istediğinize emin misiniz?")) {
+                                    const { error } = await signOut();
+                                    if (error) window.alert("Çıkış Hatası: " + error.message);
+                                }
+                            } else {
+                                navigation.navigate('Ayarlar');
+                            }
+                        }}>
                             <View style={styles.avatar}>
                                 <Text style={{ color: '#fff', fontWeight: 'bold', fontSize: 12 }}>
                                     {company?.name ? company.name.substring(0, 2).toUpperCase() : "AC"}
@@ -226,7 +242,7 @@ export default function WebContainer({ children, activeRoute }) {
                             </View>
                             <View style={styles.userInfo}>
                                 <Text style={styles.userName} numberOfLines={1}>{company?.name || "Şirketim"}</Text>
-                                <Text style={styles.userRole} numberOfLines={1}>{session?.user?.email || "Yönetici"}</Text>
+                                <Text style={styles.userRole} numberOfLines={1}>{isRestrictedPersonnel ? "Personel" : (session?.user?.email || "Yönetici")}</Text>
                             </View>
                             <Ionicons name="chevron-down" size={14} color="#94A3B8" style={{ marginLeft: 8 }} />
                         </TouchableOpacity>
