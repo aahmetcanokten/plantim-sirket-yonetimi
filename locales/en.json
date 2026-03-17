@@ -695,5 +695,19 @@
     "col_open_tasks": "Open Tasks",
     "col_actions": "Actions",
     "yes": "Yes",
-    "task_completion_rate": "Completion Rate"
+    "task_completion_rate": "Completion Rate",
+    "general_preferences": "General Preferences",
+    "currency": "Currency",
+    "date_format": "Date Format",
+    "timezone": "Timezone",
+    "security": "Security",
+    "active_sessions": "Active Sessions",
+    "active_now": "Active now",
+    "database_backup": "Database Backup",
+    "download_backup": "Download Backup",
+    "industry": "Industry",
+    "company_profile": "Company Profile",
+    "subscription": "Subscription",
+    "export_and_backup": "Export & Backup",
+    "phone_number": "Phone Number"
 }

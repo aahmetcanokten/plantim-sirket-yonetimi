@@ -1,9 +1,11 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useContext } from 'react';
 import { View, Text, StyleSheet, Platform, TouchableOpacity, ScrollView } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import { Ionicons } from '@expo/vector-icons';
 import { Colors } from '../Theme';
 import { useAuth } from '../AuthContext';
+import { AppContext } from '../AppContext';
+
 
 const MENU_ITEMS = [
     { name: 'DashboardScreen', label: 'Şirket Özeti', icon: 'grid-outline' },
@@ -31,6 +33,8 @@ const MENU_ITEMS = [
 export default function WebContainer({ children, activeRoute }) {
     const navigation = useNavigation();
     const { session } = useAuth();
+    const appContext = useContext(AppContext);
+    const company = appContext?.company;
 
     // Inject Google Fonts and Global Styles for Web
     useEffect(() => {
@@ -216,11 +220,13 @@ export default function WebContainer({ children, activeRoute }) {
                         </TouchableOpacity>
                         <TouchableOpacity style={styles.userBadge} onPress={() => navigation.navigate('Ayarlar')}>
                             <View style={styles.avatar}>
-                                <Text style={{ color: '#fff', fontWeight: 'bold', fontSize: 12 }}>AC</Text>
+                                <Text style={{ color: '#fff', fontWeight: 'bold', fontSize: 12 }}>
+                                    {company?.name ? company.name.substring(0, 2).toUpperCase() : "AC"}
+                                </Text>
                             </View>
                             <View style={styles.userInfo}>
-                                <Text style={styles.userName}>Ahmet Can</Text>
-                                <Text style={styles.userRole}>Yönetici</Text>
+                                <Text style={styles.userName} numberOfLines={1}>{company?.name || "Şirketim"}</Text>
+                                <Text style={styles.userRole} numberOfLines={1}>{session?.user?.email || "Yönetici"}</Text>
                             </View>
                             <Ionicons name="chevron-down" size={14} color="#94A3B8" style={{ marginLeft: 8 }} />
                         </TouchableOpacity>
@@ -397,6 +403,7 @@ const styles = StyleSheet.create({
     },
     userInfo: {
         marginRight: 4,
+        maxWidth: 160,
     },
     userName: {
         fontSize: 14,

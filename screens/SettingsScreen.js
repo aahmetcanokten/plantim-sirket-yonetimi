@@ -22,8 +22,12 @@ import { AppContext } from "../AppContext";
 import { useAuth } from "../AuthContext";
 import { exportToPDF, exportToExcel } from "../utils/ExportHelper";
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import WebSettingsLayout from "./WebSettingsLayout";
 
 export default function SettingsScreen({ navigation }) {
+  if (Platform.OS === 'web') {
+    return <WebSettingsLayout navigation={navigation} />;
+  }
   const { t, i18n } = useTranslation(); // Translations
   // AppContext'ten verileri al
   const {

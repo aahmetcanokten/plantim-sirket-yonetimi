@@ -8,7 +8,8 @@ import {
     ScrollView,
     ActivityIndicator,
     Alert,
-    Linking
+    Linking,
+    Platform
 } from 'react-native';
 import { Colors } from '../Theme';
 import { Ionicons } from '@expo/vector-icons';
@@ -26,9 +27,32 @@ export default function PaywallScreen({ navigation }) {
     useEffect(() => {
         const loadOfferings = async () => {
             try {
-                const offerings = await getPackages();
-                if (offerings && offerings.availablePackages) {
-                    setPackages(offerings.availablePackages);
+                if (Platform.OS === 'web') {
+                    setPackages([
+                        {
+                            identifier: "web_premium_annual",
+                            packageType: "ANNUAL",
+                            product: {
+                                title: "Premium Paket (Yıllık)",
+                                priceString: "10.000,00 ₺",
+                                description: "Tüm özelliklere bir yıl boyunca sınırsız erişim."
+                            }
+                        },
+                        {
+                            identifier: "web_premium_monthly",
+                            packageType: "MONTHLY",
+                            product: {
+                                title: "Premium Paket (Aylık)",
+                                priceString: "1.200,00 ₺",
+                                description: "Aylık ödeme yaparak tüm premium özelliklere erişin."
+                            }
+                        }
+                    ]);
+                } else {
+                    const offerings = await getPackages();
+                    if (offerings && offerings.availablePackages) {
+                        setPackages(offerings.availablePackages);
+                    }
                 }
             } catch (error) {
                 Alert.alert(t("error"), t("packages_load_error") + error.message);
@@ -42,6 +66,15 @@ export default function PaywallScreen({ navigation }) {
 
     const handlePurchase = async (pkg) => {
         if (selectedPackage) return;
+
+        if (Platform.OS === 'web') {
+            if (window.confirm("Ödeme işlemi için güvenli ödeme bağlantısına (Iyzico / Shopier) yönlendirileceksiniz. Onaylıyor musunuz?")) {
+                // Burada kullanıcıyı bir Iyzico linkine veya web ödeme ekranına yönlendirebilirsiniz
+                window.open('https://iyzi.link/ornek-linkiniz', '_blank');
+            }
+            return;
+        }
+
         setSelectedPackage(pkg);
         try {
             const success = await purchasePremium(pkg);

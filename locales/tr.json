@@ -694,5 +694,19 @@
     "col_open_tasks": "Açık Görev",
     "col_actions": "İşlemler",
     "yes": "Evet",
-    "task_completion_rate": "Tamamlanma Oranı"
+    "task_completion_rate": "Tamamlanma Oranı",
+    "general_preferences": "Genel Tercihler",
+    "currency": "Para Birimi",
+    "date_format": "Tarih Formatı",
+    "timezone": "Saat Dilimi",
+    "security": "Güvenlik",
+    "active_sessions": "Aktif Oturumlar",
+    "active_now": "Şu an aktif",
+    "database_backup": "Veritabanı Yedeği",
+    "download_backup": "Yedeği İndir",
+    "industry": "Sektör",
+    "company_profile": "Firma Bilgileri",
+    "subscription": "Abonelik",
+    "export_and_backup": "Dışa Aktarım ve Yedekleme",
+    "phone_number": "Telefon Numarası"
 }
