@@ -148,11 +148,7 @@ export default function WebContainer({ children, activeRoute }) {
     }
 
     if (!session) {
-        return (
-            <View style={{ flex: 1, height: '100vh', width: '100%', backgroundColor: Colors.webBackground }}>
-                {children}
-            </View>
-        )
+        return <>{children}</>;
     }
 
     // Checking if we can go back

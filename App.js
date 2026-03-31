@@ -38,6 +38,8 @@ import MrpScreen from "./screens/MrpScreen";
 import DashboardScreen from "./screens/DashboardScreen";
 import FinanceScreen from "./screens/FinanceScreen";
 import LoginScreen from "./screens/LoginScreen";
+import WebLoginPage from "./screens/WebLoginPage";
+
 import PaywallScreen from "./screens/PaywallScreen";
 import OnboardingScreen from "./screens/OnboardingScreen";
 import AsyncStorage from '@react-native-async-storage/async-storage';
@@ -160,7 +162,7 @@ function RootNavigator() {
           {isFirstLaunch && Platform.OS !== 'web' && (
             <Stack.Screen name="Onboarding" component={OnboardingScreen} />
           )}
-          <Stack.Screen name="Login" component={LoginScreen} />
+          <Stack.Screen name="Login" component={Platform.OS === 'web' ? WebLoginPage : LoginScreen} />
         </>
       )}
     </Stack.Navigator>
@@ -211,28 +213,54 @@ export default function App() {
   return (
     <ErrorBoundary>
       <AuthProvider>
-        <SafeAreaProvider>
-          <OfflineNotice />
-          <AppProvider>
-            <ToastProvider>
-              <NavigationContainer
-                documentTitle={{
-                  formatter: (options, route) => 'Plantim ERP',
-                }}
-                onStateChange={(state) => {
-                  const routeInfo = getActiveRouteName(state);
-                  setActiveRoute(routeInfo);
-                }}
-              >
-                <WebContainer activeRoute={activeRoute}>
-                  <RootNavigator />
-                </WebContainer>
-              </NavigationContainer>
-            </ToastProvider>
-          </AppProvider>
-        </SafeAreaProvider>
+        <AppWebWrapper activeRoute={activeRoute} setActiveRoute={setActiveRoute} />
       </AuthProvider>
     </ErrorBoundary>
+  );
+}
+
+// Web'de login ekranını NavigationContainer dışında render ediyoruz
+// Böylece overflow:hidden olan hiçbir RN container kalmaz
+function AppWebWrapper({ activeRoute, setActiveRoute }) {
+  const { session, loading } = useAuth();
+
+  if (Platform.OS === 'web' && loading) {
+    return (
+      <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: '#F8FAFC' }}>
+        <ActivityIndicator size="large" color="#2563EB" />
+      </View>
+    );
+  }
+
+  if (Platform.OS === 'web' && !session) {
+    return (
+      <AppProvider>
+        <WebLoginPage />
+      </AppProvider>
+    );
+  }
+
+  return (
+    <SafeAreaProvider>
+      <OfflineNotice />
+      <AppProvider>
+        <ToastProvider>
+          <NavigationContainer
+            documentTitle={{
+              formatter: (options, route) => 'Plantim ERP',
+            }}
+            onStateChange={(state) => {
+              const routeInfo = getActiveRouteName(state);
+              setActiveRoute(routeInfo);
+            }}
+          >
+            <WebContainer activeRoute={activeRoute}>
+              <RootNavigator />
+            </WebContainer>
+          </NavigationContainer>
+        </ToastProvider>
+      </AppProvider>
+    </SafeAreaProvider>
   );
 }
 

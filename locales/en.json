@@ -591,7 +591,6 @@
     "pricing_popular": "MOST POPULAR",
     "back_to_login": "Back to Login",
     "nav_faq": "FAQ",
-
     "department": "Department",
     "emp_email": "Email",
     "national_id": "National ID",
@@ -709,5 +708,18 @@
     "company_profile": "Company Profile",
     "subscription": "Subscription",
     "export_and_backup": "Export & Backup",
-    "phone_number": "Phone Number"
-}
+    "phone_number": "Phone Number",
+    "web_section_features": "Powerful Features",
+    "web_section_modules": "ERP Modules",
+    "web_section_testimonials": "What Our Users Say",
+    "web_cta_banner_title": "Ready to Grow Your Business?",
+    "web_cta_banner_sub": "Create a free account now and be set up in 2 minutes.",
+    "web_module_stock_desc": "Barcode stock tracking, warehouse management and critical stock alerts",
+    "web_module_sales_desc": "Sales orders, shipment tracking and customer management",
+    "web_module_hr_desc": "Employee profiles, leave management and task assignments",
+    "web_module_finance_desc": "Income-expense tracking, invoicing and profit/loss analysis",
+    "web_module_asset_desc": "Fixed asset records and personnel custody tracking",
+    "web_module_prod_desc": "Work orders, production line and component consumption",
+    "web_hero_cta_primary": "Start Free",
+    "web_hero_cta_secondary": "Explore Features"
+}

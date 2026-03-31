@@ -31,6 +31,7 @@ export default function AssetManagementScreen({ navigation }) {
     const [selectedAsset, setSelectedAsset] = useState(null);
     const [searchQuery, setSearchQuery] = useState("");
     const [scannerVisible, setScannerVisible] = useState(false);
+    const [expandedPersonId, setExpandedPersonId] = useState(null);
 
     // Form States
     const [name, setName] = useState("");
@@ -396,6 +397,97 @@ export default function AssetManagementScreen({ navigation }) {
         );
     };
 
+    const renderPersonnelView = () => {
+        const query = searchQuery.toLowerCase();
+        const filteredPersonnel = personnel.filter(p => p.name.toLowerCase().includes(query));
+
+        return (
+            <ScrollView style={{ paddingHorizontal: Platform.OS === 'web' ? 16 : 0, paddingBottom: 100 }}>
+                {filteredPersonnel.map(person => {
+                    const isExpanded = expandedPersonId === person.id;
+                    const activeAssignments = assets.filter(a => a.status === 'ASSIGNED' && a.assigned_person_id === person.id);
+                    const pastAssignments = assets.filter(a => {
+                        try {
+                            const history = Array.isArray(a.past_assignments) ? a.past_assignments : [];
+                            return history.some(h => h.person_id === person.id);
+                        } catch(e) { return false; }
+                    });
+
+                    return (
+                        <View key={person.id} style={styles.personCard}>
+                            <TouchableOpacity style={styles.personCardHeader} onPress={() => setExpandedPersonId(isExpanded ? null : person.id)}>
+                                <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+                                    <View style={styles.webAvatarSmall}>
+                                        <Text style={styles.webAvatarTextSmall}>{person.name.charAt(0)}</Text>
+                                    </View>
+                                    <Text style={styles.personNameBold}>{person.name}</Text>
+                                </View>
+                                <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+                                    <View style={styles.badgeLabel}>
+                                        <Text style={styles.badgeLabelText}>{activeAssignments.length} Aktif</Text>
+                                    </View>
+                                    <View style={[styles.badgeLabel, { backgroundColor: '#F1F5F9', marginLeft: 8 }]}>
+                                        <Text style={[styles.badgeLabelText, { color: '#64748B' }]}>{pastAssignments.length} Eski</Text>
+                                    </View>
+                                    <Ionicons name={isExpanded ? "chevron-up" : "chevron-down"} size={20} color={Colors.secondary} style={{ marginLeft: 12 }} />
+                                </View>
+                            </TouchableOpacity>
+
+                            {isExpanded && (
+                                <View style={styles.personCardBody}>
+                                    <View style={styles.sectionTitleContainer}>
+                                        <Text style={styles.sectionTitle}>Aktif Zimmetler</Text>
+                                    </View>
+                                    {activeAssignments.length === 0 ? (
+                                        <Text style={styles.emptyTextSmall}>Aktif zimmet bulunmuyor.</Text>
+                                    ) : (
+                                        activeAssignments.map(asset => (
+                                            <View key={`active-${asset.id}`} style={styles.historyRow}>
+                                                <View style={{ flex: 1 }}>
+                                                    <Text style={styles.historyRowName}>{asset.name}</Text>
+                                                    <Text style={styles.historyRowSub}>{asset.serial_number || '-'}</Text>
+                                                </View>
+                                                <Text style={styles.historyRowDate}>
+                                                    {asset.assigned_date ? new Date(asset.assigned_date).toLocaleDateString() : '-'}
+                                                </Text>
+                                            </View>
+                                        ))
+                                    )}
+
+                                    <View style={[styles.sectionTitleContainer, { marginTop: 16 }]}>
+                                        <Text style={styles.sectionTitle}>Geçmiş Zimmetler (İade Edilenler)</Text>
+                                    </View>
+                                    {pastAssignments.length === 0 ? (
+                                        <Text style={styles.emptyTextSmall}>Geçmiş zimmet bulunmuyor.</Text>
+                                    ) : (
+                                        pastAssignments.map(asset => {
+                                            const histList = Array.isArray(asset.past_assignments) ? asset.past_assignments : [];
+                                            const hist = [...histList].sort((a,b) => new Date(b.returned_date) - new Date(a.returned_date)).find(h => h.person_id === person.id);
+                                            return (
+                                                <View key={`past-${asset.id}`} style={styles.historyRow}>
+                                                    <View style={{ flex: 1 }}>
+                                                        <Text style={[styles.historyRowName, { color: '#64748B' }]}>{asset.name}</Text>
+                                                        <Text style={styles.historyRowSub}>{asset.serial_number || '-'}</Text>
+                                                    </View>
+                                                    <View style={{ alignItems: 'flex-end' }}>
+                                                        <Text style={styles.historyRowDate}>Veriliş: {hist?.assigned_date ? new Date(hist.assigned_date).toLocaleDateString() : '-'}</Text>
+                                                        <Text style={[styles.historyRowDate, { color: Colors.warning, marginTop: 2 }]}>
+                                                            İade: {hist?.returned_date ? new Date(hist.returned_date).toLocaleDateString() : '-'}
+                                                        </Text>
+                                                    </View>
+                                                </View>
+                                            )
+                                        })
+                                    )}
+                                </View>
+                            )}
+                        </View>
+                    );
+                })}
+            </ScrollView>
+        );
+    };
+
     return (
         <ImmersiveLayout title={t("asset_management")} subtitle={`${filteredAssets.length} ${t("quantity_short")}`} onGoBack={() => navigation.goBack()} noScrollView={Platform.OS === 'web'}>
 
@@ -443,9 +535,14 @@ export default function AssetManagementScreen({ navigation }) {
                 <TouchableOpacity style={[styles.tab, activeTab === 'assigned' && styles.activeTab]} onPress={() => setActiveTab('assigned')}>
                     <Text style={[styles.tabText, activeTab === 'assigned' && styles.activeTabText]}>{t("asset_assigned")}</Text>
                 </TouchableOpacity>
+                <TouchableOpacity style={[styles.tab, activeTab === 'personnel' && styles.activeTab]} onPress={() => setActiveTab('personnel')}>
+                    <Text style={[styles.tabText, activeTab === 'personnel' && styles.activeTabText]}>{t("personnel") || "Personeller"}</Text>
+                </TouchableOpacity>
             </View>
 
-            {Platform.OS === 'web' && Dimensions.get('window').width > 800 ? (
+            {activeTab === 'personnel' ? (
+                renderPersonnelView()
+            ) : Platform.OS === 'web' && Dimensions.get('window').width > 800 ? (
                 <View style={styles.webTableWrapper}>
                     <View style={styles.webTableContainer}>
                         <View style={styles.webTableHeader}>
@@ -913,13 +1010,14 @@ const styles = StyleSheet.create({
         borderColor: '#E2E8F0',
         overflow: 'hidden',
         minHeight: 400,
+        boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.05), 0 2px 4px -1px rgba(0, 0, 0, 0.03)',
     },
     webTableHeader: {
         flexDirection: 'row',
         backgroundColor: '#F8FAFC',
         borderBottomWidth: 1,
         borderBottomColor: '#E2E8F0',
-        paddingVertical: 12,
+        paddingVertical: 14,
         paddingHorizontal: 16,
     },
     webHeaderCell: {
@@ -1013,6 +1111,88 @@ const styles = StyleSheet.create({
         fontWeight: '700',
         color: Colors.textPrimary,
         marginTop: 2,
+    },
+    // New Personnel View Styles
+    personCard: {
+        backgroundColor: '#fff',
+        borderRadius: 12,
+        marginBottom: 12,
+        borderWidth: 1,
+        borderColor: '#E2E8F0',
+        overflow: 'hidden',
+        marginHorizontal: Platform.OS === 'web' ? 0 : 16,
+    },
+    personCardHeader: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        justifyContent: 'space-between',
+        padding: 16,
+        backgroundColor: '#fff',
+    },
+    personNameBold: {
+        fontSize: 16,
+        fontWeight: '600',
+        color: Colors.textPrimary,
+    },
+    badgeLabel: {
+        backgroundColor: '#DCFCE7',
+        paddingHorizontal: 10,
+        paddingVertical: 4,
+        borderRadius: 12,
+    },
+    badgeLabelText: {
+        fontSize: 12,
+        fontWeight: '700',
+        color: '#166534',
+    },
+    personCardBody: {
+        padding: 16,
+        backgroundColor: '#F8FAFC',
+        borderTopWidth: 1,
+        borderTopColor: '#E2E8F0',
+    },
+    sectionTitleContainer: {
+        marginBottom: 8,
+        paddingBottom: 4,
+        borderBottomWidth: 1,
+        borderBottomColor: '#E2E8F0',
+    },
+    sectionTitle: {
+        fontSize: 14,
+        fontWeight: '600',
+        color: '#334155',
+    },
+    historyRow: {
+        flexDirection: 'row',
+        justifyContent: 'space-between',
+        alignItems: 'center',
+        backgroundColor: '#fff',
+        padding: 12,
+        borderRadius: 8,
+        marginBottom: 8,
+        borderWidth: 1,
+        borderColor: '#E2E8F0',
+    },
+    historyRowName: {
+        fontSize: 14,
+        fontWeight: '600',
+        color: Colors.textPrimary,
+    },
+    historyRowSub: {
+        fontSize: 12,
+        color: Colors.secondary,
+        marginTop: 2,
+    },
+    historyRowDate: {
+        fontSize: 12,
+        color: '#64748B',
+        fontWeight: '500',
+    },
+    emptyTextSmall: {
+        fontSize: 13,
+        color: Colors.secondary,
+        fontStyle: 'italic',
+        marginBottom: 12,
     },
 });
 

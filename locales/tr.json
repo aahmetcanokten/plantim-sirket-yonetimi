@@ -708,5 +708,18 @@
     "company_profile": "Firma Bilgileri",
     "subscription": "Abonelik",
     "export_and_backup": "Dışa Aktarım ve Yedekleme",
-    "phone_number": "Telefon Numarası"
+    "phone_number": "Telefon Numarası",
+    "web_section_features": "Güçlü Özellikler",
+    "web_section_modules": "ERP Modülleri",
+    "web_section_testimonials": "Kullanıcılarımız Ne Diyor?",
+    "web_cta_banner_title": "İşinizi Büyütmeye Hazır mısınız?",
+    "web_cta_banner_sub": "Hemen ücretsiz hesap açın, 2 dakikada kurulumu tamamlayın.",
+    "web_module_stock_desc": "Barkodlu stok takibi, depo yönetimi ve kritik stok uyarıları",
+    "web_module_sales_desc": "Satış siparişleri, sevkiyat takibi ve müşteri yönetimi",
+    "web_module_hr_desc": "Personel profilleri, izin yönetimi ve görev atamaları",
+    "web_module_finance_desc": "Gelir-gider takibi, fatura ve kâr/zarar analizleri",
+    "web_module_asset_desc": "Demirbaş kaydı ve personel zimmet takibi",
+    "web_module_prod_desc": "İş emirleri, üretim hattı ve bileşen tüketimi",
+    "web_hero_cta_primary": "Ücretsiz Başlayın",
+    "web_hero_cta_secondary": "Özelliklerini Keşfet"
 }

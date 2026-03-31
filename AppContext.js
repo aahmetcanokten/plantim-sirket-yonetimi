@@ -292,7 +292,10 @@ export function AppProvider({ children }) {
               console.log("Assets tablosu yüklenemedi:", assetsError.message);
               setAssets([]);
             } else {
-              setAssets(assetsData || []);
+              setAssets((assetsData || []).map(a => ({
+                ...a,
+                past_assignments: typeof a.past_assignments === 'string' ? JSON.parse(a.past_assignments) : (a.past_assignments || [])
+              })));
             }
           } catch (assetErr) {
             console.log("Assets veri çekme hatası:", assetErr);
@@ -723,10 +726,43 @@ export function AppProvider({ children }) {
   };
   const unassignAsset = async (assetId) => {
     if (!session || !supabase) return;
-    const updateData = { status: 'AVAILABLE', assigned_person_id: null, assigned_date: null };
+    
+    // Eskiden zimmetli olan personeli geçmişe ekle
+    const asset = assets.find(a => a.id === assetId);
+    let history = [];
+    if (asset) {
+        try {
+            if (typeof asset.past_assignments === 'string') {
+                history = JSON.parse(asset.past_assignments);
+            } else if (Array.isArray(asset.past_assignments)) {
+                history = [...asset.past_assignments];
+            }
+        } catch(e) { history = []; }
+        
+        if (asset.assigned_person_id) {
+            history.push({
+                person_id: asset.assigned_person_id,
+                assigned_date: asset.assigned_date,
+                returned_date: new Date().toISOString()
+            });
+        }
+    }
+
+    const updateData = { 
+        status: 'AVAILABLE', 
+        assigned_person_id: null, 
+        assigned_date: null,
+        past_assignments: JSON.stringify(history)
+    };
     const { data, error } = await supabase.from('assets').update(updateData).eq('id', assetId).select();
     if (error) Alert.alert("Hata", error.message);
-    else setAssets((prev) => prev.map(a => a.id === assetId ? data[0] : a));
+    else {
+      const updatedAsset = {
+        ...data[0],
+        past_assignments: typeof data[0].past_assignments === 'string' ? JSON.parse(data[0].past_assignments) : (data[0].past_assignments || [])
+      };
+      setAssets((prev) => prev.map(a => a.id === assetId ? updatedAsset : a));
+    }
   };
 
   // --- İŞ EMİRLERİ (WORK ORDERS) ---
