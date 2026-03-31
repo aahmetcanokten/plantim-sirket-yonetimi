@@ -586,7 +586,7 @@ export default function LoginScreen() {
                 <Text style={styles.popularBadgeText}>{t('pricing_popular')}</Text>
               </View>
               <Text style={[styles.pricingPlanName, { color: Colors.iosBlue }]}>{t('pricing_pro')}</Text>
-              <Text style={[styles.pricingPrice, { color: '#fff' }]}>990 ₺ <Text style={{ fontSize: 14, fontWeight: '400', color: '#94A3B8' }}>{t('pricing_mo')}</Text></Text>
+              <Text style={[styles.pricingPrice, { color: '#fff' }]}>11.880 ₺ <Text style={{ fontSize: 14, fontWeight: '400', color: '#94A3B8' }}>{t('pricing_yr')}</Text></Text>
               <View style={[styles.pricingDivider, { backgroundColor: 'rgba(255,255,255,0.1)' }]} />
               <PriceFeature text={t('pricing_p_1')} dark />
               <PriceFeature text={t('pricing_p_2')} dark />
@@ -706,7 +706,7 @@ const PricingSection = ({ t }) => (
       <View style={[styles.priceCard, styles.priceCardFeatured]}>
         <View style={styles.popularBadgeGlobal}><Text style={styles.popularBadgeText}>{t('pricing_popular')}</Text></View>
         <Text style={[styles.pricePlanName, { color: Colors.iosBlue }]}>{t('pricing_pro')}</Text>
-        <Text style={styles.priceAmount}>990 ₺ <Text style={styles.pricePeriod}>{t('pricing_mo')}</Text></Text>
+        <Text style={styles.priceAmount}>11.880 ₺ <Text style={styles.pricePeriod}>{t('pricing_yr')}</Text></Text>
         <View style={styles.priceDivider} />
         <PriceFeature text={t('pricing_p_1')} />
         <PriceFeature text={t('pricing_p_2')} />

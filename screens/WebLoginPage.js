@@ -953,7 +953,7 @@ export default function WebLoginPage() {
           <div className="wlp-price-card featured">
             <div className="wlp-popular-badge">{t('pricing_popular')}</div>
             <p className="wlp-price-plan pro">{t('pricing_pro')}</p>
-            <p className="wlp-price-amount">990 ₺ <span style={{ fontSize: 14, fontWeight: 400, color: '#94A3B8' }}>{t('pricing_mo')}</span></p>
+            <p className="wlp-price-amount">11.880 ₺ <span style={{ fontSize: 14, fontWeight: 400, color: '#94A3B8' }}>{t('pricing_yr')}</span></p>
             <div className="wlp-price-divider" />
             {[t('pricing_p_1'), t('pricing_p_2'), t('pricing_p_3'), t('web_feature_security')].map((f, i) => (
               <div key={i} className="wlp-price-feature">
