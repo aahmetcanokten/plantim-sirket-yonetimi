@@ -457,34 +457,37 @@ export default function SalesScreen() {
           {Platform.OS === 'web' && Dimensions.get('window').width > 768 ? (
             <View style={styles.webTableContainer}>
               <View style={styles.webTableHeader}>
-                <TouchableOpacity style={[styles.webHeaderCol, { flex: 1.5 }]} onPress={() => handleSort('dateISO')}>
+                <TouchableOpacity style={[styles.webHeaderCol, { flex: 1.2 }]} onPress={() => handleSort('dateISO')}>
                   <Text style={styles.webHeaderCell}>{t('date') || 'Tarih'}</Text>
                   {sortConfig.key === 'dateISO' && <Ionicons name={sortConfig.direction === 'asc' ? 'chevron-up' : 'chevron-down'} size={12} color="#475569" style={{ marginLeft: 4, marginTop: 1 }} />}
                 </TouchableOpacity>
-                <TouchableOpacity style={[styles.webHeaderCol, { flex: 2 }]} onPress={() => handleSort('customerName')}>
+                <TouchableOpacity style={[styles.webHeaderCol, { flex: 1.8 }]} onPress={() => handleSort('customerName')}>
                   <Text style={styles.webHeaderCell}>{t('customers')}</Text>
                   {sortConfig.key === 'customerName' && <Ionicons name={sortConfig.direction === 'asc' ? 'chevron-up' : 'chevron-down'} size={12} color="#475569" style={{ marginLeft: 4, marginTop: 1 }} />}
                 </TouchableOpacity>
-                <TouchableOpacity style={[styles.webHeaderCol, { flex: 2 }]} onPress={() => handleSort('productName')}>
+                <TouchableOpacity style={[styles.webHeaderCol, { flex: 1.8 }]} onPress={() => handleSort('productName')}>
                   <Text style={styles.webHeaderCell}>{t('product_name')}</Text>
                   {sortConfig.key === 'productName' && <Ionicons name={sortConfig.direction === 'asc' ? 'chevron-up' : 'chevron-down'} size={12} color="#475569" style={{ marginLeft: 4, marginTop: 1 }} />}
                 </TouchableOpacity>
-                <TouchableOpacity style={[styles.webHeaderCol, { flex: 1, justifyContent: 'center' }]} onPress={() => handleSort('quantity')}>
+                <TouchableOpacity style={[styles.webHeaderCol, { flex: 0.8, justifyContent: 'center' }]} onPress={() => handleSort('quantity')}>
                   <Text style={[styles.webHeaderCell, { textAlign: 'center' }]}>{t('quantity_short') || 'Adet'}</Text>
                   {sortConfig.key === 'quantity' && <Ionicons name={sortConfig.direction === 'asc' ? 'chevron-up' : 'chevron-down'} size={12} color="#475569" style={{ marginLeft: 4, marginTop: 1 }} />}
                 </TouchableOpacity>
-                <TouchableOpacity style={[styles.webHeaderCol, { flex: 1.5, justifyContent: 'flex-end' }]} onPress={() => handleSort('price')}>
+                <TouchableOpacity style={[styles.webHeaderCol, { flex: 1, justifyContent: 'flex-end' }]} onPress={() => handleSort('price')}>
                   <Text style={[styles.webHeaderCell, { textAlign: 'right' }]}>{t('price_currency_simple') || 'Tutar'}</Text>
                   {sortConfig.key === 'price' && <Ionicons name={sortConfig.direction === 'asc' ? 'chevron-up' : 'chevron-down'} size={12} color="#475569" style={{ marginLeft: 4, marginTop: 1 }} />}
                 </TouchableOpacity>
-                <TouchableOpacity style={[styles.webHeaderCol, { flex: 1.5, justifyContent: 'flex-end' }]} onPress={() => handleSort('profit')}>
+                <TouchableOpacity style={[styles.webHeaderCol, { flex: 1, justifyContent: 'flex-end' }]} onPress={() => handleSort('profit')}>
                   <Text style={[styles.webHeaderCell, { textAlign: 'right' }]}>{t('profit_loss')}</Text>
                   {sortConfig.key === 'profit' && <Ionicons name={sortConfig.direction === 'asc' ? 'chevron-up' : 'chevron-down'} size={12} color="#475569" style={{ marginLeft: 4, marginTop: 1 }} />}
                 </TouchableOpacity>
                 <View style={[styles.webHeaderCol, { flex: 1.5, justifyContent: 'center' }]}>
-                  <Text style={[styles.webHeaderCell, { textAlign: 'center' }]}>{t('info') || 'Bilgi'}</Text>
+                  <Text style={[styles.webHeaderCell, { textAlign: 'center' }]}>{t('invoice') || 'Fatura'}</Text>
                 </View>
-                <View style={[styles.webHeaderCol, { flex: 2, justifyContent: 'center' }]}>
+                <View style={[styles.webHeaderCol, { flex: 1.5, justifyContent: 'center' }]}>
+                  <Text style={[styles.webHeaderCell, { textAlign: 'center' }]}>{t('shipment') || 'Sevk'}</Text>
+                </View>
+                <View style={[styles.webHeaderCol, { flex: 2.4, justifyContent: 'center' }]}>
                   <Text style={[styles.webHeaderCell, { textAlign: 'center' }]}>{t('actions') || 'İşlemler'}</Text>
                 </View>
               </View>
@@ -512,32 +515,32 @@ export default function SalesScreen() {
 
                   return (
                     <View style={[styles.webTableRow, index % 2 === 0 ? styles.webTableRowEven : styles.webTableRowOdd]}>
-                      <View style={{ flex: 1.5, justifyContent: 'center' }}>
+                      <View style={{ flex: 1.2, justifyContent: 'center' }}>
                         <Text style={styles.webCellText}>{saleDate}</Text>
                       </View>
-                      <View style={{ flex: 2, justifyContent: 'center', paddingRight: 8 }}>
+                      <View style={{ flex: 1.8, justifyContent: 'center', paddingRight: 8 }}>
                         <Text style={styles.webCellTextBold} numberOfLines={1}>{item.customerName}</Text>
                       </View>
-                      <View style={{ flex: 2, justifyContent: 'center', paddingRight: 8 }}>
+                      <View style={{ flex: 1.8, justifyContent: 'center', paddingRight: 8 }}>
                         <Text style={styles.webCellTextBold} numberOfLines={1}>{item.productName}</Text>
                         {productCode && <Text style={styles.webCellSubText}>#{productCode}</Text>}
                       </View>
-                      <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}>
+                      <View style={{ flex: 0.8, justifyContent: 'center', alignItems: 'center' }}>
                         <View style={styles.webQuantityBadge}>
                           <Text style={styles.webQuantityText}>x{item.quantity}</Text>
                         </View>
                       </View>
-                      <View style={{ flex: 1.5, justifyContent: 'center', alignItems: 'flex-end', paddingRight: 10 }}>
+                      <View style={{ flex: 1, justifyContent: 'center', alignItems: 'flex-end', paddingRight: 10 }}>
                         <Text style={[styles.webCellTextBold, { color: Colors.iosBlue }]}>
                           {Number(item.price ?? 0).toLocaleString('tr-TR', { minimumFractionDigits: 2 })} ₺
                         </Text>
                       </View>
-                      <View style={{ flex: 1.5, justifyContent: 'center', alignItems: 'flex-end', paddingRight: 10 }}>
+                      <View style={{ flex: 1, justifyContent: 'center', alignItems: 'flex-end', paddingRight: 10 }}>
                         <Text style={[styles.webCellTextBold, { color: profit >= 0 ? Colors.iosGreen : Colors.critical }]}>
                           {profit >= 0 ? '+' : ''}{profit.toLocaleString('tr-TR', { minimumFractionDigits: 2 })} ₺
                         </Text>
                       </View>
-                      <View style={{ flex: 1.5, justifyContent: 'center', alignItems: 'center' }}>
+                      <View style={{ flex: 1.5, justifyContent: 'center', alignItems: 'center', gap: 4, paddingHorizontal: 4 }}>
                         {item.invoiceNumber ? (
                           <View style={[styles.webSmallBadge, { backgroundColor: '#E3F2FD', borderColor: '#BBDEFB' }]}>
                             <Text style={[styles.webSmallBadgeText, { color: Colors.iosBlue }]}>{t('inv_abbr')}: {item.invoiceNumber}</Text>
@@ -548,39 +551,67 @@ export default function SalesScreen() {
                           </View>
                         )}
                         {item.source_quote_id && (
-                          <View style={[styles.webSmallBadge, { backgroundColor: '#FFFBEB', borderColor: '#FDE68A', marginTop: 4 }]}>
+                          <View style={[styles.webSmallBadge, { backgroundColor: '#FFFBEB', borderColor: '#FDE68A' }]}>
                             <Text style={[styles.webSmallBadgeText, { color: '#D97706' }]}>📋 Tekliften</Text>
                           </View>
                         )}
-                        {activeTab === 'active' && item.shipmentDate && (
-                          <View style={[styles.webSmallBadge, isCriticalShipment ? { backgroundColor: Colors.critical, borderColor: '#B91C1C' } : { backgroundColor: '#E3F2FD', borderColor: '#BBDEFB' }, { marginTop: 4 }]}>
-                            <Text style={[styles.webSmallBadgeText, isCriticalShipment ? { color: '#fff' } : { color: Colors.iosBlue }]}>
-                              {t('shipped_abbr')}: {formatShipmentDate(item.shipmentDate)}
+                      </View>
+                      <View style={{ flex: 1.5, justifyContent: 'center', alignItems: 'center', paddingHorizontal: 4 }}>
+                        {activeTab === 'active' && item.shipmentDate ? (
+                          <View style={[styles.webSmallBadge, { backgroundColor: '#F8FAFC', borderColor: '#E2E8F0' }]}>
+                            <Text style={[styles.webSmallBadgeText, { color: isCriticalShipment ? Colors.critical : '#475569' }]}>
+                              📅 {formatShipmentDate(item.shipmentDate)}
                             </Text>
                           </View>
+                        ) : (
+                           activeTab === 'active' && <Text style={{ fontSize: 11, color: Colors.muted }}>-</Text>
                         )}
                       </View>
-                      <View style={{ flex: 2, flexDirection: 'row', justifyContent: 'center', alignItems: 'center', gap: 6 }}>
-                        <TouchableOpacity onPress={() => openSaleDetails(item)} style={[styles.webActionBtn, { backgroundColor: '#F3F4F6', borderColor: '#E5E7EB' }]}>
+                      <View style={{ flex: 2.4, flexDirection: 'row', justifyContent: 'center', alignItems: 'center', gap: 6 }}>
+                        <TouchableOpacity 
+                          onPress={() => openSaleDetails(item)} 
+                          style={[styles.webActionBtn, { backgroundColor: '#F3F4F6', borderColor: '#E5E7EB' }]}
+                          dataSet={{ title: t('view_details') }}
+                        >
                           <Ionicons name="eye-outline" size={16} color="#4B5563" />
                         </TouchableOpacity>
                         {activeTab === 'active' && (
-                          <TouchableOpacity onPress={() => markAsShipped(item)} style={[styles.webActionBtn, { backgroundColor: '#E8F5E9', borderColor: '#C8E6C9' }]}>
+                          <TouchableOpacity 
+                            onPress={() => markAsShipped(item)} 
+                            style={[styles.webActionBtn, { backgroundColor: '#E8F5E9', borderColor: '#C8E6C9' }]}
+                            dataSet={{ title: t('mark_as_shipped') }}
+                          >
                             <Ionicons name="checkmark" size={16} color={Colors.iosGreen} />
                           </TouchableOpacity>
                         )}
                         {activeTab === 'active' && Platform.OS === 'web' && (
-                          <TouchableOpacity onPress={() => handleCreateWorkOrder(item)} style={[styles.webActionBtn, { backgroundColor: '#FFF3E0', borderColor: '#FFE0B2' }]}>
-                            <Ionicons name="construct-outline" size={16} color="#FF9800" />
+                          <TouchableOpacity 
+                            onPress={() => handleCreateWorkOrder(item)} 
+                            style={[styles.webActionBtn, { backgroundColor: '#FFF3E0', borderColor: '#FFE0B2' }]}
+                            dataSet={{ title: t('create_work_order') }}
+                          >
+                            <Ionicons name="hammer-outline" size={16} color="#FF9800" />
                           </TouchableOpacity>
                         )}
-                        <TouchableOpacity onPress={() => openInvoiceEditor(item)} style={[styles.webActionBtn, { backgroundColor: '#E3F2FD', borderColor: '#BBDEFB' }]}>
+                        <TouchableOpacity 
+                          onPress={() => openInvoiceEditor(item)} 
+                          style={[styles.webActionBtn, { backgroundColor: '#E3F2FD', borderColor: '#BBDEFB' }]}
+                          dataSet={{ title: t('invoice_number') }}
+                        >
                           <Ionicons name="document-text" size={16} color={Colors.iosBlue} />
                         </TouchableOpacity>
-                        <TouchableOpacity onPress={() => handlePrintForm(item)} style={[styles.webActionBtn, { backgroundColor: '#F3E5F5', borderColor: '#E1BEE7' }]}>
+                        <TouchableOpacity 
+                          onPress={() => handlePrintForm(item)} 
+                          style={[styles.webActionBtn, { backgroundColor: '#F3E5F5', borderColor: '#E1BEE7' }]}
+                          dataSet={{ title: t('print_form') }}
+                        >
                           <Ionicons name="print-outline" size={16} color="#9C27B0" />
                         </TouchableOpacity>
-                        <TouchableOpacity onPress={() => confirmCancel(item)} style={[styles.webActionBtn, { backgroundColor: '#FFEBEE', borderColor: '#FFCDD2' }]}>
+                        <TouchableOpacity 
+                          onPress={() => confirmCancel(item)} 
+                          style={[styles.webActionBtn, { backgroundColor: '#FFEBEE', borderColor: '#FFCDD2' }]}
+                          dataSet={{ title: t('cancel_sale') }}
+                        >
                           <Ionicons name="trash-outline" size={16} color={Colors.critical} />
                         </TouchableOpacity>
                       </View>
@@ -692,14 +723,22 @@ export default function SalesScreen() {
                       </View>
 
                       <View style={styles.actionsContainer}>
-                        <TouchableOpacity style={styles.iconButton} onPress={() => openSaleDetails(item)}>
+                        <TouchableOpacity 
+                          style={styles.iconButton} 
+                          onPress={() => openSaleDetails(item)}
+                          title={t('view_details')}
+                        >
                           <View style={[styles.iconButtonBg, { backgroundColor: '#F3F4F6' }]}>
                             <Ionicons name="eye-outline" size={18} color="#4B5563" />
                           </View>
                         </TouchableOpacity>
 
                         {activeTab === 'active' && (
-                          <TouchableOpacity style={styles.iconButton} onPress={() => markAsShipped(item)}>
+                          <TouchableOpacity 
+                            style={styles.iconButton} 
+                            onPress={() => markAsShipped(item)}
+                            title={t('mark_as_shipped')}
+                          >
                             <View style={[styles.iconButtonBg, { backgroundColor: '#E8F5E9' }]}>
                               <Ionicons name="checkmark" size={18} color={Colors.iosGreen} />
                             </View>
@@ -707,26 +746,42 @@ export default function SalesScreen() {
                         )}
 
                         {activeTab === 'active' && Platform.OS === 'web' && (
-                          <TouchableOpacity style={styles.iconButton} onPress={() => handleCreateWorkOrder(item)}>
+                          <TouchableOpacity 
+                            style={styles.iconButton} 
+                            onPress={() => handleCreateWorkOrder(item)}
+                            title={t('create_work_order')}
+                          >
                             <View style={[styles.iconButtonBg, { backgroundColor: '#FFF3E0' }]}>
-                              <Ionicons name="construct-outline" size={18} color="#FF9800" />
+                              <Ionicons name="hammer-outline" size={18} color="#FF9800" />
                             </View>
                           </TouchableOpacity>
                         )}
 
-                        <TouchableOpacity style={styles.iconButton} onPress={() => openInvoiceEditor(item)}>
+                        <TouchableOpacity 
+                          style={styles.iconButton} 
+                          onPress={() => openInvoiceEditor(item)}
+                          title={t('invoice_number')}
+                        >
                           <View style={[styles.iconButtonBg, { backgroundColor: '#E3F2FD' }]}>
                             <Ionicons name="document-text" size={18} color={Colors.iosBlue} />
                           </View>
                         </TouchableOpacity>
 
-                        <TouchableOpacity style={styles.iconButton} onPress={() => handlePrintForm(item)}>
+                        <TouchableOpacity 
+                          style={styles.iconButton} 
+                          onPress={() => handlePrintForm(item)}
+                          title={t('print_form')}
+                        >
                           <View style={[styles.iconButtonBg, { backgroundColor: '#F3E5F5' }]}>
                             <Ionicons name="print-outline" size={18} color="#9C27B0" />
                           </View>
                         </TouchableOpacity>
 
-                        <TouchableOpacity style={styles.iconButton} onPress={() => confirmCancel(item)}>
+                        <TouchableOpacity 
+                          style={styles.iconButton} 
+                          onPress={() => confirmCancel(item)}
+                          title={t('cancel_sale')}
+                        >
                           <View style={[styles.iconButtonBg, { backgroundColor: '#FFEBEE' }]}>
                             <Ionicons name="trash-outline" size={18} color={Colors.critical} />
                           </View>
@@ -1121,7 +1176,7 @@ const styles = StyleSheet.create({
     borderBottomWidth: 1,
     borderBottomColor: '#E2E8F0',
     paddingVertical: 16,
-    paddingHorizontal: 20,
+    paddingHorizontal: 16,
   },
   webHeaderCol: {
     flexDirection: 'row',

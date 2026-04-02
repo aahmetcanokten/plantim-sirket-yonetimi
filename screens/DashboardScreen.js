@@ -204,6 +204,7 @@ export default function DashboardScreen() {
 
     const navigation = useNavigation();
     const today = new Date();
+    const isMobileWeb = Platform.OS === 'web' && window.innerWidth <= 1024;
 
     // ── KPI Hesaplamaları ─────────────────────────────────────
     const kpis = useMemo(() => {
@@ -367,7 +368,7 @@ export default function DashboardScreen() {
             </View>
 
             {/* ── KPI Kartları ─── */}
-            <View style={styles.kpiGrid}>
+            <View style={[styles.kpiGrid, isMobileWeb && { flexDirection: 'column' }]}>
                 <KpiCard
                     icon="cash-outline"
                     title="Toplam Gelir"
@@ -419,7 +420,7 @@ export default function DashboardScreen() {
             </View>
 
             {/* ── Grafik Satırı ─── */}
-            <View style={styles.chartRow}>
+            <View style={[styles.chartRow, isMobileWeb && { flexDirection: 'column' }]}>
                 {/* Satış Grafiği */}
                 <View style={styles.chartCard}>
                     <SectionHeader
@@ -441,7 +442,7 @@ export default function DashboardScreen() {
                 </View>
 
                 {/* İş Emri Özet Donut */}
-                <View style={[styles.chartCard, { flex: 0.7 }]}>
+                <View style={[styles.chartCard, isMobileWeb ? { flex: 1 } : { flex: 0.7 }]}>
                     <SectionHeader
                         icon="pie-chart-outline"
                         title="İş Emirleri"
@@ -475,7 +476,7 @@ export default function DashboardScreen() {
             </View>
 
             {/* ── Uyarılar Satırı ─── */}
-            <View style={styles.alertsRow}>
+            <View style={[styles.alertsRow, isMobileWeb && { flexDirection: 'column' }]}>
                 {/* Geciken Siparişler */}
                 <View style={styles.alertCard}>
                     <SectionHeader
@@ -538,7 +539,7 @@ export default function DashboardScreen() {
             </View>
 
             {/* ── Alt Bölümler ─── */}
-            <View style={styles.bottomRow}>
+            <View style={[styles.bottomRow, isMobileWeb && { flexDirection: 'column' }]}>
                 {/* Bakım Talepleri */}
                 <View style={styles.bottomCard}>
                     <SectionHeader
@@ -619,7 +620,7 @@ export default function DashboardScreen() {
             </View>
 
             {/* ── Teklifler & Müşteriler ─── */}
-            <View style={styles.bottomRow}>
+            <View style={[styles.bottomRow, isMobileWeb && { flexDirection: 'column' }]}>
                 <View style={styles.bottomCard}>
                     <SectionHeader
                         icon="document-text-outline"
@@ -643,7 +644,7 @@ export default function DashboardScreen() {
                     </View>
                 </View>
 
-                <View style={[styles.bottomCard, { flex: 2 }]}>
+                <View style={[styles.bottomCard, { flex: 2 }, isMobileWeb && { flex: 1 }]}>
                     <SectionHeader
                         icon="stats-chart-outline"
                         title="Genel Özet"

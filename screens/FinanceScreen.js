@@ -265,7 +265,7 @@ function OverviewTab({ allTransactions, sales, purchases }) {
         <ScrollView style={styles.tabContent} showsVerticalScrollIndicator={false}>
             {/* KPI Kartlar */}
             <Text style={styles.groupLabel}>FİNANSAL ÖZET</Text>
-            <View style={styles.kpiRow}>
+            <View style={[styles.kpiRow, Platform.OS === 'web' && window.innerWidth <= 1024 && { flexDirection: 'column' }]}>
                 <KpiCard label="Toplam Gelir" value={fmtCurrency(totalIncome)} icon="trending-up-outline" color="#10B981" />
                 <KpiCard label="Toplam Gider" value={fmtCurrency(totalExpense)} icon="trending-down-outline" color="#EF4444" />
                 <KpiCard label="Net Kâr" value={fmtCurrency(netProfit)} icon="stats-chart-outline" color={netProfit >= 0 ? '#3B82F6' : '#F97316'} />
@@ -739,6 +739,8 @@ function ReportsTab({ allTransactions, sales, purchases }) {
 // ─── ANA EKRAN ───────────────────────────────────────────────────────────────
 
 export default function FinanceScreen() {
+    const isMobileWeb = Platform.OS === 'web' && window.innerWidth <= 1024;
+
     const {
         financeTransactions, addTransaction, updateTransaction, deleteTransaction, markTransactionPaid,
         budgets, addBudget, updateBudget, deleteBudget,
@@ -788,16 +790,18 @@ export default function FinanceScreen() {
     return (
         <View style={styles.screen}>
             {/* Sekme Çubuğu */}
-            <View style={styles.tabBar}>
-                {TABS.map(tab => {
-                    const active = activeTab === tab.key;
-                    return (
-                        <TouchableOpacity key={tab.key} style={[styles.tabItem, active && styles.tabItemActive]} onPress={() => setActiveTab(tab.key)}>
-                            <Ionicons name={tab.icon} size={16} color={active ? Colors.primary : '#94A3B8'} />
-                            <Text style={[styles.tabLabel, active && styles.tabLabelActive]}>{tab.label}</Text>
-                        </TouchableOpacity>
-                    );
-                })}
+            <View style={styles.tabBarContainer}>
+                <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.tabBar}>
+                    {TABS.map(tab => {
+                        const active = activeTab === tab.key;
+                        return (
+                            <TouchableOpacity key={tab.key} style={[styles.tabItem, active && styles.tabItemActive]} onPress={() => setActiveTab(tab.key)}>
+                                <Ionicons name={tab.icon} size={16} color={active ? Colors.primary : '#94A3B8'} />
+                                <Text style={[styles.tabLabel, active && styles.tabLabelActive]}>{tab.label}</Text>
+                            </TouchableOpacity>
+                        );
+                    })}
+                </ScrollView>
             </View>
 
             {/* İçerik */}

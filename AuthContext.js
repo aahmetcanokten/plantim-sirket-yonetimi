@@ -134,15 +134,13 @@ export function AuthProvider({ children }) {
      * @returns {object} { user, session, error }
      */
     const signIn = async (email, password) => {
-        setLoading(true);
         console.log("Giriş denemesi yapılıyor:", email);
         const { data, error } = await supabase.auth.signInWithPassword({
             email: email.trim(),
             password: password,
         });
         if (error) console.error("Giriş Hatası:", error.message);
-        setLoading(false);
-        return { user: data.user, session: data.session, error };
+        return { user: data?.user, session: data?.session, error };
     };
 
     /**
@@ -152,17 +150,15 @@ export function AuthProvider({ children }) {
      * @returns {object} { user, session, error }
      */
     const signUp = async (email, password) => {
-        setLoading(true);
         // Email onayı sonrası kullanıcıyı hazırladığımız web sayfasına yönlendiriyoruz
         const { data, error } = await supabase.auth.signUp({
             email: email,
             password: password,
             options: {
-                emailRedirectTo: 'https://plantim-new-kayit-fb2604.netlify.app',
+                emailRedirectTo: 'https://plantim-new-kayit-fb2604.netlifyapp',
             }
         });
-        setLoading(false);
-        return { user: data.user, session: data.session, error };
+        return { user: data?.user, session: data?.session, error };
     };
 
     /**
@@ -172,7 +168,6 @@ export function AuthProvider({ children }) {
      * @returns {object} { user, session, error }
      */
     const signInPersonnel = async (username, password) => {
-        setLoading(true);
         const email = `${username.toLowerCase().trim()}@plantim.local`;
         console.log("Personel giriş denemesi yapılıyor:", email);
         const { data, error } = await supabase.auth.signInWithPassword({
@@ -180,7 +175,6 @@ export function AuthProvider({ children }) {
             password,
         });
         if (error) console.error("Personel Giriş Hatası:", error.message);
-        setLoading(false);
         return { user: data?.user, session: data?.session, error };
     };
 

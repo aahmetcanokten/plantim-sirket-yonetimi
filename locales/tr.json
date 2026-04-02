@@ -722,5 +722,9 @@
     "web_module_asset_desc": "Demirbaş kaydı ve personel zimmet takibi",
     "web_module_prod_desc": "İş emirleri, üretim hattı ve bileşen tüketimi",
     "web_hero_cta_primary": "Ücretsiz Başlayın",
-    "web_hero_cta_secondary": "Özelliklerini Keşfet"
+    "web_hero_cta_secondary": "Özelliklerini Keşfet",
+    "view_details": "Detayları Görüntüle",
+    "mark_as_shipped": "Sevk Edildi Olarak İşaretle",
+    "create_work_order": "İş Emri Oluştur",
+    "print_form": "Formu Yazdır"
 }

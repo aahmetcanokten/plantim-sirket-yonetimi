@@ -176,7 +176,7 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     alignItems: "center",
     justifyContent: 'space-between',
-    paddingHorizontal: 32,
+    paddingHorizontal: Platform.OS === 'web' && window.innerWidth <= 768 ? 16 : 32,
     paddingBottom: 8,
     // Web iyileştirmesi: Başlığı ortala ve çok genişlemesini engelle
     maxWidth: Platform.OS === 'web' ? 1440 : '100%',
@@ -209,7 +209,7 @@ const styles = StyleSheet.create({
     backgroundColor: '#F8FAFC',
   },
   innerContentCompact: {
-    paddingHorizontal: 32,
+    paddingHorizontal: Platform.OS === 'web' && window.innerWidth <= 768 ? 16 : 32,
     paddingVertical: 10,
     // Web iyileştirmesi: İçeriği ortala ve çok genişlemesini engelle
     maxWidth: Platform.OS === 'web' ? 1440 : '100%',

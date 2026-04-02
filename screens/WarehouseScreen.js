@@ -226,10 +226,10 @@ export default function WarehouseScreen() {
                 <View style={styles.tableContainer}>
                     <View style={styles.tableHeader}>
                         <View style={[styles.thCell, { flex: 2.5 }]}><Text style={styles.thCellText}>Ürün Adı</Text></View>
-                        <View style={[styles.thCell, { flex: 1 }]}><Text style={styles.thCellText}>Kod</Text></View>
-                        <View style={[styles.thCell, { flex: 1.2 }]}><Text style={styles.thCellText}>Kategori</Text></View>
-                        <View style={[styles.thCell, { flex: 0.7, alignItems: 'flex-end' }]}><Text style={styles.thCellText}>Toplam</Text></View>
-                        <View style={[styles.thCell, { flex: 2.5 }]}><Text style={styles.thCellText}>Depo Dağılımı</Text></View>
+                        <View style={[styles.thCell, { flex: 1.2 }]}><Text style={styles.thCellText}>Kod</Text></View>
+                        <View style={[styles.thCell, { flex: 1.5 }]}><Text style={styles.thCellText}>Kategori</Text></View>
+                        <View style={[styles.thCell, { flex: 0.8, alignItems: 'flex-end' }]}><Text style={styles.thCellText}>Toplam</Text></View>
+                        <View style={[styles.thCell, { flex: 3 }]}><Text style={styles.thCellText}>Depo Dağılımı</Text></View>
                         <View style={[styles.thCellLast, { flex: 0.8, alignItems: 'center' }]}><Text style={styles.thCellText}>İşlem</Text></View>
                     </View>
 
@@ -259,13 +259,13 @@ export default function WarehouseScreen() {
                                             <Text style={styles.tdBold} numberOfLines={1}>{item.name}</Text>
                                             {item.brand ? <Text style={styles.tdSub}>{item.brand}</Text> : null}
                                         </View>
-                                        <View style={[styles.tdCell, { flex: 1 }]}>
+                                        <View style={[styles.tdCell, { flex: 1.2 }]}>
                                             <Text style={styles.tdText}>{item.code || '-'}</Text>
                                         </View>
-                                        <View style={[styles.tdCell, { flex: 1.2 }]}>
+                                        <View style={[styles.tdCell, { flex: 1.5 }]}>
                                             <Text style={styles.tdText} numberOfLines={1}>{item.category || '-'}</Text>
                                         </View>
-                                        <View style={[styles.tdCell, { flex: 0.7, alignItems: 'flex-end' }]}>
+                                        <View style={[styles.tdCell, { flex: 0.8, alignItems: 'flex-end' }]}>
                                             <Text style={[
                                                 styles.tdQtyText,
                                                 isZero ? { color: '#DC2626' } : isLow ? { color: '#D97706' } : { color: '#059669' }
@@ -274,7 +274,7 @@ export default function WarehouseScreen() {
                                             </Text>
                                         </View>
                                         {/* Depo Dağılımı */}
-                                        <View style={[styles.tdCell, { flex: 2.5 }]}>
+                                        <View style={[styles.tdCell, { flex: 3 }]}>
                                             {locs.length === 0 ? (
                                                 <Text style={styles.tdSub}>Depo tanımsız</Text>
                                             ) : (
@@ -384,8 +384,8 @@ export default function WarehouseScreen() {
                         <View style={[styles.thCell, { flex: 1.2 }]}><Text style={styles.thCellText}>Tarih</Text></View>
                         <View style={[styles.thCell, { flex: 2 }]}><Text style={styles.thCellText}>Ürün</Text></View>
                         <View style={[styles.thCell, { flex: 0.8, alignItems: 'center' }]}><Text style={styles.thCellText}>Miktar</Text></View>
-                        <View style={[styles.thCell, { flex: 1.5 }]}><Text style={styles.thCellText}>Kaynak Depo</Text></View>
-                        <View style={[styles.thCell, { flex: 1.5 }]}><Text style={styles.thCellText}>Hedef Depo</Text></View>
+                        <View style={[styles.thCell, { flex: 1.8 }]}><Text style={styles.thCellText}>Kaynak Depo</Text></View>
+                        <View style={[styles.thCell, { flex: 1.8 }]}><Text style={styles.thCellText}>Hedef Depo</Text></View>
                         <View style={[styles.thCellLast, { flex: 2 }]}><Text style={styles.thCellText}>Not</Text></View>
                     </View>
                     {warehouseTransfers.length === 0 ? (
@@ -409,12 +409,12 @@ export default function WarehouseScreen() {
                                         <View style={[styles.tdCell, { flex: 0.8, alignItems: 'center' }]}>
                                             <Text style={styles.tdQtyTextDark}>{item.quantity}</Text>
                                         </View>
-                                        <View style={[styles.tdCell, { flex: 1.5 }]}>
+                                        <View style={[styles.tdCell, { flex: 1.8 }]}>
                                             <View style={styles.excelWarehouseBadgeRef}>
                                                 <Text style={[styles.excelWarehouseBadgeText, { color: '#B91C1C' }]} numberOfLines={1}>{item.from_warehouse || '-'}</Text>
                                             </View>
                                         </View>
-                                        <View style={[styles.tdCell, { flex: 1.5 }]}>
+                                        <View style={[styles.tdCell, { flex: 1.8 }]}>
                                             <View style={[styles.excelWarehouseBadgeRef, { backgroundColor: '#DCFCE7' }]}>
                                                 <Text style={[styles.excelWarehouseBadgeText, { color: '#15803D' }]} numberOfLines={1}>{item.to_warehouse || '-'}</Text>
                                             </View>
@@ -733,11 +733,20 @@ export default function WarehouseScreen() {
 const styles = StyleSheet.create({
     container: { paddingBottom: 60, paddingHorizontal: isWeb ? 0 : 16 },
 
-    statsRow: { flexDirection: 'row', gap: 12, marginBottom: 20, marginTop: 6 },
-    statCard: { flex: 1, borderRadius: 14, padding: 16, alignItems: 'flex-start', borderWidth: 1, borderColor: '#E2E8F0' },
-    statIconWrap: { width: 40, height: 40, borderRadius: 10, alignItems: 'center', justifyContent: 'center', marginBottom: 10 },
-    statValue: { fontSize: 26, fontWeight: '800', color: '#0F172A', letterSpacing: -0.5 },
-    statLabel: { fontSize: 12, color: '#64748B', fontWeight: '500', marginTop: 2 },
+    statsRow: { flexDirection: 'row', gap: 16, marginBottom: 24, marginTop: 10 },
+    statCard: { 
+        flex: 1, 
+        borderRadius: 16, 
+        padding: 20, 
+        alignItems: 'flex-start', 
+        borderWidth: 1, 
+        borderColor: '#E2E8F0', 
+        backgroundColor: '#fff',
+        ...Platform.select({ web: { boxShadow: '0 4px 12px rgba(0,0,0,0.03)' } })
+    },
+    statIconWrap: { width: 44, height: 44, borderRadius: 12, alignItems: 'center', justifyContent: 'center', marginBottom: 12 },
+    statValue: { fontSize: 28, fontWeight: '800', color: '#0F172A', letterSpacing: -0.5 },
+    statLabel: { fontSize: 13, color: '#64748B', fontWeight: '600', marginTop: 4 },
 
     tabRow: { flexDirection: 'row', backgroundColor: '#F1F5F9', borderRadius: 12, padding: 4, marginBottom: 20 },
     tab: { flex: 1, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', paddingVertical: 10, borderRadius: 10 },
@@ -774,15 +783,15 @@ const styles = StyleSheet.create({
     countBadgeText: { fontSize: 12, fontWeight: '700', color: Colors.primary },
 
     // Web Tablo (Excel like)
-    tableContainer: { overflow: 'hidden', borderWidth: 1, borderColor: '#CBD5E1', borderRadius: 8, backgroundColor: '#FFF' },
-    tableHeader: { flexDirection: 'row', backgroundColor: '#F1F5F9', borderBottomWidth: 1, borderBottomColor: '#CBD5E1' },
-    thCell: { borderRightWidth: 1, borderRightColor: '#CBD5E1', justifyContent: 'center' },
-    thCellLast: { justifyContent: 'center' },
-    thCellText: { fontSize: 12, fontWeight: '700', color: '#334155', textTransform: 'uppercase', paddingHorizontal: 14, paddingVertical: 12 },
-    tableRow: { flexDirection: 'row', borderBottomWidth: 1, borderBottomColor: '#E2E8F0', alignItems: 'stretch' },
+    tableContainer: { overflow: 'hidden', borderWidth: 1, borderColor: '#E2E8F0', borderRadius: 10, backgroundColor: '#FFF' },
+    tableHeader: { flexDirection: 'row', backgroundColor: '#F8FAFC', borderBottomWidth: 1, borderBottomColor: '#E2E8F0' },
+    thCell: { borderRightWidth: 1, borderRightColor: '#E2E8F0', justifyContent: 'center', paddingHorizontal: 14, paddingVertical: 12 },
+    thCellLast: { justifyContent: 'center', paddingHorizontal: 14, paddingVertical: 12 },
+    thCellText: { fontSize: 11, fontWeight: '700', color: '#64748B', textTransform: 'uppercase', letterSpacing: 0.5 },
+    tableRow: { flexDirection: 'row', borderBottomWidth: 1, borderBottomColor: '#F1F5F9', alignItems: 'stretch' },
     tableRowEven: { backgroundColor: '#fff' },
-    tableRowOdd: { backgroundColor: '#F8FAFC' },
-    tdCell: { borderRightWidth: 1, borderRightColor: '#E2E8F0', paddingHorizontal: 14, paddingVertical: 12, justifyContent: 'center' },
+    tableRowOdd: { backgroundColor: '#FAFAFA' },
+    tdCell: { borderRightWidth: 1, borderRightColor: '#F1F5F9', paddingHorizontal: 14, paddingVertical: 12, justifyContent: 'center' },
     tdCellLast: { paddingHorizontal: 14, paddingVertical: 12, justifyContent: 'center' },
     tdBold: { fontSize: 13, fontWeight: '600', color: '#1E293B' },
     tdText: { fontSize: 13, color: '#475569' },

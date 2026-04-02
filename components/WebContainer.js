@@ -37,11 +37,27 @@ export default function WebContainer({ children, activeRoute }) {
     const company = appContext?.company;
     const isRestrictedPersonnel = appContext?.isRestrictedPersonnel;
 
+    const [isSidebarOpen, setIsSidebarOpen] = useState(Platform.OS === 'web' ? window.innerWidth > 1024 : true);
+    const [isMobile, setIsMobile] = useState(Platform.OS === 'web' ? window.innerWidth <= 1024 : false);
+
     const filteredMenuItems = MENU_ITEMS.filter(item => {
         if (!isRestrictedPersonnel) return true;
         const restricted = ['Ayarlar', 'FinanceScreen', 'AssetManagementScreen', 'PersonnelScreen', 'Analytics'];
         return !restricted.includes(item.name);
     });
+
+    // Handle Window Resize for responsiveness
+    useEffect(() => {
+        if (Platform.OS === 'web') {
+            const handleResize = () => {
+                const mobile = window.innerWidth <= 1024;
+                setIsMobile(mobile);
+                if (!mobile) setIsSidebarOpen(true);
+            };
+            window.addEventListener('resize', handleResize);
+            return () => window.removeEventListener('resize', handleResize);
+        }
+    }, []);
 
     // Inject Google Fonts and Global Styles for Web
     useEffect(() => {
@@ -157,10 +173,25 @@ export default function WebContainer({ children, activeRoute }) {
     return (
         <View style={styles.container}>
             {/* --- SIDEBAR (Sol Menü) --- */}
-            <View style={styles.sidebar}>
+            {isMobile && isSidebarOpen && (
+                <TouchableOpacity
+                    activeOpacity={1}
+                    style={styles.overlay}
+                    onPress={() => setIsSidebarOpen(false)}
+                />
+            )}
+
+            <View style={[
+                styles.sidebar,
+                isMobile && styles.mobileSidebar,
+                isMobile && !isSidebarOpen && styles.hiddenSidebar
+            ]}>
                 <TouchableOpacity
                     style={styles.logoContainer}
-                    onPress={() => navigation.navigate('MainTabs', { screen: 'Stok' })}
+                    onPress={() => {
+                        navigation.navigate('MainTabs', { screen: 'Stok' });
+                        if (isMobile) setIsSidebarOpen(false);
+                    }}
                 >
                     <View style={styles.logoIconBg}>
                         <Ionicons name="leaf" size={20} color="#fff" />
@@ -182,6 +213,7 @@ export default function WebContainer({ children, activeRoute }) {
                                     } else {
                                         navigation.navigate(item.name);
                                     }
+                                    if (isMobile) setIsSidebarOpen(false);
                                 }}
                             >
                                 <Ionicons
@@ -207,14 +239,19 @@ export default function WebContainer({ children, activeRoute }) {
             {/* --- MAIN CONTENT (Sağ İçerik) --- */}
             <View style={styles.mainContent}>
                 {/* --- HEADER (Üst Çubuk) --- */}
-                <View style={styles.header}>
+                <View style={[styles.header, isMobile && styles.mobileHeader]}>
                     <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+                        {isMobile && (
+                            <TouchableOpacity onPress={() => setIsSidebarOpen(!isSidebarOpen)} style={styles.menuToggleButton}>
+                                <Ionicons name={isSidebarOpen ? "close" : "menu"} size={24} color="#64748B" />
+                            </TouchableOpacity>
+                        )}
                         {canGoBack && (
                             <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backButton}>
                                 <Ionicons name="chevron-back" size={20} color="#64748B" />
                             </TouchableOpacity>
                         )}
-                        <Text style={styles.headerTitle}>{getPageTitle()}</Text>
+                        <Text style={[styles.headerTitle, isMobile && { fontSize: 18 }]}>{getPageTitle()}</Text>
                     </View>
 
                     <View style={styles.headerRight}>
@@ -270,7 +307,27 @@ const styles = StyleSheet.create({
         display: 'flex',
         flexDirection: 'column',
         boxShadow: '10px 0 30px rgba(0,0,0,0.05)',
-        zIndex: 10,
+        zIndex: 100,
+        transition: 'transform 0.3s ease-in-out',
+    },
+    mobileSidebar: {
+        position: 'absolute',
+        left: 0,
+        top: 0,
+        bottom: 0,
+        boxShadow: '20px 0 50px rgba(0,0,0,0.2)',
+    },
+    hiddenSidebar: {
+        transform: 'translateX(-100%)',
+    },
+    overlay: {
+        position: 'absolute',
+        top: 0,
+        left: 0,
+        right: 0,
+        bottom: 0,
+        backgroundColor: 'rgba(0,0,0,0.5)',
+        zIndex: 90,
     },
     logoContainer: {
         flexDirection: 'row',
@@ -351,6 +408,14 @@ const styles = StyleSheet.create({
         fontWeight: '700',
         letterSpacing: 0.5,
     },
+    menuToggleButton: {
+        marginRight: 12,
+        padding: 8,
+        borderRadius: 10,
+        backgroundColor: '#F8FAFC',
+        borderWidth: 1,
+        borderColor: '#F1F5F9',
+    },
 
     // MAIN CONTENT
     mainContent: {
@@ -358,6 +423,7 @@ const styles = StyleSheet.create({
         display: 'flex',
         flexDirection: 'column',
         height: '100%',
+        minWidth: 0,
     },
     header: {
         height: 72,
@@ -368,6 +434,10 @@ const styles = StyleSheet.create({
         alignItems: 'center',
         justifyContent: 'space-between',
         paddingHorizontal: 32,
+    },
+    mobileHeader: {
+        paddingHorizontal: 16,
+        height: 60,
     },
     backButton: {
         marginRight: 16,

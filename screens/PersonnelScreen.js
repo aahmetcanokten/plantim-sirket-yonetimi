@@ -157,7 +157,7 @@ export default function PersonnelScreen({ navigation }) {
   // ========= RENDERS =========
 
   const renderKPI = () => (
-    <View style={styles.kpiRow}>
+    <View style={[styles.kpiRow, Platform.OS === 'web' && window.innerWidth <= 1024 && { flexDirection: 'column' }]}>
       {[
         { key: "kpi_total_staff", val: kpi.total, icon: "people", color: "#3b82f6", bg: "#eff6ff" },
         { key: "kpi_active", val: kpi.active, icon: "checkmark-circle", color: "#22c55e", bg: "#f0fdf4" },

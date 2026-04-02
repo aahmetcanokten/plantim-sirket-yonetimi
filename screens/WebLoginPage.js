@@ -5,6 +5,7 @@
  */
 
 import React, { useState } from 'react';
+import FeaturesShowcasePage from './FeaturesShowcasePage';
 import { Platform, TextInput, TouchableOpacity, Text, View, Alert, StyleSheet } from 'react-native';
 import { useAuth } from '../AuthContext';
 import { Colors } from '../Theme';
@@ -193,6 +194,7 @@ if (Platform.OS === 'web' && typeof document !== 'undefined') {
         background: #EF4444; color: #fff;
         padding: 12px; border-radius: 12px; margin-bottom: 16px;
         font-size: 14px; font-weight: 600;
+        z-index: 999; position: relative;
       }
 
       /* Login Type Toggle */
@@ -529,13 +531,6 @@ function LoginForm({ email, setEmail, username, setUsername, password, setPasswo
 
   return (
     <div>
-      {errorMsg && (
-        <div className="wlp-error">
-          <IonIcon name="alert-circle" size={18} color="#fff" />
-          <span>{errorMsg}</span>
-        </div>
-      )}
-
       {isLoginView && (
         <div className="wlp-type-toggle">
           <button className={`wlp-type-tab ${loginType === 'admin' ? 'active' : ''}`} onClick={() => setLoginType('admin')}>
@@ -615,6 +610,13 @@ function LoginForm({ email, setEmail, username, setUsername, password, setPasswo
         </button>
       )}
 
+      {errorMsg && (
+        <div className="wlp-error" style={{ marginTop: 0, marginBottom: 20 }}>
+          <IonIcon name="alert-circle" size={16} color="#fff" />
+          <span>{errorMsg}</span>
+        </div>
+      )}
+
       <button
         className="wlp-main-btn"
         style={(!isLoginView || loginType !== 'admin') ? { marginTop: 24 } : {}}
@@ -643,64 +645,120 @@ export default function WebLoginPage() {
   const [isLoginView, setIsLoginView] = useState(true);
   const [loginType, setLoginType] = useState('admin');
   const [loading, setLoading] = useState(false);
+  const [showFeatures, setShowFeatures] = useState(false);
 
   const { signIn, signUp, resetPassword, signInPersonnel } = useAuth();
   const { t } = useTranslation();
 
   const handleLogin = async () => {
-    if (!email || !password) { alert(t('login_email_password_required')); return; }
-    setLoading(true); setErrorMsg(null);
+    console.log("handleLogin tetiklendi", { email, password });
+    if (!email || !password) {
+      const msg = t('login_email_password_required');
+      console.log("Hata: Eksik bilgi", msg);
+      setErrorMsg(msg);
+      return;
+    }
+    setLoading(true);
+    setErrorMsg(null);
     try {
-      const { error } = await signIn(email, password);
+      console.log("signIn çağrılıyor...");
+      const { session, error } = await signIn(email, password);
+      console.log("signIn sonucu:", { session: !!session, error });
+      
+      if (error) {
+        const msg = error.message.includes('Invalid login credentials')
+          ? t('login_error_invalid_credentials') : error.message;
+        console.log("Giriş hatası:", msg);
+        setErrorMsg(msg);
+      }
+    } catch (e) {
+      console.error("Beklenmedik hata:", e);
+      setErrorMsg(e.message);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handlePersonnelLogin = async () => {
+    console.log("handlePersonnelLogin tetiklendi", { username, password });
+    if (!username || !password) {
+      setErrorMsg(t('fill_all_fields'));
+      return;
+    }
+    setLoading(true);
+    setErrorMsg(null);
+    try {
+      console.log("signInPersonnel çağrılıyor...");
+      const { session, error } = await signInPersonnel(username, password);
+      console.log("signInPersonnel sonucu:", { session: !!session, error });
       if (error) {
         const msg = error.message.includes('Invalid login credentials')
           ? t('login_error_invalid_credentials') : error.message;
         setErrorMsg(msg);
       }
-    } catch (e) { setErrorMsg(e.message); }
-    finally { setLoading(false); }
-  };
-
-  const handlePersonnelLogin = async () => {
-    if (!username || !password) { alert('Kullanıcı adı ve şifre gereklidir.'); return; }
-    setLoading(true); setErrorMsg(null);
-    try {
-      const { error } = await signInPersonnel(username, password);
-      if (error) setErrorMsg(error.message.includes('Invalid login credentials') ? 'Giriş bilgileri hatalı.' : error.message);
-    } catch (e) { setErrorMsg(e.message); }
-    finally { setLoading(false); }
+    } catch (e) {
+      console.error("Beklenmedik personel giriş hatası:", e);
+      setErrorMsg(e.message);
+    } finally {
+      setLoading(false);
+    }
   };
 
   const handleSignUp = async () => {
-    if (!email || !password || !confirmPassword) { alert(t('signup_fields_required')); return; }
-    if (password !== confirmPassword) { alert(t('passwords_mismatch_message')); return; }
-    if (password.length < 6) { alert(t('password_length_warning')); return; }
+    if (!email || !password || !confirmPassword) {
+      setErrorMsg(t('signup_fields_required'));
+      return;
+    }
+    if (password !== confirmPassword) {
+      setErrorMsg(t('passwords_mismatch_message'));
+      return;
+    }
+    if (password.length < 6) {
+      setErrorMsg(t('password_length_warning'));
+      return;
+    }
     setLoading(true);
+    setErrorMsg(null);
     try {
       const { error } = await signUp(email, password);
-      if (error) { alert(t('signup_failed') + ': ' + error.message); }
-      else {
+      if (error) {
+        setErrorMsg(error.message);
+      } else {
         alert(t('signup_success_verify_email_web'));
         setEmail(''); setPassword(''); setConfirmPassword('');
       }
-    } catch (e) { alert(e.message); }
-    finally { setLoading(false); }
+    } catch (e) {
+      setErrorMsg(e.message);
+    } finally {
+      setLoading(false);
+    }
   };
 
   const handlePasswordReset = () => {
-    if (!email) { alert(t('reset_password_email_required_message')); return; }
+    if (!email) {
+      setErrorMsg(t('reset_password_email_required_message'));
+      return;
+    }
+    setErrorMsg(null);
     if (window.confirm(t('reset_link_confirmation', { email }))) {
+      setLoading(true);
       resetPassword(email).then(({ error }) => {
-        if (error) alert(error.message);
-        else alert(t('reset_link_sent_success'));
+        if (error) {
+          setErrorMsg(error.message);
+        } else {
+          alert(t('reset_link_sent_success'));
+        }
+      }).finally(() => {
+        setLoading(false);
       });
     }
   };
 
-  const toggleView = () => { setIsLoginView(v => !v); setPassword(''); setConfirmPassword(''); };
+  const toggleView = () => { setIsLoginView(v => !v); setPassword(''); setConfirmPassword(''); setErrorMsg(null); };
   const goRegister = (e) => {
     if (e && e.preventDefault) e.preventDefault();
     setIsLoginView(false);
+    setErrorMsg(null);
     
     // Web'de .wlp-page container'ı overflow-y: auto olduğu için onun scroll'u yönetilmelidir
     const page = document.querySelector('.wlp-page');
@@ -710,6 +768,15 @@ export default function WebLoginPage() {
       window.scrollTo({ top: 0, behavior: 'smooth' });
     }
   };
+
+  if (showFeatures) {
+    return (
+      <FeaturesShowcasePage
+        onClose={() => setShowFeatures(false)}
+        onRegister={() => { setShowFeatures(false); goRegister(null); }}
+      />
+    );
+  }
 
   return (
     <div className="wlp-page">
@@ -753,9 +820,9 @@ export default function WebLoginPage() {
                 {t('web_hero_cta_primary') || 'Ücretsiz Başlayın'}
                 <IonIcon name="rocket-outline" size={18} color="#fff" />
               </button>
-              <button className="wlp-hero-btn-secondary">
+              <button className="wlp-hero-btn-secondary" onClick={() => setShowFeatures(true)}>
                 <IonIcon name="play-circle-outline" size={18} color="#0A84FF" />
-                {t('web_hero_cta_secondary') || 'Demo'}
+                {t('web_hero_cta_secondary') || 'Özelliklerini Keşfet'}
               </button>
             </div>
             <div className="wlp-trust-bar">

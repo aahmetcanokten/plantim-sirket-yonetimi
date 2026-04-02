@@ -4,6 +4,7 @@ import { useAuth } from '../AuthContext'; // useAuth hook'unu import et
 import { Colors } from '../Theme';
 import { Ionicons } from '@expo/vector-icons'; // İkon kütüphanesi
 import { useTranslation } from 'react-i18next';
+import FeaturesShowcasePage from './FeaturesShowcasePage';
 
 
 // YENİ PAZARLAMA BİLEŞENİ
@@ -81,6 +82,7 @@ export default function LoginScreen() {
 
   // YENİ: Web sayfasındaki aktif sekme (login, about, solutions, pricing)
   const [activeTab, setActiveTab] = useState('login');
+  const [showFeatures, setShowFeatures] = useState(false);
 
   const [loading, setLoading] = useState(false);
 
@@ -97,51 +99,56 @@ export default function LoginScreen() {
   };
 
   const handlePersonnelLogin = async () => {
+    console.log("handlePersonnelLogin tetiklendi (LoginScreen)");
     if (!username || !password) {
-      Alert.alert(t("missing_info_title"), "Kullanıcı adı ve şifre gereklidir.");
+      const msg = t("fill_all_fields") || "Kullanıcı adı ve şifre gereklidir.";
+      setErrorMsg(msg);
+      if (Platform.OS !== 'web') Alert.alert(t("missing_info_title"), msg);
       return;
     }
     setLoading(true);
     setErrorMsg(null);
     try {
       const { error } = await signInPersonnel(username, password);
+      console.log("signInPersonnel sonucu:", error);
       if (error) {
-        if (error.message.includes("Invalid login credentials")) {
-          setErrorMsg("Giriş bilgileri hatalı.");
-        } else {
-          setErrorMsg(error.message);
-        }
-        Alert.alert("Giriş Başarısız", "Giriş bilgileri hatalı.");
+        const msg = error.message.includes("Invalid login credentials")
+          ? (t("login_error_invalid_credentials") || "Giriş bilgileri hatalı.")
+          : error.message;
+        setErrorMsg(msg);
+        if (Platform.OS !== 'web') Alert.alert(t("login_failed") || "Giriş Başarısız", msg);
       }
     } catch (error) {
       setErrorMsg(error.message);
-      Alert.alert(t("error"), "Giriş Hatası: " + error.message);
+      if (Platform.OS !== 'web') Alert.alert(t("error"), t("login_error_prefix") + error.message);
     } finally {
       setLoading(false);
     }
   };
 
   const handleLogin = async () => {
+    console.log("handleLogin tetiklendi (LoginScreen)");
     if (!email || !password) {
-      Alert.alert(t("missing_info_title"), t("login_email_password_required"));
+      const msg = t("login_email_password_required");
+      setErrorMsg(msg);
+      if (Platform.OS !== 'web') Alert.alert(t("missing_info_title"), msg);
       return;
     }
     setLoading(true);
-    setErrorMsg(null); // Reset error
+    setErrorMsg(null);
     try {
-      const { error } = await signIn(email, password);
+      const { session, error } = await signIn(email, password);
+      console.log("signIn sonucu:", { session: !!session, error });
       if (error) {
-        // Hata mesajını düzgün göster
-        if (error.message.includes("Invalid login credentials")) {
-          setErrorMsg(t("login_error_invalid_credentials"));
-        } else {
-          setErrorMsg(error.message);
-        }
-        Alert.alert(t("login_failed"), error.message.includes("Invalid login credentials") ? t("login_error_invalid_credentials") : error.message);
+        const msg = error.message.includes("Invalid login credentials")
+          ? t("login_error_invalid_credentials")
+          : error.message;
+        setErrorMsg(msg);
+        if (Platform.OS !== 'web') Alert.alert(t("login_failed"), msg);
       }
     } catch (error) {
       setErrorMsg(error.message);
-      Alert.alert(t("error"), t("login_error_prefix") + error.message);
+      if (Platform.OS !== 'web') Alert.alert(t("error"), t("login_error_prefix") + error.message);
     } finally {
       setLoading(false);
     }
@@ -149,38 +156,43 @@ export default function LoginScreen() {
 
   const handleSignUp = async () => {
     if (!email || !password || !confirmPassword) {
-      Alert.alert(t("missing_info_title"), t("signup_fields_required"));
+      const msg = t("signup_fields_required");
+      setErrorMsg(msg);
+      if (Platform.OS !== 'web') Alert.alert(t("missing_info_title"), msg);
       return;
     }
 
     if (password !== confirmPassword) {
-      Alert.alert(t("passwords_do_not_match"), t("passwords_mismatch_message"));
+      const msg = t("passwords_mismatch_message");
+      setErrorMsg(msg);
+      if (Platform.OS !== 'web') Alert.alert(t("passwords_do_not_match"), msg);
       return;
     }
 
     if (password.length < 6) {
-      Alert.alert(t("weak_password"), t("password_length_warning"));
+      const msg = t("password_length_warning");
+      setErrorMsg(msg);
+      if (Platform.OS !== 'web') Alert.alert(t("weak_password"), msg);
       return;
     }
 
     setLoading(true);
+    setErrorMsg(null);
     try {
-      const { user, session, error } = await signUp(email, password);
+      const { session, error } = await signUp(email, password);
 
       if (error) {
-        Alert.alert(t("signup_failed"), error.message);
+        setErrorMsg(error.message);
+        if (Platform.OS !== 'web') Alert.alert(t("signup_failed"), error.message);
       } else {
-        // Kayıt başarılı, kullanıcıyı bilgilendir
         Alert.alert(t("successful"), t("signup_success_verify_email_web"));
-
-        // Kayıt sonrası alanları temizle ve giriş moduna (varsayılan) dön
         setEmail('');
         setPassword('');
         setConfirmPassword('');
-        // Eğer session oluştuysa zaten App.js kullanıcıyı içeri alacaktır.
       }
     } catch (error) {
-      Alert.alert(t("error"), t("signup_error_prefix") + error.message);
+      setErrorMsg(error.message);
+      if (Platform.OS !== 'web') Alert.alert(t("error"), t("signup_error_prefix") + error.message);
     } finally {
       setLoading(false);
     }
@@ -217,6 +229,7 @@ export default function LoginScreen() {
   // YENİ: Görünümü değiştiren fonksiyon
   const toggleView = () => {
     setIsLoginView(!isLoginView);
+    setErrorMsg(null);
     // Mod değiştirirken şifre alanlarını temizle
     setPassword('');
     setConfirmPassword('');
@@ -227,7 +240,7 @@ export default function LoginScreen() {
     const backToLoginButton = (
       <TouchableOpacity
         style={styles.backButton}
-        onPress={() => setActiveTab('login')}
+        onPress={() => { setActiveTab('login'); setErrorMsg(null); }}
       >
         <Ionicons name="arrow-back" size={18} color={Colors.iosBlue} />
         <Text style={styles.backButtonText}>{t("back_to_login") || "Giriş Ekranına Dön"}</Text>
@@ -331,6 +344,16 @@ export default function LoginScreen() {
   }
 
   // Web Arayüzü — Yeni Tam Landing Page
+  // Feautres sayfası gösteriliyorsa onu render et
+  if (Platform.OS === 'web' && showFeatures) {
+    return (
+      <FeaturesShowcasePage
+        onClose={() => setShowFeatures(false)}
+        onRegister={() => { setShowFeatures(false); scrollToTopAndRegister(); }}
+      />
+    );
+  }
+
   return (
     <View style={styles.webWrapper}>
       {/* STICKY NAV HEADER - dışarıda kalır, scroll içine girmez */}
@@ -394,9 +417,9 @@ export default function LoginScreen() {
                     <Text style={styles.heroPrimaryBtnText}>{t('web_hero_cta_primary') || 'Ücretsiz Başlayın'}</Text>
                     <Ionicons name="rocket-outline" size={18} color="#fff" />
                   </TouchableOpacity>
-                  <TouchableOpacity style={styles.heroSecondaryBtn}>
+                  <TouchableOpacity style={styles.heroSecondaryBtn} onPress={() => setShowFeatures(true)}>
                     <Ionicons name="play-circle-outline" size={18} color={Colors.iosBlue} />
-                    <Text style={styles.heroSecondaryBtnText}>{t('web_hero_cta_secondary') || 'Demo'}</Text>
+                    <Text style={styles.heroSecondaryBtnText}>{t('web_hero_cta_secondary') || 'Özelliklerini Keşfet'}</Text>
                   </TouchableOpacity>
                 </View>
               )}
