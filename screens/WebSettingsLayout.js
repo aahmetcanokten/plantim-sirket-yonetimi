@@ -614,7 +614,13 @@ export default function WebSettingsLayout({ navigation }) {
             <TouchableOpacity 
               key={tab.id} 
               style={[styles.navItem, activeTab === tab.id && styles.navItemActive]}
-              onPress={() => setActiveTab(tab.id)}
+              onPress={() => {
+                if (tab.id === 'subscription') {
+                  navigation.navigate('Paywall');
+                } else {
+                  setActiveTab(tab.id);
+                }
+              }}
             >
               <Ionicons name={tab.icon} size={20} color={activeTab === tab.id ? Colors.primary : '#64748B'} />
               <Text style={[styles.navText, activeTab === tab.id && styles.navTextActive]}>{tab.label}</Text>

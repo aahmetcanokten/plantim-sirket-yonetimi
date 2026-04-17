@@ -22,7 +22,7 @@ const MENU_ITEMS = [
     { name: 'WorkOrderScreen', label: 'İş Emirleri', icon: 'construct-outline' },
     { name: 'WorkOrderArchiveScreen', label: 'İş Emri Arşivi', icon: 'archive-outline' },
     { name: 'MaintenanceScreen', label: 'Bakım ve Servis', icon: 'build-outline' },
-    { name: 'MaintenanceArchiveScreen', label: 'Bakım Arşivi', icon: 'filing-outline' },
+    { name: 'MaintenanceArchiveScreen', label: 'Bakım Arşivi', icon: 'folder-open-outline' },
     { name: 'AssetManagementScreen', label: 'Zimmet Yönetimi', icon: 'briefcase-outline' },
     { name: 'TaskListScreen', label: 'Görev Takibi', icon: 'checkbox-outline' },
     { name: 'PersonnelScreen', label: 'Personel', icon: 'person-outline' },
@@ -184,6 +184,7 @@ export default function WebContainer({ children, activeRoute }) {
             <View style={[
                 styles.sidebar,
                 isMobile && styles.mobileSidebar,
+                !isMobile && !isSidebarOpen && styles.desktopHiddenSidebar,
                 isMobile && !isSidebarOpen && styles.hiddenSidebar
             ]}>
                 <TouchableOpacity
@@ -241,11 +242,9 @@ export default function WebContainer({ children, activeRoute }) {
                 {/* --- HEADER (Üst Çubuk) --- */}
                 <View style={[styles.header, isMobile && styles.mobileHeader]}>
                     <View style={{ flexDirection: 'row', alignItems: 'center' }}>
-                        {isMobile && (
-                            <TouchableOpacity onPress={() => setIsSidebarOpen(!isSidebarOpen)} style={styles.menuToggleButton}>
-                                <Ionicons name={isSidebarOpen ? "close" : "menu"} size={24} color="#64748B" />
-                            </TouchableOpacity>
-                        )}
+                        <TouchableOpacity onPress={() => setIsSidebarOpen(!isSidebarOpen)} style={styles.menuToggleButton}>
+                            <Ionicons name="menu" size={24} color="#64748B" />
+                        </TouchableOpacity>
                         {canGoBack && (
                             <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backButton}>
                                 <Ionicons name="chevron-back" size={20} color="#64748B" />
@@ -308,7 +307,11 @@ const styles = StyleSheet.create({
         flexDirection: 'column',
         boxShadow: '10px 0 30px rgba(0,0,0,0.05)',
         zIndex: 100,
-        transition: 'transform 0.3s ease-in-out',
+        transition: 'width 0.3s ease-in-out, transform 0.3s ease-in-out',
+        overflow: 'hidden',
+    },
+    desktopHiddenSidebar: {
+        width: 0,
     },
     mobileSidebar: {
         position: 'absolute',

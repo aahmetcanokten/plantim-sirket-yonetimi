@@ -22,7 +22,7 @@ const { width } = Dimensions.get('window');
 const isWeb = Platform.OS === 'web';
 
 export default function PaywallScreen({ navigation }) {
-    const { setPremiumStatus, purchasePremium, restorePurchases, getPackages } = useContext(AppContext);
+    const { setPremiumStatus, purchasePremium, restorePurchases, getPackages, isPremium } = useContext(AppContext);
     const { t } = useTranslation();
     const [packages, setPackages] = useState([]);
     const [loading, setLoading] = useState(true);
@@ -113,7 +113,39 @@ export default function PaywallScreen({ navigation }) {
                         <View style={styles.headerLine} />
                     </View>
 
-                    <View style={styles.mainLayout}>
+                    {isPremium ? (
+                        <View style={styles.premiumActiveContainer}>
+                            <View style={styles.premiumActiveCard}>
+                                <View style={styles.premiumIconBadge}>
+                                    <Ionicons name="shield-checkmark" size={50} color="#fff" />
+                                </View>
+                                <Text style={styles.premiumActiveTitle}>Premium Aboneliğiniz Aktif!</Text>
+                                <Text style={styles.premiumActiveDesc}>
+                                    Şirket yönetiminde sınırsız özelliklere sahipsiniz. Bir güvence ile tüm sistemi kullanmaya devam edin ve bir sonraki döneme kadar her özellikten faydalanın.
+                                </Text>
+
+                                <View style={styles.subscriptionBox}>
+                                    <View style={styles.subRow}>
+                                        <Text style={styles.subLabel}>Mevcut Plan</Text>
+                                        <Text style={styles.subValue}>Premium Pro</Text>
+                                    </View>
+                                    <View style={styles.subDivider} />
+                                    <View style={styles.subRow}>
+                                        <Text style={styles.subLabel}>Yenileme Tarihi</Text>
+                                        <Text style={styles.subValue}>1 Yıl Sonra</Text>
+                                    </View>
+                                </View>
+
+                                <TouchableOpacity 
+                                    style={styles.manageButton}
+                                    onPress={() => isWeb ? window.open('https://iyzi.link/ornek-linkiniz', '_blank') : Linking.openURL('https://apps.apple.com/account/subscriptions')}
+                                >
+                                    <Text style={styles.manageButtonText}>Aboneliği Yönet / Yenile</Text>
+                                </TouchableOpacity>
+                            </View>
+                        </View>
+                    ) : (
+                        <View style={styles.mainLayout}>
                         <View style={styles.featuresSection}>
                             <Text style={styles.sectionTitle}>Neden Pro'ya Geçmelisiniz?</Text>
                             <View style={styles.featuresGrid}>
@@ -191,7 +223,8 @@ export default function PaywallScreen({ navigation }) {
                                 </View>
                             )}
                         </View>
-                    </View>
+                        </View>
+                    )}
 
                     <View style={styles.footer}>
                         <TouchableOpacity style={styles.restoreButton} onPress={handleRestore}>
@@ -465,5 +498,101 @@ const styles = StyleSheet.create({
         color: '#64748B',
         fontSize: 16,
         marginTop: 40,
+    },
+    premiumActiveContainer: {
+        width: '100%',
+        alignItems: 'center',
+        marginTop: 20,
+    },
+    premiumActiveCard: {
+        backgroundColor: '#fff',
+        borderRadius: 24,
+        padding: 40,
+        maxWidth: 600,
+        width: '100%',
+        alignItems: 'center',
+        shadowColor: "rgba(16, 185, 129, 0.4)",
+        shadowOffset: { width: 0, height: 10 },
+        shadowOpacity: 0.2,
+        shadowRadius: 20,
+        elevation: 10,
+        borderWidth: 1,
+        borderColor: '#ECFDF5',
+    },
+    premiumIconBadge: {
+        width: 100,
+        height: 100,
+        borderRadius: 50,
+        backgroundColor: '#10B981',
+        justifyContent: 'center',
+        alignItems: 'center',
+        marginBottom: 20,
+        shadowColor: '#10B981',
+        shadowOffset: { width: 0, height: 8 },
+        shadowOpacity: 0.4,
+        shadowRadius: 15,
+        elevation: 12,
+    },
+    premiumActiveTitle: {
+        fontSize: 26,
+        fontWeight: '800',
+        color: '#064E3B',
+        marginBottom: 10,
+        textAlign: 'center',
+    },
+    premiumActiveDesc: {
+        fontSize: 16,
+        color: '#475569',
+        textAlign: 'center',
+        lineHeight: 24,
+        marginBottom: 30,
+        paddingHorizontal: 10,
+    },
+    subscriptionBox: {
+        width: '100%',
+        backgroundColor: '#F8FAFC',
+        borderRadius: 16,
+        padding: 20,
+        marginBottom: 30,
+        borderWidth: 1,
+        borderColor: '#E2E8F0',
+    },
+    subRow: {
+        flexDirection: 'row',
+        justifyContent: 'space-between',
+        alignItems: 'center',
+    },
+    subLabel: {
+        fontSize: 14,
+        color: '#64748B',
+        fontWeight: '600',
+    },
+    subValue: {
+        fontSize: 16,
+        color: '#1E293B',
+        fontWeight: '800',
+    },
+    subDivider: {
+        height: 1,
+        backgroundColor: '#E2E8F0',
+        marginVertical: 15,
+    },
+    manageButton: {
+        backgroundColor: '#0F172A',
+        paddingVertical: 16,
+        paddingHorizontal: 30,
+        borderRadius: 16,
+        width: '100%',
+        alignItems: 'center',
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: 4 },
+        shadowOpacity: 0.15,
+        shadowRadius: 10,
+    },
+    manageButtonText: {
+        color: '#fff',
+        fontSize: 16,
+        fontWeight: '700',
+        letterSpacing: 0.5,
     }
 });

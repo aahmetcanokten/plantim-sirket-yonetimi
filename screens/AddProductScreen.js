@@ -9,7 +9,8 @@ import {
   Keyboard,
   ScrollView,
   Platform,
-  Dimensions
+  Dimensions,
+  Animated,
 } from "react-native";
 import { useTranslation } from "react-i18next";
 import ImmersiveLayout from "../components/ImmersiveLayout";
@@ -20,31 +21,112 @@ import KeyboardSafeView from "../components/KeyboardSafeView";
 import { useToast } from "../components/ToastProvider";
 import BarcodeScannerModal from "../components/BarcodeScannerModal";
 
+// ─── Design tokens ────────────────────────────────────────────────────────────
+const SECTION_COLORS = {
+  general:     { accent: "#2563EB", bg: "#EFF6FF", icon: "#2563EB" },
+  stock:       { accent: "#059669", bg: "#ECFDF5", icon: "#059669" },
+  identifiers: { accent: "#7C3AED", bg: "#F5F3FF", icon: "#7C3AED" },
+};
+
+// ─── Focused TextInput wrapper (web hover/focus styles) ──────────────────────
+function SmartInput({
+  label, value, onChangeText, placeholder,
+  icon, iconColor = Colors.secondary,
+  keyboardType = "default", selectOnFocus = true,
+  extraProps = {}, suffix = null, onSuffixPress = null,
+  required = false,
+}) {
+  const [focused, setFocused] = useState(false);
+
+  const containerStyle = [
+    styles.input,
+    focused && styles.inputFocused,
+  ];
+
+  return (
+    <View style={styles.inputGroup}>
+      <Text style={styles.inputLabel}>
+        {label}
+        {required && <Text style={styles.requiredMark}> *</Text>}
+      </Text>
+      <View style={[styles.inputWrapper, focused && styles.inputWrapperFocused]}>
+        {icon && (
+          <View style={styles.iconContainer}>
+            <Ionicons name={icon} size={16} color={focused ? iconColor : "#94A3B8"} />
+          </View>
+        )}
+        <TextInput
+          style={[containerStyle, icon ? { paddingLeft: 44 } : {}, suffix ? { paddingRight: 50 } : {}]}
+          value={value}
+          onChangeText={onChangeText}
+          placeholder={placeholder}
+          placeholderTextColor="#CBD5E1"
+          keyboardType={keyboardType}
+          selectTextOnFocus={selectOnFocus}
+          onFocus={() => setFocused(true)}
+          onBlur={() => setFocused(false)}
+          {...extraProps}
+        />
+        {suffix && (
+          <TouchableOpacity
+            onPress={onSuffixPress}
+            style={styles.suffixButton}
+            hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+          >
+            {suffix}
+          </TouchableOpacity>
+        )}
+      </View>
+    </View>
+  );
+}
+
+// ─── Section card component ───────────────────────────────────────────────────
+function SectionCard({ title, icon, colorKey, children }) {
+  const theme = SECTION_COLORS[colorKey] || SECTION_COLORS.general;
+  return (
+    <View style={[styles.sectionCard, Platform.OS === "web" && styles.webSectionCard]}>
+      {/* Section header */}
+      <View style={styles.sectionHeader}>
+        <View style={[styles.sectionIconBadge, { backgroundColor: theme.bg }]}>
+          <Ionicons name={icon} size={16} color={theme.icon} />
+        </View>
+        <Text style={[styles.sectionTitle, { color: theme.accent }]}>{title}</Text>
+        <View style={[styles.sectionDivider, { backgroundColor: theme.accent, opacity: 0.15 }]} />
+      </View>
+      {children}
+    </View>
+  );
+}
+
+// ─── Main screen ─────────────────────────────────────────────────────────────
 export default function AddProductScreen({ navigation, route }) {
   const { addProduct, updateProduct, products, isPremium } = useContext(AppContext);
   const toast = useToast();
   const { t } = useTranslation();
+  const saveScale = useRef(new Animated.Value(1)).current;
 
   const editingProduct = route.params?.product || null;
   const isEditing = !!editingProduct;
-  const screenWidth = Dimensions.get('window').width;
-  const isLargeWeb = Platform.OS === 'web' && screenWidth > 768;
+  const screenWidth = Dimensions.get("window").width;
+  const isLargeWeb = Platform.OS === "web" && screenWidth > 768;
 
-  const [name, setName] = useState(editingProduct?.name || "");
-  const [category, setCategory] = useState(editingProduct?.category || "");
-  const [brand, setBrand] = useState(editingProduct?.brand || "");
-  const [unit, setUnit] = useState(editingProduct?.unit || "uom_pcs");
-  const [quantity, setQuantity] = useState(editingProduct ? String(editingProduct.quantity) : "0");
-  const [cost, setCost] = useState(editingProduct ? String(editingProduct.cost) : "");
-  const [price, setPrice] = useState(editingProduct ? String(editingProduct.price) : "");
-  const [taxRate, setTaxRate] = useState(editingProduct ? String(editingProduct.taxRate || 20) : "20");
-  const [serialNumber, setSerialNumber] = useState(editingProduct?.serialNumber || "");
-  const [code, setCode] = useState(editingProduct?.code || "");
+  const [name, setName]                       = useState(editingProduct?.name || "");
+  const [category, setCategory]               = useState(editingProduct?.category || "");
+  const [brand, setBrand]                     = useState(editingProduct?.brand || "");
+  const [unit, setUnit]                       = useState(editingProduct?.unit || "uom_pcs");
+  const [quantity, setQuantity]               = useState(editingProduct ? String(editingProduct.quantity) : "0");
+  const [cost, setCost]                       = useState(editingProduct ? String(editingProduct.cost) : "");
+  const [price, setPrice]                     = useState(editingProduct ? String(editingProduct.price) : "");
+  const [taxRate, setTaxRate]                 = useState(editingProduct ? String(editingProduct.taxRate || 20) : "20");
+  const [serialNumber, setSerialNumber]       = useState(editingProduct?.serialNumber || "");
+  const [code, setCode]                       = useState(editingProduct?.code || "");
   const [warehouseLocation, setWarehouseLocation] = useState(editingProduct?.warehouseLocation || "");
-  const [supplier, setSupplier] = useState(editingProduct?.supplier || "");
-  const [description, setDescription] = useState(editingProduct?.description || "");
+  const [supplier, setSupplier]               = useState(editingProduct?.supplier || "");
+  const [description, setDescription]         = useState(editingProduct?.description || "");
   const [criticalStockLimit, setCriticalStockLimit] = useState(editingProduct ? String(editingProduct.criticalStockLimit) : "5");
-  const [scannerVisible, setScannerVisible] = useState(false);
+  const [scannerVisible, setScannerVisible]   = useState(false);
+  const [isSaving, setIsSaving]               = useState(false);
 
   useEffect(() => {
     if (editingProduct) {
@@ -66,75 +148,65 @@ export default function AddProductScreen({ navigation, route }) {
   }, [editingProduct]);
 
   const resetForm = () => {
-    setName("");
-    setCategory("");
-    setBrand("");
-    setUnit("uom_pcs");
-    setQuantity("0");
-    setCost("");
-    setPrice("");
-    setTaxRate("20");
-    setSerialNumber("");
-    setCode("");
-    setWarehouseLocation("");
-    setSupplier("");
-    setDescription("");
-    setCriticalStockLimit("5");
+    setName(""); setCategory(""); setBrand(""); setUnit("uom_pcs");
+    setQuantity("0"); setCost(""); setPrice(""); setTaxRate("20");
+    setSerialNumber(""); setCode(""); setWarehouseLocation("");
+    setSupplier(""); setDescription(""); setCriticalStockLimit("5");
+  };
+
+  const animateSave = () => {
+    Animated.sequence([
+      Animated.timing(saveScale, { toValue: 0.96, duration: 80, useNativeDriver: true }),
+      Animated.timing(saveScale, { toValue: 1, duration: 120, useNativeDriver: true }),
+    ]).start();
   };
 
   const handleSave = async () => {
     Keyboard.dismiss();
-
     if (!name.trim()) {
-      Alert.alert(t('error'), t('product_name_required'));
+      Alert.alert(t("error"), t("product_name_required"));
       return;
     }
+    animateSave();
+    setIsSaving(true);
 
     const productData = {
-      name: name.trim(),
-      category: category.trim(),
-      brand: brand.trim(),
-      unit: unit,
-      quantity: parseInt(quantity, 10) || 0,
-      cost: parseFloat(cost) || 0,
-      price: parseFloat(price) || 0,
+      name: name.trim(), category: category.trim(), brand: brand.trim(),
+      unit, quantity: parseInt(quantity, 10) || 0,
+      cost: parseFloat(cost) || 0, price: parseFloat(price) || 0,
       taxRate: parseFloat(taxRate) || 20,
-      serialNumber: serialNumber.trim(),
-      code: code.trim(),
-      warehouseLocation: warehouseLocation.trim(),
-      supplier: supplier.trim(),
+      serialNumber: serialNumber.trim(), code: code.trim(),
+      warehouseLocation: warehouseLocation.trim(), supplier: supplier.trim(),
       description: description.trim(),
       criticalStockLimit: parseInt(criticalStockLimit, 10) || 0,
     };
 
     if (isEditing) {
       const success = await updateProduct({ ...productData, id: editingProduct.id });
-      if (success !== false) { // Context updateProduct doesn't return bool but we check for failure
-        toast.showToast && toast.showToast(`${productData.name} ${t('updated')}`);
+      setIsSaving(false);
+      if (success !== false) {
+        toast.showToast && toast.showToast(`${productData.name} ${t("updated")}`);
         navigation.goBack();
       }
       return;
     }
 
     if (!isPremium && products.length >= 5) {
-      Alert.alert(
-        t('limit_exceeded'),
-        t('limit_exceeded_add_product'),
-        [
-          { text: t('cancel'), style: "cancel" },
-          { text: t('get_premium'), onPress: () => navigation.navigate("Paywall") }
-        ]
-      );
+      setIsSaving(false);
+      Alert.alert(t("limit_exceeded"), t("limit_exceeded_add_product"), [
+        { text: t("cancel"), style: "cancel" },
+        { text: t("get_premium"), onPress: () => navigation.navigate("Paywall") },
+      ]);
       return;
     }
 
     const success = await addProduct(productData);
-
+    setIsSaving(false);
     if (success) {
       resetForm();
-      toast.showToast && toast.showToast(`${productData.name} ${t('added_to_stock')}`);
-      if (Platform.OS === 'web') {
-        navigation.navigate("MainTabs", { screen: 'Stok' });
+      toast.showToast && toast.showToast(`${productData.name} ${t("added_to_stock")}`);
+      if (Platform.OS === "web") {
+        navigation.navigate("MainTabs", { screen: "Stok" });
       } else {
         navigation.goBack();
       }
@@ -144,305 +216,581 @@ export default function AddProductScreen({ navigation, route }) {
   const handleScan = (data) => {
     setCode(data);
     setScannerVisible(false);
-    toast.showToast && toast.showToast(`${t('barcode_scanned')}: ${data}`);
+    toast.showToast && toast.showToast(`${t("barcode_scanned")}: ${data}`);
   };
 
-  const renderInput = (label, value, onChangeText, placeholder, icon, keyboardType = 'default', selectOnFocus = true, extraProps = {}) => (
-    <View style={[styles.inputGroup, isLargeWeb && styles.webInputGroup]}>
-      <Text style={styles.inputLabel}>{label}</Text>
-      <View style={styles.inputWrapper}>
-        {icon && <Ionicons name={icon} size={20} color={Colors.secondary} style={styles.inputIcon} />}
-        <TextInput
-          style={[styles.input, icon ? { paddingLeft: 45 } : {}]}
-          value={value}
-          onChangeText={onChangeText}
-          placeholder={placeholder}
-          placeholderTextColor={Colors.muted}
-          keyboardType={keyboardType}
-          selectTextOnFocus={selectOnFocus}
-          {...extraProps}
-        />
+  // ── Unit selector ──────────────────────────────────────────────────────────
+  const UnitSelector = () => (
+    <View style={styles.inputGroup}>
+      <Text style={styles.inputLabel}>{t("unit")}</Text>
+      <View style={styles.unitPicker}>
+        {["uom_pcs", "uom_kg", "uom_m", "uom_lt"].map((u) => (
+          <TouchableOpacity
+            key={u}
+            style={[styles.unitBtn, unit === u && styles.unitBtnActive]}
+            onPress={() => setUnit(u)}
+            activeOpacity={0.7}
+          >
+            {unit === u && (
+              <View style={styles.unitBtnDot} />
+            )}
+            <Text style={[styles.unitBtnText, unit === u && styles.unitBtnTextActive]}>
+              {t(u)}
+            </Text>
+          </TouchableOpacity>
+        ))}
       </View>
     </View>
   );
 
+  // ── Renders ────────────────────────────────────────────────────────────────
   return (
     <ImmersiveLayout
-      title={isEditing ? t('edit_product') : t('add_new_product')}
-      subtitle={isEditing ? editingProduct.name : t('new_product_subtitle')}
+      title={isEditing ? t("edit_product") : t("add_new_product")}
+      subtitle={isEditing ? editingProduct.name : t("new_product_subtitle")}
       showBackButton={true}
       navigation={navigation}
     >
       <KeyboardSafeView offsetIOS={120}>
-        <ScrollView contentContainerStyle={styles.container} showsVerticalScrollIndicator={false}>
-
-          <View style={isLargeWeb ? styles.webFormGrid : styles.mobileForm}>
-
-            {/* Temel Bilgiler Bölümü */}
-            <View style={isLargeWeb ? styles.webSection : styles.section}>
-              <Text style={styles.sectionTitle}>{t('general')}</Text>
-
-              <View style={isLargeWeb ? styles.webRow : null}>
-                {renderInput(t('product_name') + " *", name, setName, t('product_name'), "cube-outline")}
-                {renderInput(t('category'), category, setCategory, t('category'), "folder-open-outline")}
-              </View>
-
-              <View style={isLargeWeb ? styles.webRow : null}>
-                {renderInput(t('brand'), brand, setBrand, t('brand'), "pricetag-outline")}
-                <View style={[styles.inputGroup, isLargeWeb && styles.webInputGroup]}>
-                  <Text style={styles.inputLabel}>{t('unit')}</Text>
-                  <View style={styles.unitPicker}>
-                    {['uom_pcs', 'uom_kg', 'uom_m', 'uom_lt'].map((u) => (
-                      <TouchableOpacity
-                        key={u}
-                        style={[styles.unitBtn, unit === u && styles.unitBtnActive]}
-                        onPress={() => setUnit(u)}
-                      >
-                        <Text style={[styles.unitBtnText, unit === u && styles.unitBtnTextActive]}>{t(u)}</Text>
-                      </TouchableOpacity>
-                    ))}
-                  </View>
+        <ScrollView
+          contentContainerStyle={styles.container}
+          showsVerticalScrollIndicator={false}
+          keyboardShouldPersistTaps="handled"
+        >
+          {/* ── Page header (web only) ────────────────────────────────── */}
+          {isLargeWeb && (
+            <View style={styles.pageHeader}>
+              <View style={styles.pageHeaderLeft}>
+                <View style={styles.pageHeaderIcon}>
+                  <Ionicons
+                    name={isEditing ? "create-outline" : "cube-outline"}
+                    size={22}
+                    color="#2563EB"
+                  />
+                </View>
+                <View>
+                  <Text style={styles.pageTitle}>
+                    {isEditing ? t("edit_product") : t("add_new_product")}
+                  </Text>
+                  <Text style={styles.pageSubtitle}>
+                    {isEditing ? editingProduct.name : t("new_product_subtitle")}
+                  </Text>
                 </View>
               </View>
+              {/* Quick-save top button */}
+              <TouchableOpacity
+                style={[styles.topSaveBtn, isSaving && styles.topSaveBtnDisabled]}
+                onPress={isSaving ? null : handleSave}
+                activeOpacity={0.85}
+              >
+                <Ionicons
+                  name={isEditing ? "checkmark-done-outline" : "add-circle-outline"}
+                  size={18}
+                  color="#fff"
+                  style={{ marginRight: 8 }}
+                />
+                <Text style={styles.topSaveBtnText}>
+                  {isSaving ? t("saving") || "Kaydediliyor…" : isEditing ? t("save_and_update") : t("add_to_stock")}
+                </Text>
+              </TouchableOpacity>
             </View>
+          )}
 
-            {/* Stok ve Fiyat Bölümü */}
-            <View style={isLargeWeb ? styles.webSection : styles.section}>
-              <Text style={styles.sectionTitle}>{t('stock_label')} & {t('cost_label')}</Text>
+          {/* ── Form grid ────────────────────────────────────────────── */}
+          <View style={isLargeWeb ? styles.formGrid : styles.mobileForm}>
 
-              <View style={isLargeWeb ? styles.webRow : null}>
-                {renderInput(t('current_stock_quantity'), quantity, (text) => setQuantity(text.replace(/[^0-9]/g, '')), "0", "stats-chart-outline", "number-pad")}
-                {renderInput(t('critical_stock_level'), criticalStockLimit, (text) => setCriticalStockLimit(text.replace(/[^0-9]/g, '')), "5", "alert-circle-outline", "number-pad")}
+            {/* ── SECTION 1: General Info ─────────────────────────── */}
+            <SectionCard title={t("general")} icon="information-circle-outline" colorKey="general">
+              <View style={isLargeWeb ? styles.row : null}>
+                <SmartInput
+                  label={t("product_name")}
+                  required
+                  value={name}
+                  onChangeText={setName}
+                  placeholder={t("product_name")}
+                  icon="cube-outline"
+                  iconColor="#2563EB"
+                />
+                <SmartInput
+                  label={t("category")}
+                  value={category}
+                  onChangeText={setCategory}
+                  placeholder={t("category")}
+                  icon="folder-open-outline"
+                  iconColor="#2563EB"
+                />
               </View>
-
-              <View style={isLargeWeb ? styles.webRow : null}>
-                {renderInput(t('purchase_price') + " (₺)", cost, (text) => setCost(text.replace(/[^0-9.]/g, '')), "0.00", "cash-outline", "decimal-pad")}
-                {renderInput(t('sale_price') + " (₺)", price, (text) => setPrice(text.replace(/[^0-9.]/g, '')), "0.00", "cart-outline", "decimal-pad")}
+              <View style={isLargeWeb ? styles.row : null}>
+                <SmartInput
+                  label={t("brand")}
+                  value={brand}
+                  onChangeText={setBrand}
+                  placeholder={t("brand")}
+                  icon="pricetag-outline"
+                  iconColor="#2563EB"
+                />
+                <UnitSelector />
               </View>
+            </SectionCard>
 
-              <View style={isLargeWeb ? styles.webRow : null}>
-                {renderInput(t('tax_rate'), taxRate, (text) => setTaxRate(text.replace(/[^0-9]/g, '')), "20", "receipt-outline", "number-pad")}
-                {renderInput(t('warehouse_location'), warehouseLocation, setWarehouseLocation, t('warehouse_location'), "location-outline")}
+            {/* ── SECTION 2: Stock & Pricing ──────────────────────── */}
+            <SectionCard
+              title={`${t("stock_label")} & ${t("cost_label")}`}
+              icon="stats-chart-outline"
+              colorKey="stock"
+            >
+              <View style={isLargeWeb ? styles.row : null}>
+                <SmartInput
+                  label={t("current_stock_quantity")}
+                  value={quantity}
+                  onChangeText={(text) => setQuantity(text.replace(/[^0-9]/g, ""))}
+                  placeholder="0"
+                  icon="stats-chart-outline"
+                  iconColor="#059669"
+                  keyboardType="number-pad"
+                />
+                <SmartInput
+                  label={t("critical_stock_level")}
+                  value={criticalStockLimit}
+                  onChangeText={(text) => setCriticalStockLimit(text.replace(/[^0-9]/g, ""))}
+                  placeholder="5"
+                  icon="alert-circle-outline"
+                  iconColor="#059669"
+                  keyboardType="number-pad"
+                />
               </View>
-            </View>
-
-            {/* Tanımlayıcılar Bölümü */}
-            <View style={isLargeWeb ? styles.webSection : styles.section}>
-              <Text style={styles.sectionTitle}>{t('code_barcode_label')}</Text>
-
-              <View style={isLargeWeb ? styles.webRow : null}>
-                <View style={[styles.inputGroup, isLargeWeb && styles.webInputGroup]}>
-                  <Text style={styles.inputLabel}>{t('product_code_barcode')}</Text>
-                  <View style={styles.inputWrapper}>
-                    <Ionicons name="barcode-outline" size={20} color={Colors.secondary} style={styles.inputIcon} />
-                    <TextInput
-                      style={[styles.input, { paddingLeft: 45, paddingRight: 50 }]}
-                      value={code}
-                      onChangeText={setCode}
-                      placeholder={t('product_code_barcode')}
-                      placeholderTextColor={Colors.muted}
-                    />
-                    <TouchableOpacity onPress={() => setScannerVisible(true)} style={styles.barcodeIconAction}>
-                      <Ionicons name="scan-outline" size={20} color={Colors.iosBlue} />
-                    </TouchableOpacity>
-                  </View>
-                </View>
-                {renderInput(t('serial_number'), serialNumber, setSerialNumber, t('serial_number'), "key-outline")}
+              <View style={isLargeWeb ? styles.row : null}>
+                <SmartInput
+                  label={`${t("purchase_price")} (₺)`}
+                  value={cost}
+                  onChangeText={(text) => setCost(text.replace(/[^0-9.]/g, ""))}
+                  placeholder="0.00"
+                  icon="cash-outline"
+                  iconColor="#059669"
+                  keyboardType="decimal-pad"
+                />
+                <SmartInput
+                  label={`${t("sale_price")} (₺)`}
+                  value={price}
+                  onChangeText={(text) => setPrice(text.replace(/[^0-9.]/g, ""))}
+                  placeholder="0.00"
+                  icon="cart-outline"
+                  iconColor="#059669"
+                  keyboardType="decimal-pad"
+                />
               </View>
-
-              <View style={isLargeWeb ? styles.webRow : null}>
-                {renderInput(t('supplier'), supplier, setSupplier, t('supplier'), "business-outline")}
-                {renderInput(t('description'), description, setDescription, t('enter_details'), "document-text-outline", "default", true, { multiline: true })}
+              <View style={isLargeWeb ? styles.row : null}>
+                <SmartInput
+                  label={t("tax_rate")}
+                  value={taxRate}
+                  onChangeText={(text) => setTaxRate(text.replace(/[^0-9]/g, ""))}
+                  placeholder="20"
+                  icon="receipt-outline"
+                  iconColor="#059669"
+                  keyboardType="number-pad"
+                />
+                <SmartInput
+                  label={t("warehouse_location")}
+                  value={warehouseLocation}
+                  onChangeText={setWarehouseLocation}
+                  placeholder={t("warehouse_location")}
+                  icon="location-outline"
+                  iconColor="#059669"
+                />
               </View>
-            </View>
+            </SectionCard>
+
+            {/* ── SECTION 3: Identifiers ──────────────────────────── */}
+            <SectionCard title={t("code_barcode_label")} icon="barcode-outline" colorKey="identifiers">
+              <View style={isLargeWeb ? styles.row : null}>
+                {/* Barcode input – custom suffix */}
+                <SmartInput
+                  label={t("product_code_barcode")}
+                  value={code}
+                  onChangeText={setCode}
+                  placeholder={t("product_code_barcode")}
+                  icon="barcode-outline"
+                  iconColor="#7C3AED"
+                  suffix={
+                    <View style={styles.scanBadge}>
+                      <Ionicons name="scan-outline" size={15} color="#7C3AED" />
+                    </View>
+                  }
+                  onSuffixPress={() => setScannerVisible(true)}
+                />
+                <SmartInput
+                  label={t("serial_number")}
+                  value={serialNumber}
+                  onChangeText={setSerialNumber}
+                  placeholder={t("serial_number")}
+                  icon="key-outline"
+                  iconColor="#7C3AED"
+                />
+              </View>
+              <View style={isLargeWeb ? styles.row : null}>
+                <SmartInput
+                  label={t("supplier")}
+                  value={supplier}
+                  onChangeText={setSupplier}
+                  placeholder={t("supplier")}
+                  icon="business-outline"
+                  iconColor="#7C3AED"
+                />
+                <SmartInput
+                  label={t("description")}
+                  value={description}
+                  onChangeText={setDescription}
+                  placeholder={t("enter_details")}
+                  icon="document-text-outline"
+                  iconColor="#7C3AED"
+                  extraProps={{ multiline: true, numberOfLines: 3, textAlignVertical: "top", style: { minHeight: 80 } }}
+                />
+              </View>
+            </SectionCard>
           </View>
 
-          {/* Ekle Butonu */}
-          <View style={styles.actionContainer}>
+          {/* ── Action bar ───────────────────────────────────────── */}
+          <View style={styles.actionBar}>
             <TouchableOpacity
-              style={styles.saveButton}
-              onPress={handleSave}
-              activeOpacity={0.8}
-            >
-              <Ionicons name={isEditing ? "refresh-outline" : "save-outline"} size={22} color="#fff" style={{ marginRight: 10 }} />
-              <Text style={styles.saveButtonText}>{isEditing ? t('save_and_update') : t('add_to_stock')}</Text>
-            </TouchableOpacity>
-
-            <TouchableOpacity
-              style={styles.cancelButton}
+              style={styles.cancelBtn}
               onPress={() => navigation.goBack()}
               activeOpacity={0.7}
             >
-              <Text style={styles.cancelButtonText}>{t('cancel')}</Text>
+              <Ionicons name="close-outline" size={18} color="#64748B" style={{ marginRight: 6 }} />
+              <Text style={styles.cancelBtnText}>{t("cancel")}</Text>
             </TouchableOpacity>
-          </View>
 
+            <Animated.View style={[{ transform: [{ scale: saveScale }] }, styles.saveButtonWrap]}>
+              <TouchableOpacity
+                style={[styles.saveBtn, isSaving && styles.saveBtnDisabled]}
+                onPress={isSaving ? null : handleSave}
+                activeOpacity={0.85}
+              >
+                {isSaving ? (
+                  <Ionicons name="hourglass-outline" size={20} color="#fff" style={{ marginRight: 10 }} />
+                ) : (
+                  <Ionicons
+                    name={isEditing ? "checkmark-done-outline" : "save-outline"}
+                    size={20}
+                    color="#fff"
+                    style={{ marginRight: 10 }}
+                  />
+                )}
+                <Text style={styles.saveBtnText}>
+                  {isSaving
+                    ? t("saving") || "Kaydediliyor…"
+                    : isEditing
+                    ? t("save_and_update")
+                    : t("add_to_stock")}
+                </Text>
+              </TouchableOpacity>
+            </Animated.View>
+          </View>
         </ScrollView>
       </KeyboardSafeView>
-      <BarcodeScannerModal visible={scannerVisible} onClose={() => setScannerVisible(false)} onScanned={handleScan} />
+
+      <BarcodeScannerModal
+        visible={scannerVisible}
+        onClose={() => setScannerVisible(false)}
+        onScanned={handleScan}
+      />
     </ImmersiveLayout>
   );
 }
 
+// ─── Styles ───────────────────────────────────────────────────────────────────
 const styles = StyleSheet.create({
+  // ── Scroll container
   container: {
     flexGrow: 1,
-    paddingTop: 10,
-    paddingBottom: 40,
-    paddingHorizontal: Platform.OS === 'web' ? 20 : 0,
+    paddingTop: 8,
+    paddingBottom: 48,
+    paddingHorizontal: Platform.OS === "web" ? 0 : 0,
   },
-  section: {
-    marginBottom: 25,
-    backgroundColor: '#fff',
-    padding: 15,
+
+  // ── Page header (web)
+  pageHeader: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    marginBottom: 28,
+    paddingBottom: 20,
+    borderBottomWidth: 1,
+    borderBottomColor: "#F1F5F9",
+  },
+  pageHeaderLeft: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 14,
+  },
+  pageHeaderIcon: {
+    width: 46,
+    height: 46,
+    borderRadius: 14,
+    backgroundColor: "#EFF6FF",
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  pageTitle: {
+    fontSize: 20,
+    fontWeight: "800",
+    color: "#0F172A",
+    letterSpacing: -0.3,
+  },
+  pageSubtitle: {
+    fontSize: 13,
+    color: "#64748B",
+    marginTop: 2,
+    fontWeight: "500",
+  },
+  topSaveBtn: {
+    flexDirection: "row",
+    alignItems: "center",
+    backgroundColor: "#2563EB",
+    paddingHorizontal: 20,
+    paddingVertical: 10,
+    borderRadius: 10,
+    ...Platform.select({
+      web: { cursor: "pointer", boxShadow: "0 4px 14px rgba(37,99,235,0.35)" },
+    }),
+  },
+  topSaveBtnDisabled: {
+    backgroundColor: "#93C5FD",
+  },
+  topSaveBtnText: {
+    color: "#fff",
+    fontWeight: "700",
+    fontSize: 14,
+  },
+
+  // ── Grids
+  formGrid: {
+    width: "100%",
+  },
+  mobileForm: {
+    width: "100%",
+  },
+  row: {
+    flexDirection: "row",
+    gap: 16,
+  },
+
+  // ── Section card
+  sectionCard: {
+    backgroundColor: "#fff",
     borderRadius: 16,
     borderWidth: 1,
-    borderColor: '#F1F5F9',
+    borderColor: "#F1F5F9",
+    padding: 20,
+    marginBottom: 20,
   },
-  webSection: {
-    marginBottom: 30,
-    backgroundColor: '#fff',
-    padding: 24,
+  webSectionCard: {
     borderRadius: 20,
-    borderWidth: 1,
-    borderColor: '#E2E8F0',
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.05,
-    shadowRadius: 10,
-    elevation: 4,
+    padding: 28,
+    marginBottom: 24,
+    ...Platform.select({
+      web: { boxShadow: "0 2px 12px rgba(15,23,42,0.05)" },
+    }),
+  },
+  sectionHeader: {
+    flexDirection: "row",
+    alignItems: "center",
+    marginBottom: 22,
+    gap: 10,
+  },
+  sectionIconBadge: {
+    width: 30,
+    height: 30,
+    borderRadius: 8,
+    alignItems: "center",
+    justifyContent: "center",
   },
   sectionTitle: {
-    fontSize: 16,
-    fontWeight: '800',
-    color: '#0F172A',
-    marginBottom: 20,
-    textTransform: 'uppercase',
-    letterSpacing: 1,
-    borderLeftWidth: 4,
-    borderLeftColor: Colors.iosBlue,
-    paddingLeft: 10,
+    fontSize: 12,
+    fontWeight: "800",
+    textTransform: "uppercase",
+    letterSpacing: 1.1,
   },
-  inputGroup: {
-    marginBottom: 18,
+  sectionDivider: {
     flex: 1,
-  },
-  webInputGroup: {
-    marginHorizontal: 10,
-  },
-  inputLabel: {
-    fontWeight: "700",
-    fontSize: 13,
-    color: '#64748B',
-    marginBottom: 8,
+    height: 1,
     marginLeft: 4,
   },
-  inputWrapper: {
-    position: 'relative',
-    justifyContent: 'center',
+
+  // ── Input group
+  inputGroup: {
+    flex: 1,
+    marginBottom: 16,
+    minWidth: 0,
   },
-  inputIcon: {
-    position: 'absolute',
-    left: 15,
+  inputLabel: {
+    fontSize: 12,
+    fontWeight: "700",
+    color: "#475569",
+    marginBottom: 7,
+    letterSpacing: 0.2,
+  },
+  requiredMark: {
+    color: "#EF4444",
+    fontWeight: "700",
+  },
+  inputWrapper: {
+    position: "relative",
+    borderRadius: 11,
+    borderWidth: 1.5,
+    borderColor: "#E2E8F0",
+    backgroundColor: "#F8FAFC",
+    overflow: "hidden",
+    ...Platform.select({
+      web: { transition: "border-color 0.15s, box-shadow 0.15s" },
+    }),
+  },
+  inputWrapperFocused: {
+    borderColor: "#2563EB",
+    backgroundColor: "#FAFBFF",
+    ...Platform.select({
+      web: { boxShadow: "0 0 0 3px rgba(37,99,235,0.12)" },
+    }),
+  },
+  iconContainer: {
+    position: "absolute",
+    left: 13,
+    top: 0,
+    bottom: 0,
+    justifyContent: "center",
     zIndex: 1,
   },
   input: {
-    backgroundColor: "#F8FAFC",
-    padding: 14,
-    borderRadius: 12,
-    borderWidth: 1,
-    borderColor: "#E2E8F0",
-    fontSize: 15,
+    paddingVertical: 12,
+    paddingHorizontal: 14,
+    fontSize: 14,
     color: "#1E293B",
+    fontWeight: "500",
     ...Platform.select({
-      web: {
-        outlineStyle: 'none',
-      }
+      web: { outlineStyle: "none" },
     }),
   },
-  barcodeIconAction: {
-    position: 'absolute',
-    right: 15,
+  inputFocused: {
+    // handled via wrapper
+  },
+  suffixButton: {
+    position: "absolute",
+    right: 12,
+    top: 0,
+    bottom: 0,
+    justifyContent: "center",
+    alignItems: "center",
+    zIndex: 2,
+  },
+  scanBadge: {
+    backgroundColor: "#F5F3FF",
+    borderRadius: 7,
     padding: 5,
-  },
-  priceRow: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-  },
-  webRow: {
-    flexDirection: 'row',
-    marginHorizontal: -10,
-  },
-  unitPicker: {
-    flexDirection: 'row',
-    backgroundColor: '#F8FAFC',
-    borderRadius: 12,
     borderWidth: 1,
-    borderColor: '#E2E8F0',
-    padding: 4,
+    borderColor: "#DDD6FE",
+  },
+
+  // ── Unit picker
+  unitPicker: {
+    flexDirection: "row",
+    backgroundColor: "#F1F5F9",
+    borderRadius: 11,
+    borderWidth: 1.5,
+    borderColor: "#E2E8F0",
+    padding: 3,
+    gap: 2,
   },
   unitBtn: {
     flex: 1,
-    paddingVertical: 10,
-    alignItems: 'center',
+    paddingVertical: 9,
+    alignItems: "center",
+    justifyContent: "center",
     borderRadius: 8,
+    flexDirection: "row",
+    gap: 4,
   },
   unitBtnActive: {
-    backgroundColor: '#fff',
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
-    elevation: 2,
+    backgroundColor: "#fff",
+    ...Platform.select({
+      web: { boxShadow: "0 1px 4px rgba(0,0,0,0.1)" },
+      ios: { shadowColor: "#000", shadowOffset: { width: 0, height: 1 }, shadowOpacity: 0.1, shadowRadius: 3 },
+      android: { elevation: 2 },
+    }),
+  },
+  unitBtnDot: {
+    width: 6,
+    height: 6,
+    borderRadius: 3,
+    backgroundColor: "#2563EB",
   },
   unitBtnText: {
-    fontSize: 13,
-    fontWeight: '600',
-    color: '#64748B',
+    fontSize: 12,
+    fontWeight: "600",
+    color: "#94A3B8",
   },
   unitBtnTextActive: {
-    color: Colors.iosBlue,
-    fontWeight: '700',
+    color: "#2563EB",
+    fontWeight: "700",
   },
-  actionContainer: {
-    marginTop: 20,
-    alignItems: 'center',
-    width: '100%',
-    maxWidth: 600,
-    alignSelf: 'center',
+
+  // ── Action bar
+  actionBar: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "flex-end",
+    gap: 12,
+    marginTop: 8,
+    paddingTop: 24,
+    borderTopWidth: 1,
+    borderTopColor: "#F1F5F9",
   },
-  saveButton: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    backgroundColor: Colors.iosBlue,
-    width: '100%',
-    padding: 18,
-    borderRadius: 16,
-    shadowColor: Colors.iosBlue,
-    shadowOffset: { width: 0, height: 8 },
-    shadowOpacity: 0.3,
-    shadowRadius: 12,
-    elevation: 8,
+  cancelBtn: {
+    flexDirection: "row",
+    alignItems: "center",
+    paddingHorizontal: 20,
+    paddingVertical: 11,
+    borderRadius: 10,
+    borderWidth: 1.5,
+    borderColor: "#E2E8F0",
+    backgroundColor: "#fff",
+    ...Platform.select({
+      web: { cursor: "pointer" },
+    }),
   },
-  saveButtonText: {
-    color: '#fff',
-    fontWeight: '800',
-    fontSize: 18,
+  cancelBtnText: {
+    color: "#64748B",
+    fontWeight: "600",
+    fontSize: 14,
   },
-  cancelButton: {
-    marginTop: 15,
-    padding: 10,
+  saveButtonWrap: {
+    borderRadius: 12,
+    overflow: "hidden",
   },
-  cancelButtonText: {
-    color: '#64748B',
-    fontWeight: '600',
+  saveBtn: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    backgroundColor: "#2563EB",
+    paddingHorizontal: 28,
+    paddingVertical: 13,
+    borderRadius: 12,
+    minWidth: 200,
+    ...Platform.select({
+      web: { cursor: "pointer", boxShadow: "0 6px 20px rgba(37,99,235,0.35)" },
+      ios: { shadowColor: "#2563EB", shadowOffset: { width: 0, height: 6 }, shadowOpacity: 0.35, shadowRadius: 12 },
+      android: { elevation: 6 },
+    }),
+  },
+  saveBtnDisabled: {
+    backgroundColor: "#93C5FD",
+    ...Platform.select({
+      web: { boxShadow: "none", cursor: "not-allowed" },
+    }),
+  },
+  saveBtnText: {
+    color: "#fff",
+    fontWeight: "800",
     fontSize: 15,
+    letterSpacing: 0.2,
   },
-  webFormGrid: {
-    width: '100%',
-  },
-  mobileForm: {
-    width: '100%',
-  }
 });

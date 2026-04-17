@@ -290,7 +290,7 @@ export default function AssetManagementScreen({ navigation }) {
                 </div>
 
                 <div class="footer">
-                    Bu belge elektronik ortamda oluşturulmuştur. | Mini ERP
+                    Bu belge elektronik ortamda oluşturulmuştur. | PLANTİM ERP
                 </div>
             </body>
             </html>
