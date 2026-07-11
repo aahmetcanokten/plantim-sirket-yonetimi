@@ -15,7 +15,7 @@ const BrandingContent = ({ t, isMobileWeb, isVerySmall, setIsLoginView }) => (
         <View style={styles.webLogoIcon}>
           <Ionicons name="leaf" size={isVerySmall ? 24 : 32} color={Colors.iosBlue} />
         </View>
-        <Text style={[styles.webLogoText, isVerySmall && { fontSize: 24 }]}>PLANTİM <Text style={{ fontWeight: '400', opacity: 0.8 }}>ERP</Text></Text>
+        <Text style={[styles.webLogoText, isVerySmall && { fontSize: 24 }]}>PLANTIM <Text style={{ fontWeight: '400', opacity: 0.8 }}>ERP</Text></Text>
       </View>
     )}
 
@@ -322,7 +322,7 @@ export default function LoginScreen() {
         <ScrollView contentContainerStyle={styles.scrollContainer}>
           <View style={styles.header}>
             <Ionicons name="leaf-outline" size={80} color={Colors.iosBlue} />
-            <Text style={styles.title}>PLANTİM</Text>
+            <Text style={styles.title}>PLANTIM</Text>
             <Text style={styles.subtitle}>{t("login_slogan")}</Text>
           </View>
 
@@ -363,7 +363,7 @@ export default function LoginScreen() {
             <View style={[styles.webLogoIcon, { width: 36, height: 36, borderRadius: 10 }]}>
               <Ionicons name="leaf" size={18} color={Colors.iosBlue} />
             </View>
-            <Text style={styles.headerLogoText}>PLANTİM <Text style={{ fontWeight: '400', color: Colors.iosBlue }}>ERP</Text></Text>
+            <Text style={styles.headerLogoText}>PLANTIM <Text style={{ fontWeight: '400', color: Colors.iosBlue }}>ERP</Text></Text>
           </View>
           {!isMobileWeb && (
             <View style={styles.headerNavLinks}>
@@ -656,7 +656,7 @@ export default function LoginScreen() {
         <View style={styles.pageFooter}>
           <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 8 }}>
             <Ionicons name="leaf" size={16} color={Colors.iosBlue} />
-            <Text style={styles.pageFooterBrand}>  PLANTİM ERP</Text>
+            <Text style={styles.pageFooterBrand}>  PLANTIM ERP</Text>
           </View>
           <Text style={styles.pageFooterText}>© 2026 Plantim Kurumsal Yazılım Teknolojileri · plantimtakviyelen@gmail.com</Text>
         </View>

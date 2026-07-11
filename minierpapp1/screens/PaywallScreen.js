@@ -88,7 +88,7 @@ export default function PaywallScreen({ navigation }) {
                     // İşlemi sonlandır (Apple/Google'a 'tamamlandı' bilgisi ver)
                     await finishTransaction({purchase, isConsumable: false});
                     
-                    Alert.alert('Satın Alma Başarılı', 'PLANTİM Premium özellikleriniz aktifleştirildi!');
+                    Alert.alert('Satın Alma Başarılı', 'PLANTIM Premium özellikleriniz aktifleştirildi!');
                     
                     // Yükleniyor durumunu kaldır
                     setSelectedProductId(null);
@@ -171,7 +171,7 @@ export default function PaywallScreen({ navigation }) {
 
                 <View style={styles.header}>
                     <Ionicons name="leaf-outline" size={60} color={Colors.iosBlue} />
-                    <Text style={styles.title}>PLANTİM Premium</Text>
+                    <Text style={styles.title}>PLANTIM Premium</Text>
                     <Text style={styles.subtitle}>Tüm potansiyelinizi ortaya çıkarın.</Text>
                 </View>
 

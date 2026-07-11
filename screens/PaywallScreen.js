@@ -108,7 +108,7 @@ export default function PaywallScreen({ navigation }) {
                         <View style={styles.logoBadge}>
                             <Ionicons name="diamond-outline" size={40} color="#fff" />
                         </View>
-                        <Text style={styles.title}>PLANTİM <Text style={{ color: Colors.iosBlue }}>PREMIUM</Text></Text>
+                        <Text style={styles.title}>PLANTIM <Text style={{ color: Colors.iosBlue }}>PREMIUM</Text></Text>
                         <Text style={styles.subtitle}>Şirket Yönetiminde Sınırları Kaldırın</Text>
                         <View style={styles.headerLine} />
                     </View>

@@ -1436,7 +1436,7 @@ export default function WebLoginPage() {
             <div className="wlp-logo-icon">
               <Icon name="leaf" size={18} color="#fff" />
             </div>
-            <span className="wlp-logo-text">PLANTİM <span>ERP</span></span>
+            <span className="wlp-logo-text">PLANTIM <span>ERP</span></span>
           </div>
           <div className="wlp-nav-links">
             <a className="wlp-nav-link" href="#features">Özellikler</a>
@@ -1996,7 +1996,7 @@ export default function WebLoginPage() {
             <div className="wlp-logo-icon" style={{ width: 30, height: 30, borderRadius: 8 }}>
               <Icon name="leaf" size={14} color="#fff" />
             </div>
-            <p className="wlp-footer-brand">PLANTİM ERP</p>
+            <p className="wlp-footer-brand">PLANTIM ERP</p>
           </div>
           <p className="wlp-footer-text">
             © 2026 Plantim Kurumsal Yazılım Teknolojileri

@@ -197,7 +197,7 @@ export default function WebContainer({ children, activeRoute }) {
                     <View style={styles.logoIconBg}>
                         <Ionicons name="leaf" size={20} color="#fff" />
                     </View>
-                    <Text style={styles.logoText}>PLANTİM <Text style={{ fontWeight: '300', opacity: 0.7 }}>ERP</Text></Text>
+                    <Text style={styles.logoText}>PLANTIM <Text style={{ fontWeight: '300', opacity: 0.7 }}>ERP</Text></Text>
                 </TouchableOpacity>
 
                 <ScrollView style={styles.menuContainer} showsVerticalScrollIndicator={false}>

@@ -617,7 +617,7 @@ function ModuleScreenshot({ module }) {
         <div style={{ width: 180, background: '#0f172a', padding: '16px 12px', flexShrink: 0 }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 24, padding: '0 4px' }}>
             <div style={{ background: '#3b82f6', borderRadius: 8, width: 28, height: 28, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 14 }}>🌿</div>
-            <span style={{ color: '#fff', fontSize: 13, fontWeight: 700, fontFamily: 'Inter, sans-serif' }}>PLANTİM ERP</span>
+            <span style={{ color: '#fff', fontSize: 13, fontWeight: 700, fontFamily: 'Inter, sans-serif' }}>PLANTIM ERP</span>
           </div>
           {['Şirket Özeti', 'Stok Listesi', 'Montaj/Üretim', 'Satışlar', 'Satın Alma', 'Finans', 'Müşteriler', 'İş Emirleri', 'Zimmet', 'Personel', 'Raporlar'].map((item, i) => (
             <div key={i} style={{
@@ -748,7 +748,7 @@ export default function FeaturesShowcasePage({ onClose, onRegister }) {
         <div className="fsp-nav-inner">
           <div className="fsp-nav-logo" onClick={onClose}>
             <div className="fsp-nav-logo-icon">🌿</div>
-            <span className="fsp-nav-logo-text">PLANTİM <span>ERP</span></span>
+            <span className="fsp-nav-logo-text">PLANTIM <span>ERP</span></span>
           </div>
           <button className="fsp-nav-back" onClick={onClose}>
             ← Giriş Sayfasına Dön
@@ -912,7 +912,7 @@ export default function FeaturesShowcasePage({ onClose, onRegister }) {
 
       {/* ── FOOTER ── */}
       <footer className="fsp-footer">
-        <p className="fsp-footer-brand">PLANTİM ERP</p>
+        <p className="fsp-footer-brand">PLANTIM ERP</p>
         <p className="fsp-footer-text">© 2026 Plantim Kurumsal Yazılım Teknolojileri · plantimtakviyelen@gmail.com</p>
       </footer>
 

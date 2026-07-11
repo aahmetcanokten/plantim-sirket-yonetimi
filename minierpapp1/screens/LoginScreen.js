@@ -126,7 +126,7 @@ export default function LoginScreen() {
       <ScrollView contentContainerStyle={styles.scrollContainer}>
         <View style={styles.header}>
           <Ionicons name="leaf-outline" size={80} color={Colors.iosBlue} />
-          <Text style={styles.title}>PLANTİM</Text>
+          <Text style={styles.title}>PLANTIM</Text>
           <Text style={styles.subtitle}>şirketiniz, cebinizde ve güvende.</Text>
         </View>
 
