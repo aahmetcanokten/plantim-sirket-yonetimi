@@ -1020,7 +1020,8 @@ export function AppProvider({ children }) {
 
   const addQuotation = async (q) => {
     if (!session || !supabase) return;
-    const totalAmount = (q.items || []).reduce((sum, item) => sum + (parseFloat(item.total) || 0), 0);
+    const discount = parseFloat(q.discount_amount) || 0;
+    const totalAmount = (q.items || []).reduce((sum, item) => sum + (parseFloat(item.total) || 0), 0) - discount;
     const toInsert = {
       ...q,
       user_id: session.user.id,
@@ -1042,7 +1043,8 @@ export function AppProvider({ children }) {
 
   const updateQuotation = async (u) => {
     if (!session || !supabase) return;
-    const totalAmount = (u.items || []).reduce((sum, item) => sum + (parseFloat(item.total) || 0), 0);
+    const discount = parseFloat(u.discount_amount) || 0;
+    const totalAmount = (u.items || []).reduce((sum, item) => sum + (parseFloat(item.total) || 0), 0) - discount;
     const updateData = {
       ...u,
       items: JSON.stringify(u.items || []),
@@ -1070,6 +1072,16 @@ export function AppProvider({ children }) {
   const approveQuotation = async (id) => {
     if (!session || !supabase) return;
     const { data, error } = await supabase.from('quotations').update({ status: 'APPROVED', updated_at: new Date().toISOString() }).eq('id', id).select();
+    if (error) Alert.alert('Hata', error.message);
+    else {
+      const existing = quotations.find(q => q.id === id);
+      setQuotations(prev => prev.map(q => q.id === id ? { ...data[0], items: existing?.items || [] } : q));
+    }
+  };
+
+  const updateQuotationStatus = async (id, newStatus) => {
+    if (!session || !supabase) return;
+    const { data, error } = await supabase.from('quotations').update({ status: newStatus, updated_at: new Date().toISOString() }).eq('id', id).select();
     if (error) Alert.alert('Hata', error.message);
     else {
       const existing = quotations.find(q => q.id === id);
@@ -1712,7 +1724,7 @@ export function AppProvider({ children }) {
         workOrders, addWorkOrder, updateWorkOrder, closeWorkOrder, addWorkOrderFromBom,
         processTemplates, addProcessTemplate, deleteProcessTemplate,
         maintenanceRequests, addMaintenanceRequest, updateMaintenanceRequest, closeMaintenanceRequest, deleteMaintenanceRequest,
-        quotations, addQuotation, updateQuotation, cancelQuotation, approveQuotation, convertQuotationToSale, deleteQuotation,
+        quotations, addQuotation, updateQuotation, updateQuotationStatus, cancelQuotation, approveQuotation, convertQuotationToSale, deleteQuotation,
         stockLocations, getProductStockLocations, getStockAtWarehouse, getAllWarehouses, addStockToWarehouse, upsertStockLocation,
         warehouseTransfers, addWarehouseTransfer,
         boms, addBom, updateBom, deleteBom, produceFromBom,
