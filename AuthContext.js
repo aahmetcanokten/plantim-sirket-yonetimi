@@ -9,8 +9,8 @@ import { createClient } from '@supabase/supabase-js';
 // Bu değişkenleri genellikle .env dosyasında tutmak daha güvenlidir, 
 // ancak test amaçlı buraya ekleyebilirsiniz.
 // Kendi değerlerinizle değiştirin!
-const supabaseUrl = process.env.EXPO_PUBLIC_SUPABASE_URL;
-const supabaseAnonKey = process.env.EXPO_PUBLIC_SUPABASE_ANON_KEY;
+const supabaseUrl = process.env.EXPO_PUBLIC_SUPABASE_URL || 'https://wzaxmplzambkjriqtweq.supabase.co';
+const supabaseAnonKey = process.env.EXPO_PUBLIC_SUPABASE_ANON_KEY || 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Ind6YXhtcGx6YW1ia2pyaXF0d2VxIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjI4MzQzNTQsImV4cCI6MjA3ODQxMDM1NH0.bpQWqzOoEYC8wi4jTh097OK7ogYOK4xDkvrXpTQaDUs';
 
 // Supabase İstemcisini Oluşturun
 // Bu, uygulamanızın Supabase ile iletişim kurmasını sağlayan tekil istemcidir.
