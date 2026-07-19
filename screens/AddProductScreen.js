@@ -206,7 +206,7 @@ export default function AddProductScreen({ navigation, route }) {
       resetForm();
       toast.showToast && toast.showToast(`${productData.name} ${t("added_to_stock")}`);
       if (Platform.OS === "web") {
-        navigation.navigate("MainTabs", { screen: "Stok" });
+        navigation.navigate("Stok");
       } else {
         navigation.goBack();
       }

@@ -367,6 +367,44 @@ export default function DashboardScreen() {
                 </View>
             </View>
 
+            {/* ── Hızlı Erişim Kısayolları (Mobil İçin) ─── */}
+            {isMobileWeb && (
+                <View style={styles.quickAccessRow}>
+                    <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ gap: 12, paddingHorizontal: 4 }}>
+                        <TouchableOpacity style={styles.quickAccessBtn} onPress={() => navigation.navigate('WorkOrderScreen')}>
+                            <View style={[styles.qaIconBg, { backgroundColor: PALETTE.purpleLight }]}>
+                                <Ionicons name="construct-outline" size={20} color={PALETTE.purple} />
+                            </View>
+                            <Text style={styles.qaText}>Yeni İş Emri</Text>
+                        </TouchableOpacity>
+                        <TouchableOpacity style={styles.quickAccessBtn} onPress={() => navigation.navigate('QuotationScreen')}>
+                            <View style={[styles.qaIconBg, { backgroundColor: PALETTE.blueLight }]}>
+                                <Ionicons name="document-text-outline" size={20} color={PALETTE.blue} />
+                            </View>
+                            <Text style={styles.qaText}>Yeni Teklif</Text>
+                        </TouchableOpacity>
+                        <TouchableOpacity style={styles.quickAccessBtn} onPress={() => navigation.navigate('FinanceScreen')}>
+                            <View style={[styles.qaIconBg, { backgroundColor: PALETTE.greenLight }]}>
+                                <Ionicons name="wallet-outline" size={20} color={PALETTE.green} />
+                            </View>
+                            <Text style={styles.qaText}>Finans</Text>
+                        </TouchableOpacity>
+                        <TouchableOpacity style={styles.quickAccessBtn} onPress={() => navigation.navigate('AddProductScreen')}>
+                            <View style={[styles.qaIconBg, { backgroundColor: PALETTE.amberLight }]}>
+                                <Ionicons name="cube-outline" size={20} color={PALETTE.amber} />
+                            </View>
+                            <Text style={styles.qaText}>Ürün Ekle</Text>
+                        </TouchableOpacity>
+                        <TouchableOpacity style={styles.quickAccessBtn} onPress={() => navigation.navigate('PersonnelScreen')}>
+                            <View style={[styles.qaIconBg, { backgroundColor: PALETTE.cyanLight }]}>
+                                <Ionicons name="people-outline" size={20} color={PALETTE.cyan} />
+                            </View>
+                            <Text style={styles.qaText}>Personel</Text>
+                        </TouchableOpacity>
+                    </ScrollView>
+                </View>
+            )}
+
             {/* ── KPI Kartları ─── */}
             <View style={[styles.kpiGrid, isMobileWeb && { flexDirection: 'column' }]}>
                 <KpiCard
@@ -483,7 +521,7 @@ export default function DashboardScreen() {
                         icon="time-outline"
                         title="Geciken Siparişler"
                         color={PALETTE.red}
-                        onPress={() => navigation.navigate('MainTabs', { screen: 'Satışlar' })}
+                        onPress={() => navigation.navigate('Satışlar')}
                     />
                     {overdueSales.length === 0 ? (
                         <EmptyState icon="checkmark-circle-outline" text="Geciken sipariş yok" color={PALETTE.green} />
@@ -513,7 +551,7 @@ export default function DashboardScreen() {
                         icon="cart-outline"
                         title="Bekleyen Satın Almalar"
                         color={PALETTE.amber}
-                        onPress={() => navigation.navigate('MainTabs', { screen: 'Satın Alma' })}
+                        onPress={() => navigation.navigate('Satın Alma')}
                     />
                     {pendingPurchaseList.length === 0 ? (
                         <EmptyState icon="checkmark-circle-outline" text="Bekleyen satın alma yok" color={PALETTE.green} />
@@ -599,7 +637,7 @@ export default function DashboardScreen() {
                         icon="warning-outline"
                         title="Kritik Stok"
                         color={PALETTE.red}
-                        onPress={() => navigation.navigate('MainTabs', { screen: 'Stok' })}
+                        onPress={() => navigation.navigate('Stok')}
                     />
                     {stockAlerts.length === 0 ? (
                         <EmptyState icon="checkmark-circle-outline" text="Stok seviyeleri normal" color={PALETTE.green} />
@@ -949,5 +987,28 @@ const styles = StyleSheet.create({
     emptyText: {
         fontSize: 13,
         fontWeight: '600',
+    },
+
+    // Hızlı Erişim
+    quickAccessRow: {
+        marginBottom: 20,
+    },
+    quickAccessBtn: {
+        alignItems: 'center',
+        gap: 6,
+        width: 72,
+    },
+    qaIconBg: {
+        width: 48,
+        height: 48,
+        borderRadius: 16,
+        alignItems: 'center',
+        justifyContent: 'center',
+    },
+    qaText: {
+        fontSize: 11,
+        fontWeight: '600',
+        color: PALETTE.text,
+        textAlign: 'center',
     },
 });

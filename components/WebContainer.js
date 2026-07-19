@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useContext, useMemo, useRef } from 'react';
-import { View, Text, StyleSheet, Platform, TouchableOpacity, ScrollView } from 'react-native';
-import { useNavigation } from '@react-navigation/native';
+import { View, Text, StyleSheet, Platform, TouchableOpacity, ScrollView, Dimensions, Alert } from 'react-native';
+import { useNavigation, useRoute } from '@react-navigation/native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { Colors } from '../Theme';
 import { useAuth } from '../AuthContext';
@@ -32,16 +33,16 @@ function isTaskOverdue(dueDateStr) {
 
 const MENU_ITEMS = [
     { name: 'DashboardScreen', label: 'Şirket Özeti', icon: 'grid-outline' },
-    { name: 'MainTabs', params: { screen: 'Stok' }, label: 'Stok Listesi', icon: 'list-outline' },
+    { name: 'Stok', label: 'Stok Listesi', icon: 'list-outline' },
     { name: 'AddProductScreen', label: 'Yeni Ürün Ekle', icon: 'add-circle-outline' },
     { name: 'AssemblyScreen', label: 'Montaj / Üretim', icon: 'construct-outline' },
     { name: 'QuotationScreen', label: 'Teklifler', icon: 'document-text-outline' },
     { name: 'WarehouseScreen', label: 'Depo ve Transfer', icon: 'swap-horizontal-outline' },
     { name: 'MrpScreen', label: 'Malzeme İhtiyaç', icon: 'layers-outline' },
-    { name: 'MainTabs', params: { screen: 'Satışlar' }, label: 'Satışlar', icon: 'cash-outline' },
-    { name: 'MainTabs', params: { screen: 'Satın Alma' }, label: 'Satın Alma', icon: 'cart-outline' },
+    { name: 'Satışlar', label: 'Satışlar', icon: 'cash-outline' },
+    { name: 'Satın Alma', label: 'Satın Alma', icon: 'cart-outline' },
     { name: 'FinanceScreen', label: 'Finans Yönetimi', icon: 'wallet-outline' },
-    { name: 'MainTabs', params: { screen: 'Müşteriler' }, label: 'Müşteriler', icon: 'people-outline' },
+    { name: 'Müşteriler', label: 'Müşteriler', icon: 'people-outline' },
     { name: 'WorkOrderScreen', label: 'İş Emirleri', icon: 'construct-outline' },
     { name: 'WorkOrderArchiveScreen', label: 'İş Emri Arşivi', icon: 'archive-outline' },
     { name: 'MaintenanceScreen', label: 'Bakım ve Servis', icon: 'build-outline' },
@@ -58,6 +59,8 @@ export default function WebContainer({ children, activeRoute }) {
     const { session, signOut } = useAuth();
     const appContext = useContext(AppContext);
     const company = appContext?.company;
+    const insets = useSafeAreaInsets();
+    const currentRoute = useRoute();
     const isRestrictedPersonnel = appContext?.isRestrictedPersonnel;
     const userPermissions = appContext?.userPermissions || {};
 
@@ -69,8 +72,9 @@ export default function WebContainer({ children, activeRoute }) {
     const workOrders = appContext?.workOrders ?? [];
     const maintenanceRequests = appContext?.maintenanceRequests ?? [];
 
-    const [isSidebarOpen, setIsSidebarOpen] = useState(Platform.OS === 'web' ? window.innerWidth > 1024 : true);
-    const [isMobile, setIsMobile] = useState(Platform.OS === 'web' ? window.innerWidth <= 1024 : false);
+    const screenWidth = Dimensions.get('window').width;
+    const [isSidebarOpen, setIsSidebarOpen] = useState(Platform.OS === 'web' ? screenWidth > 1024 : false);
+    const [isMobile, setIsMobile] = useState(Platform.OS === 'web' ? screenWidth <= 1024 : true);
 
     // ─── Bildirim Panel State'leri ──────────────────────────────────────────
     const [isNotifOpen, setIsNotifOpen] = useState(false);
@@ -95,7 +99,7 @@ export default function WebContainer({ children, activeRoute }) {
                         title: 'Geciken Sipariş',
                         message: `${s.productName || s.product_name || 'Ürün'} — ${s.customerName || s.customer_name || 'Müşteri'}`,
                         detail: `Teslim tarihi: ${new Date(s.shipmentDate).toLocaleDateString('tr-TR')}`,
-                        navigate: { name: 'MainTabs', params: { screen: 'Satışlar' } },
+                        navigate: { name: 'Satışlar' },
                     });
                 }
             }
@@ -110,7 +114,7 @@ export default function WebContainer({ children, activeRoute }) {
                     title: 'Düşük Stok',
                     message: `${p.name || p.product_name || 'Ürün'}`,
                     detail: `Mevcut: ${p.quantity ?? 0} · Min: ${p.min_stock}`,
-                    navigate: { name: 'MainTabs', params: { screen: 'Stok' } },
+                    navigate: { name: 'Stok' },
                 });
             }
         });
@@ -142,7 +146,7 @@ export default function WebContainer({ children, activeRoute }) {
                     title: 'Bekleyen Satın Alma',
                     message: `${p.productName || p.product_name || p.supplier_name || 'Ürün'}`,
                     detail: `Miktar: ${p.quantity ?? '-'}${p.cost ? ` · ₺${(p.cost * (p.quantity ?? 1)).toLocaleString('tr-TR')}` : ''}`,
-                    navigate: { name: 'MainTabs', params: { screen: 'Satın Alma' } },
+                    navigate: { name: 'Satın Alma' },
                 });
             }
         });
@@ -210,11 +214,12 @@ export default function WebContainer({ children, activeRoute }) {
     const filteredMenuItems = MENU_ITEMS.filter(item => {
         if (!isRestrictedPersonnel) return true;
         
-        // Benzersiz yetki anahtarını bul (Eğer MainTabs ise screen ismini ekle)
-        const permKey = item.params?.screen ? `${item.name}_${item.params.screen}` : item.name;
+        // Benzersiz yetki anahtarını bul
+        const permKey = item.name;
+        const legacyKey = `MainTabs_${item.name}`; // Eski veritabanı kayıtları için
         
         // userPermissions içinde bu key true ise göster, değilse gizle
-        return !!userPermissions[permKey];
+        return !!userPermissions[permKey] || !!userPermissions[legacyKey];
     });
 
     // Handle Window Resize for responsiveness
@@ -227,6 +232,13 @@ export default function WebContainer({ children, activeRoute }) {
             };
             window.addEventListener('resize', handleResize);
             return () => window.removeEventListener('resize', handleResize);
+        } else {
+            // For mobile orientation changes
+            const subscription = Dimensions.addEventListener('change', ({ window }) => {
+                const mobile = window.width <= 1024;
+                setIsMobile(true); // always true on phone, but might want to check tablet
+            });
+            return () => subscription?.remove();
         }
     }, []);
 
@@ -330,25 +342,12 @@ export default function WebContainer({ children, activeRoute }) {
     };
 
     const isMenuSelected = (item) => {
-        if (item.name === 'MainTabs' && currentParams?.screen === item.params?.screen) return true;
-        if (item.name === 'MainTabs' && !item.params && currentRouteName === 'MainTabs') return true; // Fallback
-
-        // Tab içindeki stok ekranı varsayılan açılıyorsa ve route MainTabs ise
-        if (currentRouteName === 'Stok' && item.label === 'Stok') return true;
-        if (currentRouteName === 'Satışlar' && item.label === 'Satışlar') return true;
-        if (currentRouteName === 'Satın Alma' && item.label === 'Satın Alma') return true;
-        if (currentRouteName === 'Müşteriler' && item.label === 'Müşteriler') return true;
-
-        if (item.name === currentRouteName) return true;
-        return false;
+        return item.name === currentRouteName;
     };
 
 
-    // Only render dashboard layout on Web
-    if (Platform.OS !== 'web') {
-        return <>{children}</>;
-    }
-
+    // WebContainer artık mobil cihazlarda da çalışacak.
+    // Ancak login veya yükleme anında göstermek istemiyorsak children döndürebiliriz:
     if (!session) {
         return <>{children}</>;
     }
@@ -376,7 +375,7 @@ export default function WebContainer({ children, activeRoute }) {
                 <TouchableOpacity
                     style={styles.logoContainer}
                     onPress={() => {
-                        navigation.navigate('MainTabs', { screen: 'Stok' });
+                        navigation.navigate('Stok');
                         if (isMobile) setIsSidebarOpen(false);
                     }}
                 >
@@ -426,7 +425,7 @@ export default function WebContainer({ children, activeRoute }) {
             {/* --- MAIN CONTENT (Sağ İçerik) --- */}
             <View style={styles.mainContent}>
                 {/* --- HEADER (Üst Çubuk) --- */}
-                <View style={[styles.header, isMobile && styles.mobileHeader]}>
+                <View style={[styles.header, isMobile && styles.mobileHeader, Platform.OS !== 'web' && { paddingTop: insets.top + 16, height: 70 + insets.top }]}>
                     <View style={{ flexDirection: 'row', alignItems: 'center' }}>
                         <TouchableOpacity onPress={() => setIsSidebarOpen(!isSidebarOpen)} style={styles.menuToggleButton}>
                             <Ionicons name="menu" size={24} color="#64748B" />
@@ -462,9 +461,16 @@ export default function WebContainer({ children, activeRoute }) {
 
                         <TouchableOpacity style={styles.userBadge} onPress={async () => {
                             if (isRestrictedPersonnel) {
-                                if (Platform.OS === 'web' && window.confirm("Çıkış yapmak istediğinize emin misiniz?")) {
-                                    const { error } = await signOut();
-                                    if (error) window.alert("Çıkış Hatası: " + error.message);
+                                if (Platform.OS === 'web') {
+                                    if (window.confirm("Çıkış yapmak istediğinize emin misiniz?")) {
+                                        const { error } = await signOut();
+                                        if (error) window.alert("Çıkış Hatası: " + error.message);
+                                    }
+                                } else {
+                                    Alert.alert("Çıkış", "Çıkış yapmak istediğinize emin misiniz?", [
+                                        { text: "İptal", style: "cancel" },
+                                        { text: "Çıkış", style: "destructive", onPress: async () => await signOut() }
+                                    ]);
                                 }
                             } else {
                                 navigation.navigate('Ayarlar');

@@ -616,7 +616,7 @@ export default function MrpScreen() {
                                                 <>
                                                     <TouchableOpacity
                                                         style={styles.quickActionBtn}
-                                                        onPress={() => navigation.navigate('MainTabs', { screen: 'Satın Alma' })}
+                                                        onPress={() => navigation.navigate('Satın Alma')}
                                                     >
                                                         <Ionicons name="cart-outline" size={13} color="#92400E" style={{ marginRight: 4 }} />
                                                         <Text style={styles.quickActionText}>Satın Alma'ya Git</Text>

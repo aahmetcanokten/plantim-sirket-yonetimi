@@ -798,7 +798,7 @@ function NativeAssemblyScreen({ navigation }) {
             }, true);
             toast.showToast?.(t("production_completed", { productName, qty: prodQty }));
             triggerHaptic(HapticType.SUCCESS);
-            navigation.navigate("MainTabs", { screen: "Stok" });
+            navigation.navigate("Stok");
         } catch (e) {
             Alert.alert(t("error"), "Üretim gerçekleştirilemedi.");
         }

@@ -6,7 +6,6 @@ import { useTranslation } from 'react-i18next';
 
 enableScreens();
 import { NavigationContainer } from "@react-navigation/native";
-import { createBottomTabNavigator } from "@react-navigation/bottom-tabs";
 import { createStackNavigator } from "@react-navigation/stack";
 import { AppProvider, AppContext } from "./AppContext";
 import { AuthProvider, useAuth } from "./AuthContext";
@@ -50,53 +49,11 @@ import WebContainer from "./components/WebContainer";
 import { Ionicons } from "@expo/vector-icons";
 import { Colors } from "./Theme";
 
-const Tab = createBottomTabNavigator();
 const Stack = createStackNavigator();
 
 // REKLAM BİRİMİ ID'si KALDIRILDI
 // Uygulama Açılış Reklamı Nesnesi KALDIRILDI
 
-function MainTabs() {
-  const { t } = useTranslation();
-
-  return (
-    <Tab.Navigator
-      initialRouteName="Stok"
-      screenOptions={({ route }) => ({
-        headerShown: false,
-        tabBarIcon: ({ color, size }) => {
-          let iconName = "cube-outline";
-          if (route.name === "Satışlar") iconName = "cash-outline";
-          else if (route.name === "Stok") iconName = "cube-outline";
-          else if (route.name === "Satın Alma") iconName = "cart-outline";
-          else if (route.name === "Müşteriler") iconName = "people-outline";
-          return <Ionicons name={iconName} size={size} color={color} />;
-        },
-        tabBarActiveTintColor: Colors.primary,
-        tabBarInactiveTintColor: Colors.secondary,
-        tabBarStyle: {
-          display: Platform.OS === 'web' ? 'none' : 'flex',
-          height: Platform.OS === "ios" ? 90 : (Platform.OS === 'web' ? 70 : 60),
-          borderTopWidth: 0,
-          backgroundColor: "#fff",
-          ...(Platform.OS === "ios"
-            ? {
-              shadowColor: "#000",
-              shadowOffset: { width: 0, height: -4 },
-              shadowOpacity: 0.06,
-              shadowRadius: 12,
-            }
-            : { elevation: 8 }),
-        },
-      })}
-    >
-      <Tab.Screen name="Stok" component={StockScreen} options={{ tabBarLabel: t('stock') }} />
-      <Tab.Screen name="Satışlar" component={SalesScreen} options={{ tabBarLabel: t('sales') }} />
-      <Tab.Screen name="Satın Alma" component={PurchasesScreen} options={{ tabBarLabel: t('purchasing') }} />
-      <Tab.Screen name="Müşteriler" component={CustomerScreen} options={{ tabBarLabel: t('customers') }} />
-    </Tab.Navigator>
-  );
-}
 
 
 function RootNavigator() {
@@ -137,7 +94,10 @@ function RootNavigator() {
         ) : (
           <>
             <Stack.Screen name="DashboardScreen" component={DashboardScreen} />
-            <Stack.Screen name="MainTabs" component={MainTabs} />
+            <Stack.Screen name="Stok" component={StockScreen} />
+            <Stack.Screen name="Satışlar" component={SalesScreen} />
+            <Stack.Screen name="Satın Alma" component={PurchasesScreen} />
+            <Stack.Screen name="Müşteriler" component={CustomerScreen} />
             <Stack.Screen name="Ayarlar" component={SettingsScreen} />
             <Stack.Screen name="Analytics" component={AnalyticsScreen} />
             <Stack.Screen name="DetailedStockScreen" component={DetailedStockScreen} />
