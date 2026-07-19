@@ -204,7 +204,7 @@ export default function DashboardScreen() {
 
     const navigation = useNavigation();
     const today = new Date();
-    const isMobileWeb = Platform.OS === 'web' && window.innerWidth <= 1024;
+    const isMobileWeb = Platform.OS === 'web' && typeof window !== 'undefined' && window.innerWidth <= 1024;
 
     // ── KPI Hesaplamaları ─────────────────────────────────────
     const kpis = useMemo(() => {
