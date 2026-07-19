@@ -700,31 +700,15 @@ function TxTableHeader() {
 
 // ─── SEKME 2: GELİRLER ───────────────────────────────────────────────────────
 
-function IncomeTab({ transactions, sales, addTransaction, updateTransaction, deleteTransaction }) {
+function IncomeTab({ transactions, sales, addTransaction, updateTransaction, deleteTransaction, updateSale, updatePurchase }) {
     const [showModal, setShowModal] = useState(false);
     const [editItem, setEditItem] = useState(null);
     const [search, setSearch] = useState('');
     const [filterCat, setFilterCat] = useState('ALL');
 
-    const salesDerived = useMemo(() => sales.filter(s => s.isShipped).map(s => ({
-        id: `sale-${s.id}`,
-        type: 'INCOME',
-        category: 'SATIS',
-        description: `Satış: ${s.customerName || s.productName || 'Ürün'}`,
-        amount: (s.quantity || 1) * (s.price || s.unit_price || 0),
-        transaction_date: s.dateISO || s.sale_date,
-        is_paid: true,
-        payment_method: 'HAVALE',
-        _isDerived: true,
-    })), [sales]);
-
-    const manualIncomes = useMemo(() =>
-        transactions.filter(t => t.type === 'INCOME'),
-        [transactions]);
-
     const allIncomes = useMemo(() =>
-        [...manualIncomes, ...salesDerived],
-        [manualIncomes, salesDerived]);
+        transactions.filter(t => t.type === 'INCOME' && t.is_paid),
+        [transactions]);
 
     const filtered = useMemo(() => allIncomes
         .filter(t => {
@@ -740,7 +724,13 @@ function IncomeTab({ transactions, sales, addTransaction, updateTransaction, del
         [filtered]);
 
     const handleSave = async (data) => {
-        if (data.id) {
+        if (data._isDerived) {
+            if (data._sourceType === 'SALE') {
+                await updateSale({ id: data.sourceId, is_paid: data.is_paid, payment_method: data.payment_method, payment_date: data.transaction_date });
+            } else if (data._sourceType === 'PURCHASE') {
+                await updatePurchase({ id: data.sourceId, is_paid: data.is_paid, payment_method: data.payment_method, payment_date: data.transaction_date });
+            }
+        } else if (data.id) {
             await updateTransaction(data);
         } else {
             await addTransaction(data);
@@ -906,31 +896,15 @@ function MobileTransactionRow({ item, isDerived, onEdit, onDelete }) {
 
 // ─── SEKME 3: GİDERLER ───────────────────────────────────────────────────────
 
-function ExpenseTab({ transactions, purchases, addTransaction, updateTransaction, deleteTransaction }) {
+function ExpenseTab({ transactions, purchases, addTransaction, updateTransaction, deleteTransaction, updateSale, updatePurchase }) {
     const [showModal, setShowModal] = useState(false);
     const [editItem, setEditItem] = useState(null);
     const [search, setSearch] = useState('');
     const [filterCat, setFilterCat] = useState('ALL');
 
-    const purchasesDerived = useMemo(() => purchases.filter(p => p.delivered).map(p => ({
-        id: `purchase-${p.id}`,
-        type: 'EXPENSE',
-        category: 'SATIN_ALMA',
-        description: `Satın Alma: ${p.productName || p.supplier_name || 'Tedarikçi'}`,
-        amount: (p.quantity || 1) * (p.cost || p.unit_price || 0),
-        transaction_date: p.delivered_date || p.created_at,
-        is_paid: true,
-        payment_method: 'HAVALE',
-        _isDerived: true,
-    })), [purchases]);
-
-    const manualExpenses = useMemo(() =>
-        transactions.filter(t => t.type === 'EXPENSE'),
-        [transactions]);
-
     const allExpenses = useMemo(() =>
-        [...manualExpenses, ...purchasesDerived],
-        [manualExpenses, purchasesDerived]);
+        transactions.filter(t => t.type === 'EXPENSE' && t.is_paid),
+        [transactions]);
 
     const filtered = useMemo(() => allExpenses
         .filter(t => {
@@ -956,7 +930,13 @@ function ExpenseTab({ transactions, purchases, addTransaction, updateTransaction
     }, [allExpenses]);
 
     const handleSave = async (data) => {
-        if (data.id) {
+        if (data._isDerived) {
+            if (data._sourceType === 'SALE') {
+                await updateSale({ id: data.sourceId, is_paid: data.is_paid, payment_method: data.payment_method, payment_date: data.transaction_date });
+            } else if (data._sourceType === 'PURCHASE') {
+                await updatePurchase({ id: data.sourceId, is_paid: data.is_paid, payment_method: data.payment_method, payment_date: data.transaction_date });
+            }
+        } else if (data.id) {
             await updateTransaction(data);
         } else {
             await addTransaction(data);
@@ -1118,20 +1098,43 @@ function InvoicesTab({ transactions, addTransaction, updateTransaction, deleteTr
     }), [invoices, filterStatus]);
 
     const handleSave = async (data) => {
-        if (data.id) await updateTransaction(data);
-        else await addTransaction(data);
+        if (data._isDerived) {
+            if (data._sourceType === 'SALE') {
+                await updateSale({ id: data.sourceId, is_paid: data.is_paid, payment_method: data.payment_method, payment_date: data.transaction_date });
+            } else if (data._sourceType === 'PURCHASE') {
+                await updatePurchase({ id: data.sourceId, is_paid: data.is_paid, payment_method: data.payment_method, payment_date: data.transaction_date });
+            }
+        } else if (data.id) {
+            await updateTransaction(data);
+        } else {
+            await addTransaction(data);
+        }
     };
 
     const handlePaymentToggle = async (inv) => {
         if (inv.is_paid) return;
-        if (Platform.OS === 'web') {
-            if (window.confirm(`${inv.invoice_number} faturasını ödendi olarak işaretlemek istiyor musunuz?`)) {
+        const confirmMsg = `${inv.invoice_number || inv.description} faturasını ödendi olarak işaretlemek istiyor musunuz?`;
+        
+        const markAsPaid = async () => {
+            if (inv._isDerived) {
+                if (inv._sourceType === 'SALE') {
+                    await updateSale({ id: inv.sourceId, is_paid: true, payment_date: new Date().toISOString() });
+                } else if (inv._sourceType === 'PURCHASE') {
+                    await updatePurchase({ id: inv.sourceId, is_paid: true, payment_date: new Date().toISOString() });
+                }
+            } else {
                 await markTransactionPaid(inv.id);
             }
+        };
+
+        if (Platform.OS === 'web') {
+            if (window.confirm(confirmMsg)) {
+                await markAsPaid();
+            }
         } else {
-            Alert.alert('Ödendi mi?', `${inv.invoice_number} fatrasını ödendi olarak işaretlemek istiyor musunuz?`, [
+            Alert.alert('Ödendi mi?', confirmMsg, [
                 { text: 'İptal' },
-                { text: 'Evet', onPress: () => markTransactionPaid(inv.id) }
+                { text: 'Evet', onPress: markAsPaid }
             ]);
         }
     };
@@ -1476,7 +1479,7 @@ export default function FinanceScreen() {
     const {
         financeTransactions,
         addTransaction, updateTransaction, deleteTransaction, markTransactionPaid,
-        sales, purchases,
+        sales, purchases, updateSale, updatePurchase
     } = useContext(AppContext);
 
     const [activeTab, setActiveTab] = useState('overview');
@@ -1485,16 +1488,27 @@ export default function FinanceScreen() {
         id: `sale-${s.id}`, type: 'INCOME', category: 'SATIS',
         description: `Satış: ${s.customerName || s.productName || 'Ürün'}`,
         amount: (s.quantity || 1) * (s.price || s.unit_price || 0),
-        transaction_date: s.dateISO || s.sale_date,
-        is_paid: true,
+        transaction_date: s.payment_date || s.dateISO || s.sale_date,
+        is_paid: s.is_paid || false,
+        payment_method: s.payment_method || null,
+        invoice_number: s.invoiceNumber,
+        due_date: s.shipmentDate || null,
+        _isDerived: true,
+        _sourceType: 'SALE',
+        sourceId: s.id
     })), [sales]);
 
     const purchasesDerived = useMemo(() => (purchases || []).filter(p => p.delivered).map(p => ({
         id: `purchase-${p.id}`, type: 'EXPENSE', category: 'SATIN_ALMA',
         description: `Satın Alma: ${p.productName || p.supplier_name || 'Tedarikçi'}`,
         amount: (p.quantity || 1) * (p.cost || p.unit_price || 0),
-        transaction_date: p.delivered_date || p.created_at,
-        is_paid: true,
+        transaction_date: p.payment_date || p.delivered_date || p.created_at,
+        is_paid: p.is_paid || false,
+        payment_method: p.payment_method || null,
+        invoice_number: p.invoice_number || null,
+        _isDerived: true,
+        _sourceType: 'PURCHASE',
+        sourceId: p.id
     })), [purchases]);
 
     const allTransactions = useMemo(() =>
@@ -1507,27 +1521,33 @@ export default function FinanceScreen() {
                 return <OverviewTab allTransactions={allTransactions} sales={sales || []} purchases={purchases || []} />;
             case 'income':
                 return <IncomeTab
-                    transactions={financeTransactions || []}
+                    transactions={allTransactions}
                     sales={sales || []}
                     addTransaction={addTransaction}
                     updateTransaction={updateTransaction}
                     deleteTransaction={deleteTransaction}
+                    updateSale={updateSale}
+                    updatePurchase={updatePurchase}
                 />;
             case 'expense':
                 return <ExpenseTab
-                    transactions={financeTransactions || []}
+                    transactions={allTransactions}
                     purchases={purchases || []}
                     addTransaction={addTransaction}
                     updateTransaction={updateTransaction}
                     deleteTransaction={deleteTransaction}
+                    updateSale={updateSale}
+                    updatePurchase={updatePurchase}
                 />;
             case 'invoices':
                 return <InvoicesTab
-                    transactions={financeTransactions || []}
+                    transactions={allTransactions}
                     addTransaction={addTransaction}
                     updateTransaction={updateTransaction}
                     deleteTransaction={deleteTransaction}
                     markTransactionPaid={markTransactionPaid}
+                    updateSale={updateSale}
+                    updatePurchase={updatePurchase}
                 />;
             case 'reports':
                 return <ReportsTab allTransactions={allTransactions} />;

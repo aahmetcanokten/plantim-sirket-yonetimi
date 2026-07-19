@@ -75,6 +75,35 @@ export default function WebSettingsLayout({ navigation }) {
   const [editVehicle, setEditVehicle] = useState(null);
   const [vehicleForm, setVehicleForm] = useState({ model: "", plate: "", lastServiceDate: "" });
 
+  // Personel İzinleri Modal
+  const [permissionsModal, setPermissionsModal] = useState(false);
+  const [selectedPersonnelForPermissions, setSelectedPersonnelForPermissions] = useState(null);
+  const [editingPermissions, setEditingPermissions] = useState({});
+  const [savingPermissions, setSavingPermissions] = useState(false);
+
+  const ALL_MODULES = [
+    { id: 'DashboardScreen', label: 'Şirket Özeti' },
+    { id: 'MainTabs_Stok', label: 'Stok Listesi' },
+    { id: 'AddProductScreen', label: 'Yeni Ürün Ekle' },
+    { id: 'AssemblyScreen', label: 'Montaj / Üretim' },
+    { id: 'QuotationScreen', label: 'Teklifler' },
+    { id: 'WarehouseScreen', label: 'Depo ve Transfer' },
+    { id: 'MrpScreen', label: 'Malzeme İhtiyaç' },
+    { id: 'MainTabs_Satışlar', label: 'Satışlar' },
+    { id: 'MainTabs_Satın Alma', label: 'Satın Alma' },
+    { id: 'FinanceScreen', label: 'Finans Yönetimi' },
+    { id: 'MainTabs_Müşteriler', label: 'Müşteriler' },
+    { id: 'WorkOrderScreen', label: 'İş Emirleri' },
+    { id: 'WorkOrderArchiveScreen', label: 'İş Emri Arşivi' },
+    { id: 'MaintenanceScreen', label: 'Bakım ve Servis' },
+    { id: 'MaintenanceArchiveScreen', label: 'Bakım Arşivi' },
+    { id: 'AssetManagementScreen', label: 'Zimmet Yönetimi' },
+    { id: 'TaskListScreen', label: 'Görev Takibi' },
+    { id: 'PersonnelScreen', label: 'Personel (İK)' },
+    { id: 'Analytics', label: 'Raporlar' },
+    { id: 'Ayarlar', label: 'Ayarlar' },
+  ];
+
   const loadPersonnelAccounts = async () => {
     if (!supabase || !session) return;
     const { data } = await supabase.from('personnel_users')
@@ -368,6 +397,23 @@ export default function WebSettingsLayout({ navigation }) {
     }
   };
 
+  const handleSavePermissions = async () => {
+    if (!selectedPersonnelForPermissions) return;
+    setSavingPermissions(true);
+    const { error } = await supabase
+      .from('personnel_users')
+      .update({ permissions: editingPermissions })
+      .eq('id', selectedPersonnelForPermissions.id);
+    
+    if (error) {
+      if(Platform.OS === 'web') window.alert("Hata: " + error.message);
+    } else {
+      setPermissionsModal(false);
+      loadPersonnelAccounts();
+    }
+    setSavingPermissions(false);
+  };
+
   const renderPersonnelAccess = () => (
     <View style={styles.sectionContainer}>
       <Text style={styles.sectionTitle}>Personel Erişimi</Text>
@@ -406,14 +452,59 @@ export default function WebSettingsLayout({ navigation }) {
             <View key={p.user_id} style={styles.tableRow}>
               <Text style={[styles.tableCell, {flex: 2, fontWeight: '500'}]}>{p.username}</Text>
               <Text style={[styles.tableCell, {flex: 1}]}>{new Date(p.created_at).toLocaleDateString()}</Text>
-              <View style={[styles.tableCell, {flex: 1, alignItems: 'flex-end'}]}>
+              <View style={[styles.tableCell, {flex: 1, alignItems: 'center', flexDirection: 'row', justifyContent: 'flex-end'}]}>
+                <TouchableOpacity 
+                  style={{marginRight: 16}} 
+                  onPress={() => {
+                    setSelectedPersonnelForPermissions(p);
+                    setEditingPermissions(p.permissions || {});
+                    setPermissionsModal(true);
+                  }}>
+                  <Text style={{color: Colors.primary, fontWeight: '500'}}>Yetkileri Düzenle</Text>
+                </TouchableOpacity>
                 <TouchableOpacity onPress={() => handleDeletePersonnelAccount(p.id, p.user_id)}>
-                  <Text style={{color: '#EF4444', fontWeight: '500'}}>Erişimi İptal Et</Text>
+                  <Text style={{color: '#EF4444', fontWeight: '500'}}>İptal Et</Text>
                 </TouchableOpacity>
               </View>
             </View>
           ))}
         </View>
+      )}
+
+      {permissionsModal && selectedPersonnelForPermissions && (
+        <Modal transparent visible={permissionsModal}>
+          <View style={styles.modalOverlay}>
+            <View style={[styles.modalContent, { maxWidth: 500, width: '90%', maxHeight: '80%' }]}>
+              <Text style={styles.modalTitle}>{selectedPersonnelForPermissions.username} - Yetkiler</Text>
+              <Text style={[styles.textSecondary, { marginBottom: 16 }]}>Bu personelin erişebileceği ekranları seçin:</Text>
+              
+              <ScrollView style={{ marginBottom: 16 }}>
+                {ALL_MODULES.map(mod => {
+                  const isChecked = !!editingPermissions[mod.id];
+                  return (
+                    <TouchableOpacity 
+                      key={mod.id} 
+                      style={{ flexDirection: 'row', alignItems: 'center', paddingVertical: 12, borderBottomWidth: 1, borderBottomColor: '#F1F5F9' }}
+                      onPress={() => setEditingPermissions(prev => ({...prev, [mod.id]: !isChecked}))}
+                    >
+                      <Ionicons name={isChecked ? "checkbox" : "square-outline"} size={24} color={isChecked ? Colors.primary : "#CBD5E1"} />
+                      <Text style={{ marginLeft: 12, fontSize: 15, color: '#1E293B' }}>{mod.label}</Text>
+                    </TouchableOpacity>
+                  );
+                })}
+              </ScrollView>
+
+              <View style={styles.row}>
+                <TouchableOpacity style={[styles.outlineBtn, {flex:1, marginRight: 8}]} onPress={()=>setPermissionsModal(false)}>
+                  <Text style={styles.outlineBtnText}>{t('cancel') || 'İptal'}</Text>
+                </TouchableOpacity>
+                <TouchableOpacity style={[styles.primaryBtn, {flex:1}]} onPress={handleSavePermissions} disabled={savingPermissions}>
+                  <Text style={styles.primaryBtnText}>{savingPermissions ? "Kaydediliyor..." : (t('save') || 'Kaydet')}</Text>
+                </TouchableOpacity>
+              </View>
+            </View>
+          </View>
+        </Modal>
       )}
     </View>
   );

@@ -59,6 +59,7 @@ export default function WebContainer({ children, activeRoute }) {
     const appContext = useContext(AppContext);
     const company = appContext?.company;
     const isRestrictedPersonnel = appContext?.isRestrictedPersonnel;
+    const userPermissions = appContext?.userPermissions || {};
 
     // Bildirim için veri kaynakları
     const sales = appContext?.sales ?? [];
@@ -208,8 +209,12 @@ export default function WebContainer({ children, activeRoute }) {
 
     const filteredMenuItems = MENU_ITEMS.filter(item => {
         if (!isRestrictedPersonnel) return true;
-        const restricted = ['Ayarlar', 'FinanceScreen', 'AssetManagementScreen', 'PersonnelScreen', 'Analytics'];
-        return !restricted.includes(item.name);
+        
+        // Benzersiz yetki anahtarını bul (Eğer MainTabs ise screen ismini ekle)
+        const permKey = item.params?.screen ? `${item.name}_${item.params.screen}` : item.name;
+        
+        // userPermissions içinde bu key true ise göster, değilse gizle
+        return !!userPermissions[permKey];
     });
 
     // Handle Window Resize for responsiveness

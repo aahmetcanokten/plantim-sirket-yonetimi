@@ -658,7 +658,7 @@ export default function LoginScreen() {
             <Ionicons name="leaf" size={16} color={Colors.iosBlue} />
             <Text style={styles.pageFooterBrand}>  PLANTIM ERP</Text>
           </View>
-          <Text style={styles.pageFooterText}>© 2026 Plantim Kurumsal Yazılım Teknolojileri · plantimtakviyelen@gmail.com</Text>
+          <Text style={styles.pageFooterText}>© 2026 Plantim Kurumsal Yazılım Teknolojileri · plantimterp@gmail.com</Text>
         </View>
       </ScrollView>
     </View>
@@ -874,14 +874,14 @@ const LoginForm = ({
 
     {isLoginView && (
       <View style={{ flexDirection: 'row', marginBottom: 24, padding: 4, backgroundColor: '#F1F5F9', borderRadius: 12 }}>
-        <TouchableOpacity 
-          style={[{ flex: 1, paddingVertical: 10, alignItems: 'center', borderRadius: 8 }, loginType === 'admin' && { backgroundColor: '#fff', shadowColor: '#000', shadowOpacity: 0.05, shadowRadius: 4 }]} 
+        <TouchableOpacity
+          style={[{ flex: 1, paddingVertical: 10, alignItems: 'center', borderRadius: 8 }, loginType === 'admin' && { backgroundColor: '#fff', shadowColor: '#000', shadowOpacity: 0.05, shadowRadius: 4 }]}
           onPress={() => setLoginType('admin')}
         >
           <Text style={{ fontWeight: loginType === 'admin' ? '600' : '500', color: loginType === 'admin' ? Colors.iosBlue : '#64748B' }}>Yönetici</Text>
         </TouchableOpacity>
-        <TouchableOpacity 
-          style={[{ flex: 1, paddingVertical: 10, alignItems: 'center', borderRadius: 8 }, loginType === 'personnel' && { backgroundColor: '#fff', shadowColor: '#000', shadowOpacity: 0.05, shadowRadius: 4 }]} 
+        <TouchableOpacity
+          style={[{ flex: 1, paddingVertical: 10, alignItems: 'center', borderRadius: 8 }, loginType === 'personnel' && { backgroundColor: '#fff', shadowColor: '#000', shadowOpacity: 0.05, shadowRadius: 4 }]}
           onPress={() => setLoginType('personnel')}
         >
           <Text style={{ fontWeight: loginType === 'personnel' ? '600' : '500', color: loginType === 'personnel' ? Colors.iosBlue : '#64748B' }}>Personel</Text>
@@ -1463,7 +1463,7 @@ const styles = StyleSheet.create({
   testimonialText: { color: '#fff', fontSize: 18, fontStyle: 'italic', lineHeight: 28, marginBottom: 16 },
   testimonialUser2: { color: Colors.iosBlue, fontSize: 16, fontWeight: '700' },
   faqSection: { marginTop: 60 },
-  webHeroCta2: { alignSelf: 'flex-end',  },
+  webHeroCta2: { alignSelf: 'flex-end', },
   navLink: { color: '#94A3B8', fontSize: 16, fontWeight: '500', ...Platform.select({ web: { cursor: 'pointer' } }) },
   navLinkActive: { color: '#fff', fontWeight: '700', borderBottomWidth: 2, borderBottomColor: Colors.iosBlue, paddingBottom: 4 },
   navLinks: { flexDirection: 'row', gap: 30 },

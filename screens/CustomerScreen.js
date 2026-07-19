@@ -13,25 +13,52 @@ import { SkeletonCustomerItem } from "../components/Skeleton";
 // --- Müşteri Ekleme/Düzenleme Modalı ---
 const CustomerFormModal = ({ visible, onClose, onSave, initialData = null }) => {
     const { t } = useTranslation();
+    const [activeTab, setActiveTab] = useState('general');
+    
+    // Genel Bilgiler
     const [companyName, setCompanyName] = useState(initialData?.companyName || initialData?.name || "");
+    const [cariCode, setCariCode] = useState(initialData?.cariCode || "");
+    const [customerType, setCustomerType] = useState(initialData?.customerType || "B2B");
+    const [status, setStatus] = useState(initialData?.status || "ACTIVE");
+    const [industry, setIndustry] = useState(initialData?.industry || "");
+
+    // İletişim Bilgileri
     const [contactName, setContactName] = useState(initialData?.contactName || "");
     const [phone, setPhone] = useState(initialData?.phone || "");
     const [email, setEmail] = useState(initialData?.email || "");
-    const [cariCode, setCariCode] = useState(initialData?.cariCode || "");
+    const [website, setWebsite] = useState(initialData?.website || "");
     const [address, setAddress] = useState(initialData?.address || "");
+
+    // Finansal Bilgiler
     const [taxOffice, setTaxOffice] = useState(initialData?.taxOffice || "");
     const [taxNumber, setTaxNumber] = useState(initialData?.taxNumber || "");
+    const [creditLimit, setCreditLimit] = useState(initialData?.creditLimit?.toString() || "");
+    const [discountRate, setDiscountRate] = useState(initialData?.discountRate?.toString() || "");
+
+    // Notlar
+    const [notes, setNotes] = useState(initialData?.notes || "");
 
     React.useEffect(() => {
         if (visible) {
+            setActiveTab('general');
             setCompanyName(initialData?.companyName || initialData?.name || "");
+            setCariCode(initialData?.cariCode || "");
+            setCustomerType(initialData?.customerType || "B2B");
+            setStatus(initialData?.status || "ACTIVE");
+            setIndustry(initialData?.industry || "");
+            
             setContactName(initialData?.contactName || "");
             setPhone(initialData?.phone || "");
             setEmail(initialData?.email || "");
-            setCariCode(initialData?.cariCode || "");
+            setWebsite(initialData?.website || "");
             setAddress(initialData?.address || "");
+            
             setTaxOffice(initialData?.taxOffice || "");
             setTaxNumber(initialData?.taxNumber || "");
+            setCreditLimit(initialData?.creditLimit?.toString() || "");
+            setDiscountRate(initialData?.discountRate?.toString() || "");
+            
+            setNotes(initialData?.notes || "");
         }
     }, [visible, initialData]);
 
@@ -51,7 +78,15 @@ const CustomerFormModal = ({ visible, onClose, onSave, initialData = null }) => 
             cariCode: cariCode.trim(),
             address: address.trim(),
             taxOffice: taxOffice.trim(),
-            taxNumber: taxNumber.trim()
+            taxNumber: taxNumber.trim(),
+            
+            customerType,
+            status,
+            industry: industry.trim(),
+            website: website.trim(),
+            creditLimit: creditLimit ? parseFloat(creditLimit) : 0,
+            discountRate: discountRate ? parseFloat(discountRate) : 0,
+            notes: notes.trim(),
         };
 
         onSave(customerData);
@@ -75,52 +110,125 @@ const CustomerFormModal = ({ visible, onClose, onSave, initialData = null }) => 
                                     <Ionicons name="close" size={28} color={Colors.textPrimary} />
                                 </TouchableOpacity>
                             </View>
+
+                            <View style={styles.tabContainer}>
+                                <TouchableOpacity style={[styles.tabBtn, activeTab === 'general' && styles.tabBtnActive]} onPress={() => setActiveTab('general')}>
+                                    <Text style={[styles.tabText, activeTab === 'general' && styles.tabTextActive]}>Genel Bilgiler</Text>
+                                </TouchableOpacity>
+                                <TouchableOpacity style={[styles.tabBtn, activeTab === 'contact' && styles.tabBtnActive]} onPress={() => setActiveTab('contact')}>
+                                    <Text style={[styles.tabText, activeTab === 'contact' && styles.tabTextActive]}>İletişim & Adres</Text>
+                                </TouchableOpacity>
+                                <TouchableOpacity style={[styles.tabBtn, activeTab === 'finance' && styles.tabBtnActive]} onPress={() => setActiveTab('finance')}>
+                                    <Text style={[styles.tabText, activeTab === 'finance' && styles.tabTextActive]}>Finans & Ticari</Text>
+                                </TouchableOpacity>
+                                <TouchableOpacity style={[styles.tabBtn, activeTab === 'notes' && styles.tabBtnActive]} onPress={() => setActiveTab('notes')}>
+                                    <Text style={[styles.tabText, activeTab === 'notes' && styles.tabTextActive]}>Notlar</Text>
+                                </TouchableOpacity>
+                            </View>
+
                             <ScrollView contentContainerStyle={styles.formContent} showsVerticalScrollIndicator={false}>
-                                {/* ŞİRKET BİLGİLERİ */}
-                                <View style={styles.formSection}>
-                                    <Text style={styles.sectionTitle}>{t('company_info')}</Text>
-                                    <Text style={styles.inputLabel}>{t('company_title')} <Text style={styles.requiredStar}>*</Text></Text>
-                                    <TextInput style={styles.input} value={companyName} onChangeText={setCompanyName} placeholder={t('example_company')} selectTextOnFocus={Platform.OS === 'web'} />
-
-                                    <Text style={styles.inputLabel}>{t('cari_code')}</Text>
-                                    <TextInput style={styles.input} value={cariCode} onChangeText={setCariCode} autoCapitalize="characters" placeholder={t('example_code')} selectTextOnFocus={Platform.OS === 'web'} />
-                                </View>
-
-                                {/* İLETİŞİM BİLGİLERİ */}
-                                <View style={styles.formSection}>
-                                    <Text style={styles.sectionTitle}>{t('contact_person')}</Text>
-                                    <Text style={styles.inputLabel}>{t('contact_person')} <Text style={styles.requiredStar}>*</Text></Text>
-                                    <TextInput style={styles.input} value={contactName} onChangeText={setContactName} placeholder={t('example_name')} selectTextOnFocus={Platform.OS === 'web'} />
-
-                                    <View style={styles.inputRow}>
-                                        <View style={{ flex: 1, marginRight: 8 }}>
-                                            <Text style={styles.inputLabel}>{t('phone')} <Text style={styles.requiredStar}>*</Text></Text>
-                                            <TextInput style={styles.input} value={phone} onChangeText={setPhone} keyboardType="phone-pad" placeholder={t('example_phone')} selectTextOnFocus={Platform.OS === 'web'} />
+                                {activeTab === 'general' && (
+                                    <View style={styles.formSection}>
+                                        <View style={styles.inputRow}>
+                                            <View style={{ flex: 1, marginRight: 8 }}>
+                                                <Text style={styles.inputLabel}>Müşteri Tipi</Text>
+                                                <View style={styles.toggleGroup}>
+                                                    <TouchableOpacity style={[styles.toggleBtn, customerType === 'B2B' && styles.toggleBtnActive]} onPress={() => setCustomerType('B2B')}>
+                                                        <Text style={[styles.toggleBtnText, customerType === 'B2B' && styles.toggleBtnTextActive]}>B2B</Text>
+                                                    </TouchableOpacity>
+                                                    <TouchableOpacity style={[styles.toggleBtn, customerType === 'B2C' && styles.toggleBtnActive]} onPress={() => setCustomerType('B2C')}>
+                                                        <Text style={[styles.toggleBtnText, customerType === 'B2C' && styles.toggleBtnTextActive]}>B2C</Text>
+                                                    </TouchableOpacity>
+                                                </View>
+                                            </View>
+                                            <View style={{ flex: 1 }}>
+                                                <Text style={styles.inputLabel}>Durum</Text>
+                                                <View style={styles.toggleGroup}>
+                                                    <TouchableOpacity style={[styles.toggleBtn, status === 'ACTIVE' && styles.toggleBtnActive]} onPress={() => setStatus('ACTIVE')}>
+                                                        <Text style={[styles.toggleBtnText, status === 'ACTIVE' && styles.toggleBtnTextActive]}>Aktif</Text>
+                                                    </TouchableOpacity>
+                                                    <TouchableOpacity style={[styles.toggleBtn, status === 'PASSIVE' && styles.toggleBtnActive]} onPress={() => setStatus('PASSIVE')}>
+                                                        <Text style={[styles.toggleBtnText, status === 'PASSIVE' && styles.toggleBtnTextActive]}>Pasif</Text>
+                                                    </TouchableOpacity>
+                                                    <TouchableOpacity style={[styles.toggleBtn, status === 'LEAD' && styles.toggleBtnActive]} onPress={() => setStatus('LEAD')}>
+                                                        <Text style={[styles.toggleBtnText, status === 'LEAD' && styles.toggleBtnTextActive]}>Aday</Text>
+                                                    </TouchableOpacity>
+                                                </View>
+                                            </View>
                                         </View>
-                                        <View style={{ flex: 1 }}>
-                                            <Text style={styles.inputLabel}>{t('email')}</Text>
-                                            <TextInput style={styles.input} value={email} onChangeText={setEmail} keyboardType="email-address" autoCapitalize="none" placeholder={t('example_email')} selectTextOnFocus={Platform.OS === 'web'} />
+
+                                        <Text style={styles.inputLabel}>{t('company_title')} <Text style={styles.requiredStar}>*</Text></Text>
+                                        <TextInput style={styles.input} value={companyName} onChangeText={setCompanyName} placeholder={t('example_company')} selectTextOnFocus={Platform.OS === 'web'} />
+
+                                        <View style={styles.inputRow}>
+                                            <View style={{ flex: 1, marginRight: 8 }}>
+                                                <Text style={styles.inputLabel}>{t('cari_code')}</Text>
+                                                <TextInput style={styles.input} value={cariCode} onChangeText={setCariCode} autoCapitalize="characters" placeholder={t('example_code')} selectTextOnFocus={Platform.OS === 'web'} />
+                                            </View>
+                                            <View style={{ flex: 1 }}>
+                                                <Text style={styles.inputLabel}>Sektör / Endüstri</Text>
+                                                <TextInput style={styles.input} value={industry} onChangeText={setIndustry} placeholder="Örn: Teknoloji" selectTextOnFocus={Platform.OS === 'web'} />
+                                            </View>
                                         </View>
                                     </View>
+                                )}
 
-                                    <Text style={styles.inputLabel}>{t('address')}</Text>
-                                    <TextInput style={[styles.input, { height: 80 }]} value={address} onChangeText={setAddress} multiline placeholder={t('example_address')} selectTextOnFocus={Platform.OS === 'web'} />
-                                </View>
+                                {activeTab === 'contact' && (
+                                    <View style={styles.formSection}>
+                                        <Text style={styles.inputLabel}>{t('contact_person')} <Text style={styles.requiredStar}>*</Text></Text>
+                                        <TextInput style={styles.input} value={contactName} onChangeText={setContactName} placeholder={t('example_name')} selectTextOnFocus={Platform.OS === 'web'} />
 
-                                {/* VERGİ BİLGİLERİ */}
-                                <View style={styles.formSection}>
-                                    <Text style={styles.sectionTitle}>{t('tax_info') || 'Vergi Bilgileri'}</Text>
-                                    <View style={styles.inputRow}>
-                                        <View style={{ flex: 1, marginRight: 8 }}>
-                                            <Text style={styles.inputLabel}>{t('tax_office')}</Text>
-                                            <TextInput style={styles.input} value={taxOffice} onChangeText={setTaxOffice} placeholder={t('example_tax_office')} selectTextOnFocus={Platform.OS === 'web'} />
+                                        <View style={styles.inputRow}>
+                                            <View style={{ flex: 1, marginRight: 8 }}>
+                                                <Text style={styles.inputLabel}>{t('phone')} <Text style={styles.requiredStar}>*</Text></Text>
+                                                <TextInput style={styles.input} value={phone} onChangeText={setPhone} keyboardType="phone-pad" placeholder={t('example_phone')} selectTextOnFocus={Platform.OS === 'web'} />
+                                            </View>
+                                            <View style={{ flex: 1 }}>
+                                                <Text style={styles.inputLabel}>{t('email')}</Text>
+                                                <TextInput style={styles.input} value={email} onChangeText={setEmail} keyboardType="email-address" autoCapitalize="none" placeholder={t('example_email')} selectTextOnFocus={Platform.OS === 'web'} />
+                                            </View>
                                         </View>
-                                        <View style={{ flex: 1 }}>
-                                            <Text style={styles.inputLabel}>{t('tax_number')}</Text>
-                                            <TextInput style={styles.input} value={taxNumber} onChangeText={setTaxNumber} keyboardType="number-pad" placeholder={t('example_tax_number')} selectTextOnFocus={Platform.OS === 'web'} />
+
+                                        <Text style={styles.inputLabel}>Web Sitesi</Text>
+                                        <TextInput style={styles.input} value={website} onChangeText={setWebsite} keyboardType="url" autoCapitalize="none" placeholder="Örn: www.sirketim.com" selectTextOnFocus={Platform.OS === 'web'} />
+
+                                        <Text style={styles.inputLabel}>{t('address')}</Text>
+                                        <TextInput style={[styles.input, { height: 80 }]} value={address} onChangeText={setAddress} multiline placeholder={t('example_address')} selectTextOnFocus={Platform.OS === 'web'} />
+                                    </View>
+                                )}
+
+                                {activeTab === 'finance' && (
+                                    <View style={styles.formSection}>
+                                        <View style={styles.inputRow}>
+                                            <View style={{ flex: 1, marginRight: 8 }}>
+                                                <Text style={styles.inputLabel}>{t('tax_office')}</Text>
+                                                <TextInput style={styles.input} value={taxOffice} onChangeText={setTaxOffice} placeholder={t('example_tax_office')} selectTextOnFocus={Platform.OS === 'web'} />
+                                            </View>
+                                            <View style={{ flex: 1 }}>
+                                                <Text style={styles.inputLabel}>{t('tax_number')}</Text>
+                                                <TextInput style={styles.input} value={taxNumber} onChangeText={setTaxNumber} keyboardType="number-pad" placeholder={t('example_tax_number')} selectTextOnFocus={Platform.OS === 'web'} />
+                                            </View>
+                                        </View>
+
+                                        <View style={styles.inputRow}>
+                                            <View style={{ flex: 1, marginRight: 8 }}>
+                                                <Text style={styles.inputLabel}>Kredi Limiti (₺)</Text>
+                                                <TextInput style={styles.input} value={creditLimit} onChangeText={setCreditLimit} keyboardType="numeric" placeholder="0.00" selectTextOnFocus={Platform.OS === 'web'} />
+                                            </View>
+                                            <View style={{ flex: 1 }}>
+                                                <Text style={styles.inputLabel}>Varsayılan İskonto (%)</Text>
+                                                <TextInput style={styles.input} value={discountRate} onChangeText={setDiscountRate} keyboardType="numeric" placeholder="0" selectTextOnFocus={Platform.OS === 'web'} />
+                                            </View>
                                         </View>
                                     </View>
-                                </View>
+                                )}
+
+                                {activeTab === 'notes' && (
+                                    <View style={styles.formSection}>
+                                        <Text style={styles.inputLabel}>Özel Notlar & Açıklamalar</Text>
+                                        <TextInput style={[styles.input, { height: 120 }]} value={notes} onChangeText={setNotes} multiline placeholder="Müşteri hakkında özel notlarınızı buraya girebilirsiniz..." selectTextOnFocus={Platform.OS === 'web'} />
+                                    </View>
+                                )}
 
                                 <TouchableOpacity style={styles.saveButton} onPress={handleSave}>
                                     <Text style={styles.saveButtonText}>{t('save')}</Text>
@@ -143,8 +251,27 @@ const CustomerListItem = ({ item, onEdit, onDelete, orderCount }) => {
                 <View style={customerListStyles.headerLeft}>
                     <View style={customerListStyles.titleRow}>
                         <Text style={customerListStyles.cardTitle} numberOfLines={1}>{item.companyName || item.name}</Text>
+                        
+                        {item.customerType && (
+                            <View style={[customerListStyles.categoryBadge, { backgroundColor: item.customerType === 'B2B' ? '#EFF6FF' : '#F5F3FF', marginLeft: 8 }]}>
+                                <Text style={[customerListStyles.categoryText, { color: item.customerType === 'B2B' ? '#1D4ED8' : '#6D28D9' }]}>{item.customerType}</Text>
+                            </View>
+                        )}
+                        {item.status && (
+                            <View style={[customerListStyles.categoryBadge, { backgroundColor: item.status === 'ACTIVE' ? '#F0FDF4' : item.status === 'PASSIVE' ? '#FEF2F2' : '#FFFBEB', marginLeft: 4 }]}>
+                                <Text style={[customerListStyles.categoryText, { color: item.status === 'ACTIVE' ? '#15803D' : item.status === 'PASSIVE' ? '#B91C1C' : '#B45309' }]}>
+                                    {item.status === 'ACTIVE' ? 'Aktif' : item.status === 'PASSIVE' ? 'Pasif' : 'Aday'}
+                                </Text>
+                            </View>
+                        )}
                     </View>
                     <View style={customerListStyles.subTitleRow}>
+                        {item.industry ? (
+                            <View style={customerListStyles.categoryBadge}>
+                                <Ionicons name="business-outline" size={10} color={Colors.secondary} style={{ marginRight: 3 }} />
+                                <Text style={customerListStyles.categoryText}>{item.industry}</Text>
+                            </View>
+                        ) : null}
                         {item.contactName && (
                             <View style={customerListStyles.categoryBadge}>
                                 <Ionicons name="person-outline" size={10} color={Colors.secondary} style={{ marginRight: 3 }} />
@@ -384,12 +511,28 @@ export default function CustomerScreen() {
                                     return (
                                         <View style={[styles.webTableRow, index % 2 === 0 ? styles.webTableRowEven : styles.webTableRowOdd]}>
                                             <View style={{ flex: 2, justifyContent: 'center' }}>
-                                                <Text style={styles.webCellTextBold}>{item.companyName || item.name}</Text>
-                                                {orderCount > 0 && (
-                                                    <View style={styles.orderBadgeMini}>
-                                                        <Text style={styles.orderBadgeTextMini}>{orderCount} {t('order')}</Text>
-                                                    </View>
-                                                )}
+                                                <View style={{flexDirection: 'row', alignItems: 'center'}}>
+                                                    <Text style={styles.webCellTextBold}>{item.companyName || item.name}</Text>
+                                                    {item.status && (
+                                                        <View style={[styles.orderBadgeMini, { backgroundColor: item.status === 'ACTIVE' ? '#F0FDF4' : item.status === 'PASSIVE' ? '#FEF2F2' : '#FFFBEB', marginLeft: 6 }]}>
+                                                            <Text style={[styles.orderBadgeTextMini, { color: item.status === 'ACTIVE' ? '#15803D' : item.status === 'PASSIVE' ? '#B91C1C' : '#B45309' }]}>
+                                                                {item.status === 'ACTIVE' ? 'Aktif' : item.status === 'PASSIVE' ? 'Pasif' : 'Aday'}
+                                                            </Text>
+                                                        </View>
+                                                    )}
+                                                </View>
+                                                <View style={{flexDirection: 'row', alignItems: 'center', marginTop: 4}}>
+                                                    {item.customerType && (
+                                                        <View style={[styles.orderBadgeMini, { backgroundColor: item.customerType === 'B2B' ? '#EFF6FF' : '#F5F3FF', marginTop: 0, marginRight: 6 }]}>
+                                                            <Text style={[styles.orderBadgeTextMini, { color: item.customerType === 'B2B' ? '#1D4ED8' : '#6D28D9' }]}>{item.customerType}</Text>
+                                                        </View>
+                                                    )}
+                                                    {orderCount > 0 && (
+                                                        <View style={[styles.orderBadgeMini, {marginTop: 0}]}>
+                                                            <Text style={styles.orderBadgeTextMini}>{orderCount} {t('order')}</Text>
+                                                        </View>
+                                                    )}
+                                                </View>
                                             </View>
                                             <View style={{ flex: 1.5, justifyContent: 'center' }}>
                                                 <Text style={styles.webCellText}>{item.contactName || '-'}</Text>
@@ -798,9 +941,67 @@ const styles = StyleSheet.create({
         })
     },
     webModalContainer: {
+        height: '100%',
+        maxHeight: '100%',
+    },
+    tabContainer: {
+        flexDirection: 'row',
+        backgroundColor: '#fff',
+        borderBottomWidth: 1,
+        borderBottomColor: '#E2E8F0',
+        paddingHorizontal: 20,
+    },
+    tabBtn: {
+        paddingVertical: 12,
+        paddingHorizontal: 16,
+        marginRight: 8,
+        borderBottomWidth: 2,
+        borderBottomColor: 'transparent',
+    },
+    tabBtnActive: {
+        borderBottomColor: Colors.iosBlue,
+    },
+    tabText: {
+        fontSize: 14,
+        fontWeight: '600',
+        color: '#64748B',
+    },
+    tabTextActive: {
+        color: Colors.iosBlue,
+    },
+    inputRow: {
+        flexDirection: 'row',
+        justifyContent: 'space-between',
+    },
+    toggleGroup: {
+        flexDirection: 'row',
+        backgroundColor: '#F1F5F9',
+        borderRadius: 8,
+        padding: 4,
+        marginTop: 8,
+    },
+    toggleBtn: {
         flex: 1,
-        height: 'auto',
-        maxHeight: '90vh',
+        paddingVertical: 10,
+        alignItems: 'center',
+        borderRadius: 6,
+    },
+    toggleBtnActive: {
+        backgroundColor: '#fff',
+        ...Platform.select({
+            web: {
+                boxShadow: '0 1px 3px rgba(0,0,0,0.1)'
+            },
+            default: IOSShadow
+        })
+    },
+    toggleBtnText: {
+        fontSize: 13,
+        fontWeight: '600',
+        color: '#64748B',
+    },
+    toggleBtnTextActive: {
+        color: Colors.iosBlue,
     },
     formSection: {
         marginBottom: 24,

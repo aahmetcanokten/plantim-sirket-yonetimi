@@ -17,12 +17,14 @@ CREATE TABLE IF NOT EXISTS public.personnel_users (
 -- RLS for personnel_users
 ALTER TABLE public.personnel_users ENABLE ROW LEVEL SECURITY;
 
+DROP POLICY IF EXISTS "Admins can manage their personnel" ON public.personnel_users;
 CREATE POLICY "Admins can manage their personnel"
   ON public.personnel_users
   FOR ALL
   USING (admin_id = auth.uid())
   WITH CHECK (admin_id = auth.uid());
 
+DROP POLICY IF EXISTS "Personnel can read their own record" ON public.personnel_users;
 CREATE POLICY "Personnel can read their own record"
   ON public.personnel_users
   FOR SELECT

@@ -60,6 +60,7 @@ export function AppProvider({ children }) {
 
   // --- PERSONEL YETKİLENDİRMESİ ---
   const [isRestrictedPersonnel, setIsRestrictedPersonnel] = useState(false);
+  const [userPermissions, setUserPermissions] = useState({}); // YENİ EKLENDİ
 
   const [dbPremium, setDbPremium] = useState(false);
   const [rcPremium, setRcPremium] = useState(false);
@@ -142,14 +143,17 @@ export function AppProvider({ children }) {
 
           // Personel Check
           try {
-            const { data: pUser } = await supabase.from('personnel_users').select('role').eq('user_id', userId).maybeSingle();
+            const { data: pUser } = await supabase.from('personnel_users').select('role, permissions').eq('user_id', userId).maybeSingle();
             if (pUser && pUser.role === 'PERSONNEL') {
               setIsRestrictedPersonnel(true);
+              setUserPermissions(pUser.permissions || {});
             } else {
               setIsRestrictedPersonnel(false);
+              setUserPermissions({});
             }
           } catch(e) {
             setIsRestrictedPersonnel(false);
+            setUserPermissions({});
           }
 
           // Finans verilerini yükle
@@ -187,10 +191,20 @@ export function AppProvider({ children }) {
             setDbPremium(false);
           }
 
-          setCustomers(customerRes.data || []);
+          // Müşteriler
+          const mappedCustomers = (customerRes.data || []).map(c => ({
+            ...c,
+            customerType: c.customer_type || c.customerType || 'B2B',
+            status: c.status || 'ACTIVE',
+            industry: c.industry || '',
+            website: c.website || '',
+            creditLimit: c.credit_limit !== undefined ? c.credit_limit : (c.creditLimit || 0),
+            discountRate: c.discount_rate !== undefined ? c.discount_rate : (c.discountRate || 0),
+            notes: c.notes || ''
+          }));
+          setCustomers(mappedCustomers);
           setProducts(productRes.data || []);
 
-          // Satış verilerini eşle (DB snake_case -> UI camelCase)
           const mappedSales = (salesRes.data || []).map(s => ({
             ...s,
             productId: s.productId || s.product_id,
@@ -202,10 +216,20 @@ export function AppProvider({ children }) {
             dateISO: s.dateISO || s.sale_date || s.created_at,
             shipmentDate: s.shipmentDate || s.shipment_date,
             invoiceNumber: s.invoiceNumber || s.invoice_number,
+            is_paid: s.is_paid || false,
+            payment_method: s.payment_method || '',
+            payment_date: s.payment_date || null,
           }));
           setSales(mappedSales);
           setVehicles(vehicleRes.data || []);
-          setPurchases(purchasesRes.data || []);
+
+          const mappedPurchases = (purchasesRes.data || []).map(p => ({
+            ...p,
+            is_paid: p.is_paid || false,
+            payment_method: p.payment_method || '',
+            payment_date: p.payment_date || null,
+          }));
+          setPurchases(mappedPurchases);
           setWorkOrders((workOrdersRes?.data || []).map(wo => ({
             ...wo,
             processes: typeof wo.processes === 'string' ? JSON.parse(wo.processes) : (wo.processes || [])
@@ -344,24 +368,60 @@ export function AppProvider({ children }) {
   // Müşteriler
   const addCustomer = async (c) => {
     if (!session || !supabase) return false;
-    const toInsert = { ...c, user_id: session.user.id };
+    const toInsert = { 
+      ...c, 
+      user_id: session.user.id,
+      customer_type: c.customerType || 'B2B',
+      status: c.status || 'ACTIVE',
+      industry: c.industry || '',
+      website: c.website || '',
+      credit_limit: c.creditLimit || 0,
+      discount_rate: c.discountRate || 0,
+      notes: c.notes || ''
+    };
+    delete toInsert.customerType;
+    delete toInsert.creditLimit;
+    delete toInsert.discountRate;
+
     const { data, error } = await supabase.from('customers').insert(toInsert).select();
     if (error) {
       Alert.alert("Hata", error.message);
       return false;
     } else {
-      setCustomers((prev) => [data[0], ...prev]);
+      const newCust = {
+        ...data[0],
+        customerType: data[0].customer_type,
+        creditLimit: data[0].credit_limit,
+        discountRate: data[0].discount_rate,
+      };
+      setCustomers((prev) => [newCust, ...prev]);
       return true;
     }
   };
   const updateCustomer = async (u) => {
     if (!session || !supabase) return false;
-    const { data, error } = await supabase.from('customers').update(u).eq('id', u.id).select();
+    const toUpdate = { 
+      ...u,
+      customer_type: u.customerType !== undefined ? u.customerType : u.customer_type,
+      credit_limit: u.creditLimit !== undefined ? u.creditLimit : u.credit_limit,
+      discount_rate: u.discountRate !== undefined ? u.discountRate : u.discount_rate,
+    };
+    delete toUpdate.customerType;
+    delete toUpdate.creditLimit;
+    delete toUpdate.discountRate;
+
+    const { data, error } = await supabase.from('customers').update(toUpdate).eq('id', u.id).select();
     if (error) {
       Alert.alert("Hata", error.message);
       return false;
     } else {
-      setCustomers((prev) => prev.map(c => c.id === u.id ? data[0] : c));
+      const updatedCust = {
+        ...data[0],
+        customerType: data[0].customer_type,
+        creditLimit: data[0].credit_limit,
+        discountRate: data[0].discount_rate,
+      };
+      setCustomers((prev) => prev.map(c => c.id === u.id ? updatedCust : c));
       return true;
     }
   };
@@ -421,6 +481,9 @@ export function AppProvider({ children }) {
       productCode: s.productCode || s.product_code,
       invoiceNumber: s.invoiceNumber || s.invoice_number,
       shipmentDate: s.shipmentDate || s.shipment_date,
+      is_paid: s.is_paid || false,
+      payment_method: s.payment_method || null,
+      payment_date: s.payment_date || null,
     };
     delete saleToAdd.id;
     delete saleToAdd.dateISO;
@@ -453,6 +516,9 @@ export function AppProvider({ children }) {
       productCode: saleData[0].productCode || saleData[0].product_code,
       dateISO: saleData[0].sale_date,
       shipmentDate: saleData[0].shipmentDate || saleData[0].shipment_date,
+      is_paid: saleData[0].is_paid || false,
+      payment_method: saleData[0].payment_method || null,
+      payment_date: saleData[0].payment_date || null,
     };
 
     setSales((prev) => [newMappedSale, ...prev]);
@@ -476,6 +542,9 @@ export function AppProvider({ children }) {
       invoiceNumber: u.invoiceNumber || u.invoice_number,
       shipmentDate: u.shipmentDate || u.shipment_date,
       sale_date: u.dateISO || u.sale_date,
+      is_paid: u.is_paid !== undefined ? u.is_paid : false,
+      payment_method: u.payment_method || null,
+      payment_date: u.payment_date || null,
     };
     delete updateData.id;
     delete updateData.dateISO;
@@ -500,6 +569,9 @@ export function AppProvider({ children }) {
       productCode: data[0].productCode || data[0].product_code,
       dateISO: data[0].sale_date,
       shipmentDate: data[0].shipmentDate || data[0].shipment_date,
+      is_paid: data[0].is_paid || false,
+      payment_method: data[0].payment_method || null,
+      payment_date: data[0].payment_date || null,
     };
     setSales((prev) => prev.map(s => s.id === u.id ? mappedUpdated : s));
 
@@ -654,16 +726,38 @@ export function AppProvider({ children }) {
   // Satın Almalar
   const addPurchase = async (p) => {
     if (!session || !supabase) return;
-    const toInsert = { ...p, user_id: session.user.id };
+    const toInsert = { 
+      ...p, 
+      user_id: session.user.id,
+      is_paid: p.is_paid || false,
+      payment_method: p.payment_method || null,
+      payment_date: p.payment_date || null
+    };
     const { data, error } = await supabase.from('purchases').insert(toInsert).select();
     if (error) Alert.alert("Hata", error.message);
-    else setPurchases((prev) => [data[0], ...prev]);
+    else {
+      const newP = {
+        ...data[0],
+        is_paid: data[0].is_paid || false,
+        payment_method: data[0].payment_method || null,
+        payment_date: data[0].payment_date || null
+      };
+      setPurchases((prev) => [newP, ...prev]);
+    }
   };
   const updatePurchase = async (u) => {
     if (!session || !supabase) return;
     const { data, error } = await supabase.from('purchases').update(u).eq('id', u.id).select();
     if (error) Alert.alert("Hata", error.message);
-    else setPurchases((prev) => prev.map(p => p.id === u.id ? data[0] : p));
+    else {
+      const updatedP = {
+        ...data[0],
+        is_paid: data[0].is_paid || false,
+        payment_method: data[0].payment_method || null,
+        payment_date: data[0].payment_date || null,
+      };
+      setPurchases((prev) => prev.map(p => p.id === u.id ? updatedP : p));
+    }
   };
   const deletePurchase = async (id) => {
     if (!session || !supabase) return;
@@ -1738,7 +1832,8 @@ export function AppProvider({ children }) {
         },
         deleteUserAccount,
         appDataLoading,
-        isRestrictedPersonnel // YENİ EKLENDİ
+        isRestrictedPersonnel, // YENİ EKLENDİ
+        userPermissions
       }}
     >
       {children}
