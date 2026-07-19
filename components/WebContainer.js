@@ -346,8 +346,14 @@ export default function WebContainer({ children, activeRoute }) {
     };
 
 
-    // WebContainer artık mobil cihazlarda da çalışacak.
-    // Ancak login veya yükleme anında göstermek istemiyorsak children döndürebiliriz:
+    // WebContainer yalnızca web platformunda çalışır.
+    // iOS ve Android'de web-specific HTML elementleri (<div>, <span> vb.) ve
+    // CSS özellikleri (height:'100vh', boxShadow, transition, transform string vb.)
+    // React Native'de crash'e yol açar → beyaz ekran sorunu.
+    if (Platform.OS !== 'web') {
+        return <>{children}</>;
+    }
+
     if (!session) {
         return <>{children}</>;
     }
