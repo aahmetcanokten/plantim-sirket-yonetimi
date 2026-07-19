@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useContext, useMemo, useRef } from 'react';
 import { View, Text, StyleSheet, Platform, TouchableOpacity, ScrollView, Dimensions, Alert } from 'react-native';
-import { useNavigation, useRoute } from '@react-navigation/native';
+import { useNavigation } from '@react-navigation/native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { Colors } from '../Theme';
@@ -60,7 +60,6 @@ export default function WebContainer({ children, activeRoute }) {
     const appContext = useContext(AppContext);
     const company = appContext?.company;
     const insets = useSafeAreaInsets();
-    const currentRoute = useRoute();
     const isRestrictedPersonnel = appContext?.isRestrictedPersonnel;
     const userPermissions = appContext?.userPermissions || {};
 
