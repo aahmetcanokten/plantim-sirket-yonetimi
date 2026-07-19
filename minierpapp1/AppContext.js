@@ -306,6 +306,7 @@ export function AppProvider({ children }) {
       user_id: session.user.id,
       tasks: JSON.stringify(p.tasks || []) // Yeni eklerken de stringify et
     };
+    delete toInsert.id; // supabase UUID oluşturacak
     
     const { data, error } = await supabase.from('personnel').insert(toInsert).select();
     

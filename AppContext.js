@@ -651,8 +651,13 @@ export function AppProvider({ children }) {
       performance_score: p.performance_score ? parseFloat(p.performance_score) : null,
       notes: p.notes || null,
     };
+    delete toInsert.id; // supabase UUID oluşturacak
+    
     const { data, error } = await supabase.from('personnel').insert(toInsert).select();
-    if (error) Alert.alert("Hata", error.message);
+    if (error) {
+      console.error("Supabase insert error (personnel):", error);
+      Alert.alert("Hata", error.message);
+    }
     else {
       const newPerson = data[0];
       newPerson.tasks = p.tasks || [];
