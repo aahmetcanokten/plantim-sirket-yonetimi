@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useContext, useMemo, useRef } from 'react';
-import { View, Text, StyleSheet, Platform, TouchableOpacity, ScrollView, Dimensions, Alert } from 'react-native';
+import { View, Text, StyleSheet, Platform, TouchableOpacity, ScrollView, Dimensions, Alert, Modal } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
@@ -74,6 +74,7 @@ export default function WebContainer({ children, activeRoute }) {
     const screenWidth = Dimensions.get('window').width;
     const [isSidebarOpen, setIsSidebarOpen] = useState(Platform.OS === 'web' ? screenWidth > 1024 : false);
     const [isMobile, setIsMobile] = useState(Platform.OS === 'web' ? screenWidth <= 1024 : true);
+    const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
 
     // ─── Bildirim Panel State'leri ──────────────────────────────────────────
     const [isNotifOpen, setIsNotifOpen] = useState(false);
@@ -349,8 +350,141 @@ export default function WebContainer({ children, activeRoute }) {
     // iOS ve Android'de web-specific HTML elementleri (<div>, <span> vb.) ve
     // CSS özellikleri (height:'100vh', boxShadow, transition, transform string vb.)
     // React Native'de crash'e yol açar → beyaz ekran sorunu.
+    // Mobile Shell
     if (Platform.OS !== 'web') {
-        return <>{children}</>;
+        if (!session) return <>{children}</>;
+        
+        return (
+            <View style={{ flex: 1, backgroundColor: '#F8FAFC' }}>
+                {/* Mobile Header */}
+                <View style={{ 
+                    paddingTop: insets.top + 8, 
+                    height: 60 + insets.top, 
+                    borderBottomWidth: 1, 
+                    borderBottomColor: '#E2E8F0', 
+                    backgroundColor: '#fff',
+                    flexDirection: 'row',
+                    alignItems: 'center',
+                    paddingHorizontal: 16,
+                    justifyContent: 'space-between'
+                }}>
+                    <TouchableOpacity style={{ flexDirection: 'row', alignItems: 'center' }} onPress={() => canGoBack ? navigation.goBack() : null} disabled={!canGoBack}>
+                        {canGoBack && <Ionicons name="chevron-back" size={24} color="#1E293B" style={{ marginRight: 4 }} />}
+                        {!canGoBack && <View style={{ width: 28, height: 28, borderRadius: 8, backgroundColor: Colors.iosBlue || '#2563EB', alignItems: 'center', justifyContent: 'center', marginRight: 8 }}><Ionicons name="leaf" size={16} color="#fff" /></View>}
+                        <Text style={{ fontSize: 18, fontWeight: '700', color: '#1E293B' }}>{getPageTitle()}</Text>
+                    </TouchableOpacity>
+                    <View style={{ flexDirection: 'row', alignItems: 'center', gap: 16 }}>
+                        <TouchableOpacity onPress={() => setIsNotifOpen(true)}>
+                            <Ionicons name={unreadCount > 0 ? "notifications" : "notifications-outline"} size={22} color={unreadCount > 0 ? '#2563EB' : '#64748B'} />
+                            {unreadCount > 0 && (
+                                <View style={{ position: 'absolute', top: -4, right: -4, backgroundColor: '#EF4444', borderRadius: 10, minWidth: 16, height: 16, alignItems: 'center', justifyContent: 'center' }}>
+                                    <Text style={{ fontSize: 10, color: '#fff', fontWeight: 'bold' }}>{unreadCount > 9 ? '9+' : unreadCount}</Text>
+                                </View>
+                            )}
+                        </TouchableOpacity>
+                        <TouchableOpacity onPress={() => navigation.navigate('Ayarlar')}>
+                            <Ionicons name="settings-outline" size={22} color="#64748B" />
+                        </TouchableOpacity>
+                    </View>
+                </View>
+
+                {/* Main Content */}
+                <View style={{ flex: 1 }}>
+                    {children}
+                </View>
+
+                {/* Mobile Bottom Tab Bar */}
+                <View style={{
+                    flexDirection: 'row',
+                    backgroundColor: '#ffffff',
+                    borderTopWidth: 1,
+                    borderTopColor: '#E2E8F0',
+                    paddingBottom: insets.bottom || 16,
+                    paddingTop: 10,
+                    height: (insets.bottom ? 55 + insets.bottom : 70),
+                    justifyContent: 'space-around',
+                    alignItems: 'center'
+                }}>
+                    <TouchableOpacity style={{ alignItems: 'center', flex: 1 }} onPress={() => navigation.navigate('DashboardScreen')}>
+                        <Ionicons name="grid-outline" size={22} color={currentRouteName === 'DashboardScreen' ? '#2563EB' : '#94A3B8'} />
+                        <Text style={{ fontSize: 10, color: currentRouteName === 'DashboardScreen' ? '#2563EB' : '#94A3B8', marginTop: 4, fontWeight: currentRouteName === 'DashboardScreen' ? '600' : '400' }}>Özet</Text>
+                    </TouchableOpacity>
+                    <TouchableOpacity style={{ alignItems: 'center', flex: 1 }} onPress={() => navigation.navigate('Stok')}>
+                        <Ionicons name="cube-outline" size={22} color={currentRouteName === 'Stok' ? '#2563EB' : '#94A3B8'} />
+                        <Text style={{ fontSize: 10, color: currentRouteName === 'Stok' ? '#2563EB' : '#94A3B8', marginTop: 4, fontWeight: currentRouteName === 'Stok' ? '600' : '400' }}>Stok</Text>
+                    </TouchableOpacity>
+                    <TouchableOpacity style={{ alignItems: 'center', flex: 1 }} onPress={() => navigation.navigate('Satışlar')}>
+                        <Ionicons name="cash-outline" size={22} color={currentRouteName === 'Satışlar' ? '#2563EB' : '#94A3B8'} />
+                        <Text style={{ fontSize: 10, color: currentRouteName === 'Satışlar' ? '#2563EB' : '#94A3B8', marginTop: 4, fontWeight: currentRouteName === 'Satışlar' ? '600' : '400' }}>Satış</Text>
+                    </TouchableOpacity>
+                    <TouchableOpacity style={{ alignItems: 'center', flex: 1 }} onPress={() => setIsMobileMenuOpen(true)}>
+                        <Ionicons name="menu-outline" size={24} color="#94A3B8" />
+                        <Text style={{ fontSize: 10, color: '#94A3B8', marginTop: 4 }}>Menü</Text>
+                    </TouchableOpacity>
+                </View>
+
+                {/* Mobile Menu Modal */}
+                <Modal visible={isMobileMenuOpen} animationType="slide" transparent>
+                     <View style={{ flex: 1, backgroundColor: '#F8FAFC' }}>
+                         <View style={{ paddingTop: insets.top + 16, paddingHorizontal: 16, paddingBottom: 16, flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', borderBottomWidth: 1, borderBottomColor: '#E2E8F0', backgroundColor: '#fff' }}>
+                             <Text style={{ fontSize: 20, fontWeight: '700', color: '#1E293B' }}>Tüm Menü</Text>
+                             <TouchableOpacity onPress={() => setIsMobileMenuOpen(false)}>
+                                 <Ionicons name="close" size={28} color="#64748B" />
+                             </TouchableOpacity>
+                         </View>
+                         <ScrollView style={{ flex: 1 }} contentContainerStyle={{ padding: 16 }}>
+                             {filteredMenuItems.map((item, idx) => (
+                                 <TouchableOpacity 
+                                    key={idx} 
+                                    style={{ flexDirection: 'row', alignItems: 'center', paddingVertical: 14, borderBottomWidth: 1, borderBottomColor: '#F1F5F9' }}
+                                    onPress={() => {
+                                        setIsMobileMenuOpen(false);
+                                        navigation.navigate(item.name, item.params);
+                                    }}
+                                >
+                                     <Ionicons name={item.icon} size={22} color="#64748B" style={{ width: 30 }} />
+                                     <Text style={{ fontSize: 16, color: '#334155', flex: 1 }}>{item.label}</Text>
+                                     <Ionicons name="chevron-forward" size={18} color="#CBD5E1" />
+                                 </TouchableOpacity>
+                             ))}
+                         </ScrollView>
+                     </View>
+                </Modal>
+                
+                {/* Mobile Notification Modal (simplified) */}
+                <Modal visible={isNotifOpen} animationType="slide" transparent>
+                    <View style={{ flex: 1, backgroundColor: '#F8FAFC' }}>
+                         <View style={{ paddingTop: insets.top + 16, paddingHorizontal: 16, paddingBottom: 16, flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', borderBottomWidth: 1, borderBottomColor: '#E2E8F0', backgroundColor: '#fff' }}>
+                             <Text style={{ fontSize: 20, fontWeight: '700', color: '#1E293B' }}>Bildirimler</Text>
+                             <TouchableOpacity onPress={() => setIsNotifOpen(false)}>
+                                 <Ionicons name="close" size={28} color="#64748B" />
+                             </TouchableOpacity>
+                         </View>
+                         <ScrollView style={{ flex: 1 }} contentContainerStyle={{ padding: 16 }}>
+                            {notifications.length === 0 ? (
+                                <Text style={{ textAlign: 'center', marginTop: 40, color: '#94A3B8' }}>Bildirim yok</Text>
+                            ) : (
+                                notifications.map(notif => (
+                                    <TouchableOpacity 
+                                        key={notif.id}
+                                        style={{ backgroundColor: '#fff', padding: 16, borderRadius: 12, marginBottom: 12, shadowColor: '#000', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.05, shadowRadius: 4 }}
+                                        onPress={() => {
+                                            markAsRead(notif.id);
+                                            setIsNotifOpen(false);
+                                            navigation.navigate(notif.navigate.name, notif.navigate.params);
+                                        }}
+                                    >
+                                        <Text style={{ fontSize: 14, fontWeight: '600', color: '#1E293B', marginBottom: 4 }}>{notif.title}</Text>
+                                        <Text style={{ fontSize: 13, color: '#475569' }}>{notif.message}</Text>
+                                        <Text style={{ fontSize: 11, color: '#94A3B8', marginTop: 6 }}>{notif.detail}</Text>
+                                    </TouchableOpacity>
+                                ))
+                            )}
+                         </ScrollView>
+                    </View>
+                </Modal>
+            </View>
+        );
     }
 
     if (!session) {

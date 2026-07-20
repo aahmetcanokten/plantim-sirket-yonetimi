@@ -404,11 +404,24 @@ export default function QuotationScreen() {
                         </select>
                     )}
                     {/* Durum Filtresi - Yalnızca List görünümünde görünür */}
-                    {viewMode === 'list' && (
+                    {viewMode === 'list' && isWeb && (
                         <select style={styles.selectInput} value={statusFilter} onChange={(e) => setStatusFilter(e.target.value)}>
                             <option value="ALL">Tüm Durumlar</option>
                             {Object.entries(STATUS_CONFIG).map(([key, val]) => <option key={key} value={key}>{val.label}</option>)}
                         </select>
+                    )}
+                    
+                    {!isWeb && (
+                        <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ gap: 8, paddingHorizontal: 4 }}>
+                            <TouchableOpacity onPress={() => setStatusFilter('ALL')} style={[styles.filterChip, statusFilter === 'ALL' && styles.filterChipActive]}>
+                                <Text style={[styles.filterChipText, statusFilter === 'ALL' && styles.filterChipTextActive]}>Tüm Durumlar</Text>
+                            </TouchableOpacity>
+                            {Object.entries(STATUS_CONFIG).map(([key, val]) => (
+                                <TouchableOpacity key={key} onPress={() => setStatusFilter(key)} style={[styles.filterChip, statusFilter === key && styles.filterChipActive]}>
+                                    <Text style={[styles.filterChipText, statusFilter === key && styles.filterChipTextActive]}>{val.label}</Text>
+                                </TouchableOpacity>
+                            ))}
+                        </ScrollView>
                     )}
                 </View>
             </View>

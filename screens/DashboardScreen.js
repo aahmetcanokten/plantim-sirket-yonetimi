@@ -178,7 +178,7 @@ function AlertRow({ icon, iconColor, title, sub, badge, badgeColor }) {
             </View>
             <View style={{ flex: 1 }}>
                 <Text style={styles.alertTitle} numberOfLines={1}>{title}</Text>
-                {sub ? <Text style={styles.alertSub}>{sub}</Text> : null}
+                {sub ? <Text style={styles.alertSub} numberOfLines={1}>{sub}</Text> : null}
             </View>
             {badge ? (
                 <View style={[styles.badge, { backgroundColor: badgeColor ?? PALETTE.red }]}>
@@ -204,7 +204,7 @@ export default function DashboardScreen() {
 
     const navigation = useNavigation();
     const today = new Date();
-    const isMobileWeb = Platform.OS === 'web' && typeof window !== 'undefined' && window.innerWidth <= 1024;
+    const isMobileWeb = Platform.OS !== 'web' || (typeof window !== 'undefined' && window.innerWidth <= 1024);
 
     // ── KPI Hesaplamaları ─────────────────────────────────────
     const kpis = useMemo(() => {
