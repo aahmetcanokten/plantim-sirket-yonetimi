@@ -2001,7 +2001,7 @@ export default function WebLoginPage() {
           <p className="wlp-footer-text">
             © 2026 Plantim Kurumsal Yazılım Teknolojileri
             <span className="wlp-footer-sep">·</span>
-            plantimterp@gmail.com
+            plantimerp@gmail.com
           </p>
           <div className="wlp-footer-links">
             <span className="wlp-footer-link">Gizlilik Politikası</span>

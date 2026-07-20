@@ -658,7 +658,7 @@ export default function LoginScreen() {
             <Ionicons name="leaf" size={16} color={Colors.iosBlue} />
             <Text style={styles.pageFooterBrand}>  PLANTIM ERP</Text>
           </View>
-          <Text style={styles.pageFooterText}>© 2026 Plantim Kurumsal Yazılım Teknolojileri · plantimterp@gmail.com</Text>
+          <Text style={styles.pageFooterText}>© 2026 Plantim Kurumsal Yazılım Teknolojileri · plantimerp@gmail.com</Text>
         </View>
       </ScrollView>
     </View>

@@ -913,7 +913,7 @@ export default function FeaturesShowcasePage({ onClose, onRegister }) {
       {/* ── FOOTER ── */}
       <footer className="fsp-footer">
         <p className="fsp-footer-brand">PLANTIM ERP</p>
-        <p className="fsp-footer-text">© 2026 Plantim Kurumsal Yazılım Teknolojileri · plantimterp@gmail.com</p>
+        <p className="fsp-footer-text">© 2026 Plantim Kurumsal Yazılım Teknolojileri · plantimerp@gmail.com</p>
       </footer>
 
     </div>
