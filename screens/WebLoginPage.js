@@ -1797,23 +1797,23 @@ export default function WebLoginPage() {
         </div>
       </section>
 
-      {/* ── ENTEGRASYONLAR VE ALTYAPI ─────────────────────────── */}
+      {/* ── ENTEGRASYONLAR VE ERP ÖZELLİKLERİ ─────────────────────────── */}
       <section className="wlp-integrations-section">
         <div className="wlp-integrations-inner">
-          <div className="wlp-section-label reveal" style={{ maxWidth: 400, margin: '0 auto 14px' }}>Sınırsız Büyüme Kapasitesi</div>
-          <h2 className="wlp-section-head reveal">İşletmenizin İhtiyaç Duyduğu Tüm <br /><span>Entegrasyonlar ve Altyapı</span></h2>
-          <p className="wlp-section-desc reveal" style={{ margin: '0 auto' }}>Banka API'leri, E-fatura sistemleri, E-ticaret platformları ve daha fazlası. Supabase güvenliği ile %99.9 Uptime sağlıyoruz.</p>
+          <div className="wlp-section-label reveal" style={{ maxWidth: 400, margin: '0 auto 14px' }}>Modüler & Esnek Yapı</div>
+          <h2 className="wlp-section-head reveal">İşletmenizin İhtiyaç Duyduğu Tüm <br /><span>ERP Çözümleri ve Özellikleri</span></h2>
+          <p className="wlp-section-desc reveal" style={{ margin: '0 auto' }}>Stoktan üretime, görev takibinden zimmet yönetimine kadar tüm süreçlerinizi tek platformdan yönetin.</p>
 
           <div className="wlp-int-grid reveal">
             {[
-              { icon: 'logo-amazon', name: 'Cevheriçi Pazaryeri & E-Ticaret' },
-              { icon: 'document-text-outline', name: 'E-Fatura, E-Arşiv & Makbuz' },
-              { icon: 'card-outline', name: 'Banka Hesap Hareketleri' },
-              { icon: 'logo-whatsapp', name: 'WhatsApp & SMS Bildirimleri' },
-              { icon: 'mail-outline', name: 'Zamanlanmış E-posta Raporları' },
-              { icon: 'server-outline', name: 'Supabase PostgreSQL Cloud' },
-              { icon: 'shield-checkmark-outline', name: '256-bit Veri Şifreleme' },
-              { icon: 'cloud-done-outline', name: 'Günlük Otomatik Yedekleme' },
+              { icon: 'cube-outline', name: 'Stok & Depo Yönetimi' },
+              { icon: 'construct-outline', name: 'Üretim & MRP Takibi' },
+              { icon: 'checkbox-outline', name: 'Görev & İş Takibi' },
+              { icon: 'shield-checkmark-outline', name: 'Demirbaş & Zimmet Yönetimi' },
+              { icon: 'trending-up-outline', name: 'Satış & Müşteri Analizleri' },
+              { icon: 'people-outline', name: 'Personel & İK Takibi' },
+              { icon: 'document-text-outline', name: 'Gelişmiş PDF Raporlama' },
+              { icon: 'cloud-done-outline', name: 'Bulut & Mobil Senkronizasyon' },
             ].map((int, i) => (
               <div key={i} className="wlp-int-item">
                 <Icon name={int.icon} size={20} color="#818CF8" />
@@ -2127,20 +2127,6 @@ export default function WebLoginPage() {
                   <div>
                     <h4 className="wlp-channel-title">E-posta İle İletişim</h4>
                     <p className="wlp-channel-desc">plantimerp@gmail.com adresine doğrudan mail atın.</p>
-                  </div>
-                </a>
-
-                {/* Direct Call / Info */}
-                <a 
-                  href="tel:+905057295868"
-                  className="wlp-contact-channel"
-                >
-                  <div className="wlp-channel-icon" style={{ background: 'rgba(255,255,255,0.1)' }}>
-                    <Icon name="call" size={24} color="#38BDF8" />
-                  </div>
-                  <div>
-                    <h4 className="wlp-channel-title">+90 505 729 58 68</h4>
-                    <p className="wlp-channel-desc">Hafta içi 09:00 - 18:00 arası bizi doğrudan arayın.</p>
                   </div>
                 </a>
               </div>
