@@ -1,5 +1,5 @@
 import React, { useState, useRef } from 'react';
-import { View, Text, TextInput, StyleSheet, Alert, TouchableOpacity, ScrollView, KeyboardAvoidingView, Platform, useWindowDimensions } from 'react-native';
+import { View, Text, TextInput, StyleSheet, Alert, TouchableOpacity, ScrollView, KeyboardAvoidingView, Platform, useWindowDimensions, Linking } from 'react-native';
 import { useAuth } from '../AuthContext'; // useAuth hook'unu import et
 import { Colors } from '../Theme';
 import { Ionicons } from '@expo/vector-icons'; // İkon kütüphanesi
@@ -583,40 +583,36 @@ export default function LoginScreen() {
           </View>
         </View>
 
-        {/* ══════════ 7. PRICING ══════════ */}
+        {/* ══════════ 7. PRICING & QUOTE ══════════ */}
         <View style={styles.pricingSection}>
-          <Text style={styles.landingSectionBadge}>{t('nav_pricing')}</Text>
-          <Text style={[styles.landingSectionTitle, { color: '#fff' }]}>Şirketinize Uygun Planı Seçin</Text>
+          <Text style={styles.landingSectionBadge}>{t('nav_pricing') || 'Teklif Alın'}</Text>
+          <Text style={[styles.landingSectionTitle, { color: '#fff' }]}>İşletmenize Özel Teklif Alın</Text>
           <Text style={[styles.landingSectionSub, { color: '#94A3B8' }]}>{t('pricing_desc')}</Text>
 
-          <View style={[styles.pricingCardsRow, isMobileWeb && { flexDirection: 'column', alignItems: 'center' }]}>
-            {/* Starter */}
-            <View style={styles.pricingCardNew}>
-              <Text style={styles.pricingPlanName}>{t('pricing_starter')}</Text>
-              <Text style={styles.pricingPrice}>{t('pricing_free')}</Text>
-              <View style={styles.pricingDivider} />
-              <PriceFeature text={t('pricing_s_1')} />
-              <PriceFeature text={t('pricing_s_2')} />
-              <PriceFeature text={t('pricing_s_3')} />
-              <TouchableOpacity style={styles.pricingStarterBtn} onPress={scrollToTopAndRegister}>
-                <Text style={styles.pricingStarterBtnText}>Ücretsiz Başla</Text>
-              </TouchableOpacity>
-            </View>
+          <View style={[styles.pricingCardsRow, { flexDirection: 'column', alignItems: 'center', maxWidth: 600, alignSelf: 'center', width: '100%' }]}>
+            <View style={[styles.pricingCardNew, styles.pricingCardFeaturedNew, { width: '100%', padding: 24, alignItems: 'center' }]}>
+              <Ionicons name="chatbubbles-outline" size={40} color={Colors.iosBlue} style={{ marginBottom: 12 }} />
+              <Text style={{ fontSize: 20, fontWeight: '700', color: '#fff', textAlign: 'center', marginBottom: 8 }}>
+                Modüler & Esnek Fiyatlandırma
+              </Text>
+              <Text style={{ fontSize: 14, color: '#94A3B8', textAlign: 'center', marginBottom: 24, lineHeight: 20 }}>
+                Sabit paketlerle sınırlı kalmayın. Kullanıcı ve modül ihtiyaçlarınıza özel en uygun fiyat teklifini anında alın.
+              </Text>
 
-            {/* Pro */}
-            <View style={[styles.pricingCardNew, styles.pricingCardFeaturedNew]}>
-              <View style={styles.popularBadgeGlobal}>
-                <Text style={styles.popularBadgeText}>{t('pricing_popular')}</Text>
-              </View>
-              <Text style={[styles.pricingPlanName, { color: Colors.iosBlue }]}>{t('pricing_pro')}</Text>
-              <Text style={[styles.pricingPrice, { color: '#fff' }]}>11.880 ₺ <Text style={{ fontSize: 14, fontWeight: '400', color: '#94A3B8' }}>{t('pricing_yr')}</Text></Text>
-              <View style={[styles.pricingDivider, { backgroundColor: 'rgba(255,255,255,0.1)' }]} />
-              <PriceFeature text={t('pricing_p_1')} dark />
-              <PriceFeature text={t('pricing_p_2')} dark />
-              <PriceFeature text={t('pricing_p_3')} dark />
-              <PriceFeature text={t('web_feature_security')} bold dark />
-              <TouchableOpacity style={styles.pricingProBtn} onPress={scrollToTopAndRegister}>
-                <Text style={styles.pricingProBtnText}>Hemen Başla</Text>
+              <TouchableOpacity 
+                style={[styles.pricingProBtn, { backgroundColor: '#22C55E', width: '100%', marginBottom: 12, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8 }]}
+                onPress={() => Linking.openURL(`https://wa.me/905057295868?text=${encodeURIComponent("Merhaba, Plantim ERP hakkında bilgi ve teklif almak istiyorum.")}`)}
+              >
+                <Ionicons name="logo-whatsapp" size={20} color="#fff" />
+                <Text style={styles.pricingProBtnText}>WhatsApp İle Teklif Al</Text>
+              </TouchableOpacity>
+
+              <TouchableOpacity 
+                style={[styles.pricingProBtn, { backgroundColor: '#4F46E5', width: '100%', flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8 }]}
+                onPress={() => Linking.openURL(`mailto:plantimerp@gmail.com?subject=${encodeURIComponent("Plantim ERP Teklif Talebi")}`)}
+              >
+                <Ionicons name="mail" size={20} color="#fff" />
+                <Text style={styles.pricingProBtnText}>E-posta İle İletişime Geç</Text>
               </TouchableOpacity>
             </View>
           </View>
@@ -713,29 +709,25 @@ const SolutionItem = ({ icon, title, color }) => (
 
 const PricingSection = ({ t }) => (
   <View style={styles.sectionCard}>
-    <Text style={styles.sectionTitle}>{t('nav_pricing') || "Ücretlendirme"}</Text>
+    <Text style={styles.sectionTitle}>{t('nav_pricing') || "Teklif Alın"}</Text>
     <Text style={styles.sectionDesc}>{t('pricing_desc')}</Text>
 
-    <View style={styles.pricingGrid}>
-      <View style={[styles.priceCard, { borderColor: '#E2E8F0' }]}>
-        <Text style={styles.pricePlanName}>{t('pricing_starter')}</Text>
-        <Text style={styles.priceAmount}>{t('pricing_free')}</Text>
-        <View style={styles.priceDivider} />
-        <PriceFeature text={t('pricing_s_1')} />
-        <PriceFeature text={t('pricing_s_2')} />
-        <PriceFeature text={t('pricing_s_3')} />
-      </View>
+    <View style={{ gap: 12, marginTop: 16 }}>
+      <TouchableOpacity 
+        style={{ backgroundColor: '#22C55E', padding: 14, borderRadius: 12, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8 }}
+        onPress={() => Linking.openURL(`https://wa.me/905057295868?text=${encodeURIComponent("Merhaba, Plantim ERP hakkında bilgi ve teklif almak istiyorum.")}`)}
+      >
+        <Ionicons name="logo-whatsapp" size={20} color="#fff" />
+        <Text style={{ color: '#fff', fontWeight: '700', fontSize: 15 }}>WhatsApp İle Teklif Al</Text>
+      </TouchableOpacity>
 
-      <View style={[styles.priceCard, styles.priceCardFeatured]}>
-        <View style={styles.popularBadgeGlobal}><Text style={styles.popularBadgeText}>{t('pricing_popular')}</Text></View>
-        <Text style={[styles.pricePlanName, { color: Colors.iosBlue }]}>{t('pricing_pro')}</Text>
-        <Text style={styles.priceAmount}>11.880 ₺ <Text style={styles.pricePeriod}>{t('pricing_yr')}</Text></Text>
-        <View style={styles.priceDivider} />
-        <PriceFeature text={t('pricing_p_1')} />
-        <PriceFeature text={t('pricing_p_2')} />
-        <PriceFeature text={t('pricing_p_3')} />
-        <PriceFeature text={t('web_feature_security')} bold />
-      </View>
+      <TouchableOpacity 
+        style={{ backgroundColor: '#4F46E5', padding: 14, borderRadius: 12, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8 }}
+        onPress={() => Linking.openURL(`mailto:plantimerp@gmail.com?subject=${encodeURIComponent("Plantim ERP Teklif Talebi")}`)}
+      >
+        <Ionicons name="mail" size={20} color="#fff" />
+        <Text style={{ color: '#fff', fontWeight: '700', fontSize: 15 }}>E-posta Gönder (plantimerp@gmail.com)</Text>
+      </TouchableOpacity>
     </View>
   </View>
 );

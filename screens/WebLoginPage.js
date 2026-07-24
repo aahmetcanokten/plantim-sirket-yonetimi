@@ -710,7 +710,7 @@ if (Platform.OS === 'web' && typeof document !== 'undefined') {
       .wlp-testi-name { font-size: 14px; font-weight: 700; color: rgba(255,255,255,0.8); margin: 0 0 2px; }
       .wlp-testi-role { font-size: 12px; color: rgba(255,255,255,0.35); margin: 0; }
 
-      /* ── PRICING ──────────────────────────────── */
+      /* ── PRICING & QUOTE ──────────────────────── */
       .wlp-pricing-section {
         padding: 100px 40px;
         background: #060918;
@@ -721,43 +721,120 @@ if (Platform.OS === 'web' && typeof document !== 'undefined') {
         background: radial-gradient(ellipse at 50% 100%, rgba(79,70,229,0.12) 0%, transparent 60%);
         pointer-events: none;
       }
-      .wlp-pricing-inner { max-width: 900px; margin: 0 auto; position: relative; z-index: 2; }
-      .wlp-pricing-cards {
-        display: flex; gap: 24px; margin-top: 60px;
+      .wlp-pricing-inner { max-width: 1040px; margin: 0 auto; position: relative; z-index: 2; }
+      .wlp-quote-grid {
+        display: grid;
+        grid-template-columns: 1.2fr 0.8fr;
+        gap: 32px;
+        margin-top: 50px;
       }
-      .wlp-price-card {
-        flex: 1; border-radius: 28px; padding: 40px;
-        border: 1px solid rgba(255,255,255,0.08);
+      @media (max-width: 900px) {
+        .wlp-quote-grid { grid-template-columns: 1fr; }
+      }
+      .wlp-quote-card {
         background: rgba(255,255,255,0.03);
-        transition: transform 0.3s;
-        position: relative; overflow: hidden;
+        border: 1px solid rgba(255,255,255,0.08);
+        border-radius: 24px;
+        padding: 36px;
+        position: relative;
+        backdrop-filter: blur(12px);
       }
-      .wlp-price-card:hover { transform: translateY(-4px); }
-      .wlp-price-card.featured {
-        background: rgba(99,102,241,0.08);
-        border-color: rgba(99,102,241,0.4);
-        box-shadow: 0 0 60px rgba(99,102,241,0.15), inset 0 1px 0 rgba(99,102,241,0.2);
+      .wlp-quote-card.featured-card {
+        background: linear-gradient(145deg, rgba(99,102,241,0.08) 0%, rgba(15,23,42,0.6) 100%);
+        border-color: rgba(99,102,241,0.3);
+        box-shadow: 0 10px 40px rgba(0,0,0,0.3), inset 0 1px 0 rgba(255,255,255,0.1);
       }
-      .wlp-price-card.featured::before {
-        content: '';
-        position: absolute; top: 0; left: 0; right: 0; height: 2px;
-        background: linear-gradient(90deg, #3B82F6, #818CF8, #3B82F6);
-        background-size: 200% 100%;
-        animation: shimmer 2s linear infinite;
+      .wlp-quote-form { display: flex; flex-direction: column; gap: 18px; }
+      .wlp-quote-form-row { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+      @media (max-width: 600px) { .wlp-quote-form-row { grid-template-columns: 1fr; } }
+      .wlp-quote-input-group { display: flex; flex-direction: column; gap: 6px; }
+      .wlp-quote-label { font-size: 13px; font-weight: 600; color: rgba(255,255,255,0.7); }
+      .wlp-quote-input {
+        background: rgba(255,255,255,0.05);
+        border: 1px solid rgba(255,255,255,0.12);
+        border-radius: 12px;
+        padding: 12px 16px;
+        color: #fff;
+        font-size: 14px;
+        font-family: inherit;
+        outline: none;
+        transition: border-color 0.2s, background 0.2s;
       }
-      .wlp-popular-tag {
-        position: absolute; top: -1px; right: 28px;
-        background: linear-gradient(135deg, #3B82F6, #818CF8);
-        color: #fff; font-size: 11px; font-weight: 800;
-        padding: 6px 16px; border-radius: 0 0 12px 12px;
-        text-transform: uppercase; letter-spacing: 0.5px;
+      .wlp-quote-input:focus {
+        border-color: #818CF8;
+        background: rgba(255,255,255,0.08);
       }
-      .wlp-price-plan { font-size: 12.5px; font-weight: 800; color: rgba(255,255,255,0.4); text-transform: uppercase; letter-spacing: 2px; margin: 0 0 16px; }
-      .wlp-price-plan.pro { color: #818CF8; }
-      .wlp-price-amount { font-size: 44px; font-weight: 900; color: #fff; margin: 0 0 8px; letter-spacing: -1px; }
-      .wlp-price-period { font-size: 14px; font-weight: 400; color: rgba(255,255,255,0.35); }
-      .wlp-price-divider { height: 1px; background: rgba(255,255,255,0.06); margin: 28px 0; }
-      .wlp-price-feat-item { display: flex; align-items: center; gap: 10px; margin-bottom: 14px; }
+      .wlp-quote-select {
+        background: rgba(15, 23, 42, 0.95);
+        color: #fff;
+      }
+      .wlp-quote-submit-btn {
+        background: linear-gradient(135deg, #4F46E5, #818CF8);
+        color: #fff;
+        border: none;
+        border-radius: 14px;
+        padding: 16px;
+        font-size: 16px;
+        font-weight: 700;
+        cursor: pointer;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 10px;
+        transition: transform 0.2s, box-shadow 0.2s;
+        margin-top: 8px;
+        font-family: inherit;
+      }
+      .wlp-quote-submit-btn:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 8px 25px rgba(79,70,229,0.4);
+      }
+      .wlp-contact-channel {
+        display: flex;
+        align-items: center;
+        gap: 16px;
+        padding: 20px;
+        background: rgba(255,255,255,0.04);
+        border: 1px solid rgba(255,255,255,0.08);
+        border-radius: 18px;
+        margin-bottom: 16px;
+        text-decoration: none;
+        transition: all 0.2s ease;
+      }
+      .wlp-contact-channel:hover {
+        background: rgba(255,255,255,0.08);
+        border-color: rgba(255,255,255,0.2);
+        transform: translateY(-2px);
+      }
+      .wlp-contact-channel.whatsapp-channel {
+        background: rgba(34, 197, 94, 0.08);
+        border-color: rgba(34, 197, 94, 0.3);
+      }
+      .wlp-contact-channel.whatsapp-channel:hover {
+        background: rgba(34, 197, 94, 0.16);
+        border-color: rgba(34, 197, 94, 0.5);
+        box-shadow: 0 8px 25px rgba(34, 197, 94, 0.25);
+      }
+      .wlp-contact-channel.email-channel {
+        background: rgba(99, 102, 241, 0.08);
+        border-color: rgba(99, 102, 241, 0.3);
+      }
+      .wlp-contact-channel.email-channel:hover {
+        background: rgba(99, 102, 241, 0.16);
+        border-color: rgba(99, 102, 241, 0.5);
+        box-shadow: 0 8px 25px rgba(99, 102, 241, 0.25);
+      }
+      .wlp-channel-icon {
+        width: 48px;
+        height: 48px;
+        border-radius: 14px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        flex-shrink: 0;
+      }
+      .wlp-channel-title { font-size: 16px; font-weight: 700; color: #fff; margin: 0 0 4px; }
+      .wlp-channel-desc { font-size: 13px; color: rgba(255,255,255,0.5); margin: 0; }
       .wlp-price-feat-text { font-size: 14px; color: rgba(255,255,255,0.6); margin: 0; }
       .wlp-price-btn {
         width: 100%; margin-top: 28px; padding: 15px;
@@ -1249,11 +1326,39 @@ export default function WebLoginPage() {
   const [loading, setLoading] = useState(false);
   const [activeModule, setActiveModule] = useState(0);
   const [openFaq, setOpenFaq] = useState(null);
+  const [quoteForm, setQuoteForm] = useState({
+    name: '',
+    company: '',
+    email: '',
+    phone: '',
+    users: '1-5',
+    note: ''
+  });
+  const [quoteSent, setQuoteSent] = useState(false);
 
   const { signIn, signUp, resetPassword, signInPersonnel } = useAuth();
   const { t } = useTranslation();
 
   useScrollReveal();
+
+  const handleQuoteSubmit = (e) => {
+    if (e) e.preventDefault();
+    if (!quoteForm.name || !quoteForm.email || !quoteForm.phone) {
+      alert('Lütfen ad soyad, e-posta ve telefon alanlarını doldurunuz.');
+      return;
+    }
+    setQuoteSent(true);
+    const subject = encodeURIComponent(`Plantim ERP Teklif Talebi - ${quoteForm.company || quoteForm.name}`);
+    const body = encodeURIComponent(
+      `Ad Soyad: ${quoteForm.name}\n` +
+      `Şirket: ${quoteForm.company || '-'}\n` +
+      `E-posta: ${quoteForm.email}\n` +
+      `Telefon: ${quoteForm.phone}\n` +
+      `Tahmini Kullanıcı Sayısı: ${quoteForm.users}\n` +
+      `Not / İhtiyaç Özeti: ${quoteForm.note || '-'}\n`
+    );
+    window.open(`mailto:plantimerp@gmail.com?subject=${subject}&body=${body}`, '_blank');
+  };
 
   const handleLogin = async () => {
     if (!email || !password) { setErrorMsg(t('login_email_password_required')); return; }
@@ -1441,7 +1546,7 @@ export default function WebLoginPage() {
           <div className="wlp-nav-links">
             <a className="wlp-nav-link" href="#features">Özellikler</a>
             <a className="wlp-nav-link" href="#modules">Modüller</a>
-            <a className="wlp-nav-link" href="#pricing">Fiyatlandırma</a>
+            <a className="wlp-nav-link" href="#pricing">{t('nav_pricing') || 'Teklif Alın'}</a>
             <a className="wlp-nav-link" href="#faq">SSS</a>
           </div>
           <div className="wlp-nav-actions">
@@ -1866,70 +1971,192 @@ export default function WebLoginPage() {
         </div>
       </section>
 
-      {/* ── PRICING ─────────────────────────────────────────────── */}
+      {/* ── PRICING & QUOTE ─────────────────────────────────────────────── */}
       <section className="wlp-pricing-section" id="pricing">
         <div className="wlp-pricing-bg" />
         <div className="wlp-pricing-inner">
-          <div className="wlp-section-label reveal">Fiyatlandırma</div>
+          <div className="wlp-section-label reveal">Teklif & İletişim</div>
           <h2 className="wlp-section-head reveal">
-            Şirketinize Uygun <span>Plan Seçin</span>
+            İşletmenize Özel <span>Teklif Alın</span>
           </h2>
           <p className="wlp-section-desc reveal">
-            {t('pricing_desc') || 'Gizli ücret yok. İstediğiniz zaman plan değiştirin.'}
+            {t('pricing_desc') || 'Sabit paketlerle sınırlı kalmayın. İhtiyaçlarınıza özel esnek modüller ve kullanıcı sayıları ile size en uygun teklifi sunalım.'}
           </p>
-          <div className="wlp-pricing-cards">
-            {/* Starter */}
-            <div className="wlp-price-card reveal reveal-delay-1">
-              <p className="wlp-price-plan">{t('pricing_starter') || 'Başlangıç'}</p>
-              <p className="wlp-price-amount">
-                {t('pricing_free') || 'Ücretsiz'}
-                <span className="wlp-price-period"> / sonsuza dek</span>
+
+          <div className="wlp-quote-grid reveal">
+            {/* LEFT: QUOTE FORM */}
+            <div className="wlp-quote-card featured-card">
+              <h3 style={{ color: '#fff', fontSize: 20, fontWeight: 700, marginTop: 0, marginBottom: 8, display: 'flex', alignItems: 'center', gap: 10 }}>
+                <Icon name="document-text" size={22} color="#818CF8" />
+                Teklif Talep Formu
+              </h3>
+              <p style={{ color: 'rgba(255,255,255,0.5)', fontSize: 13, marginBottom: 24 }}>
+                Aşağıdaki formu doldurun, müşteri temsilcimiz en kısa sürede size özel fiyat teklifi ile dönüş yapsın.
               </p>
-              <div className="wlp-price-divider" />
-              {[
-                t('pricing_s_1') || 'Temel modüller',
-                t('pricing_s_2') || '1 kullanıcı hesabı',
-                t('pricing_s_3') || 'Bulut depolama',
-                'Topluluk desteği',
-              ].map((f, i) => (
-                <div key={i} className="wlp-price-feat-item">
-                  <Icon name="checkmark-circle" size={17} color="#34D399" />
-                  <p className="wlp-price-feat-text">{f}</p>
+
+              {quoteSent ? (
+                <div style={{ background: 'rgba(34, 197, 94, 0.12)', border: '1px solid rgba(34, 197, 94, 0.4)', borderRadius: 16, padding: 24, textAlign: 'center' }}>
+                  <Icon name="checkmark-circle" size={48} color="#22C55E" />
+                  <h4 style={{ color: '#fff', fontSize: 18, margin: '14px 0 6px' }}>Teklif Talebiniz Alındı!</h4>
+                  <p style={{ color: 'rgba(255,255,255,0.7)', fontSize: 14, margin: 0 }}>
+                    Talebinizi aldık. Ayrıca e-posta istemciniz üzerinden de detaylı taslak oluşturulmuştur. En kısa sürede sizinle iletişime geçeceğiz.
+                  </p>
+                  <button 
+                    onClick={() => setQuoteSent(false)} 
+                    style={{ marginTop: 20, background: 'rgba(255,255,255,0.1)', color: '#fff', border: 'none', padding: '10px 20px', borderRadius: 10, cursor: 'pointer', fontSize: 13, fontWeight: 600 }}
+                  >
+                    Yeni Teklif İste
+                  </button>
                 </div>
-              ))}
-              <button className="wlp-price-btn starter" onClick={goRegister}>
-                Ücretsiz Başla
-              </button>
+              ) : (
+                <form className="wlp-quote-form" onSubmit={handleQuoteSubmit}>
+                  <div className="wlp-quote-form-row">
+                    <div className="wlp-quote-input-group">
+                      <label className="wlp-quote-label">Ad Soyad *</label>
+                      <input 
+                        type="text" 
+                        required 
+                        className="wlp-quote-input" 
+                        placeholder="Adınız Soyadınız"
+                        value={quoteForm.name}
+                        onChange={(e) => setQuoteForm({ ...quoteForm, name: e.target.value })}
+                      />
+                    </div>
+                    <div className="wlp-quote-input-group">
+                      <label className="wlp-quote-label">Şirket / Firma Adı</label>
+                      <input 
+                        type="text" 
+                        className="wlp-quote-input" 
+                        placeholder="Şirketiniz"
+                        value={quoteForm.company}
+                        onChange={(e) => setQuoteForm({ ...quoteForm, company: e.target.value })}
+                      />
+                    </div>
+                  </div>
+
+                  <div className="wlp-quote-form-row">
+                    <div className="wlp-quote-input-group">
+                      <label className="wlp-quote-label">E-posta Adresi *</label>
+                      <input 
+                        type="email" 
+                        required 
+                        className="wlp-quote-input" 
+                        placeholder="ornek@sirketiniz.com"
+                        value={quoteForm.email}
+                        onChange={(e) => setQuoteForm({ ...quoteForm, email: e.target.value })}
+                      />
+                    </div>
+                    <div className="wlp-quote-input-group">
+                      <label className="wlp-quote-label">Telefon Numarası *</label>
+                      <input 
+                        type="tel" 
+                        required 
+                        className="wlp-quote-input" 
+                        placeholder="0555 123 45 67"
+                        value={quoteForm.phone}
+                        onChange={(e) => setQuoteForm({ ...quoteForm, phone: e.target.value })}
+                      />
+                    </div>
+                  </div>
+
+                  <div className="wlp-quote-input-group">
+                    <label className="wlp-quote-label">Tahmini Kullanıcı Sayısı</label>
+                    <select 
+                      className="wlp-quote-input wlp-quote-select"
+                      value={quoteForm.users}
+                      onChange={(e) => setQuoteForm({ ...quoteForm, users: e.target.value })}
+                    >
+                      <option value="1-5">1 - 5 Kullanıcı</option>
+                      <option value="5-15">5 - 15 Kullanıcı</option>
+                      <option value="15-50">15 - 50 Kullanıcı</option>
+                      <option value="50+">50+ Kullanıcı (Kurumsal)</option>
+                    </select>
+                  </div>
+
+                  <div className="wlp-quote-input-group">
+                    <label className="wlp-quote-label">Özel İhtiyaçlarınız veya Notunuz</label>
+                    <textarea 
+                      rows={3} 
+                      className="wlp-quote-input" 
+                      placeholder="Hangi modüllere ihtiyacınız var? Özel bir entegrasyon talebiniz var mı?"
+                      value={quoteForm.note}
+                      onChange={(e) => setQuoteForm({ ...quoteForm, note: e.target.value })}
+                      style={{ resize: 'vertical' }}
+                    />
+                  </div>
+
+                  <button type="submit" className="wlp-quote-submit-btn">
+                    <Icon name="send" size={18} color="#fff" />
+                    Teklif Talebini Gönder
+                  </button>
+                </form>
+              )}
             </div>
 
-            {/* Pro */}
-            <div className="wlp-price-card featured reveal reveal-delay-2">
-              <div className="wlp-popular-tag">{t('pricing_popular') || 'En Çok Tercih Edilen'}</div>
-              <p className="wlp-price-plan pro">{t('pricing_pro') || 'Profesyonel'}</p>
-              <p className="wlp-price-amount">
-                11.880 ₺
-                <span className="wlp-price-period"> / yıllık</span>
-              </p>
-              <p style={{ fontSize: 13, color: '#34D399', margin: '0 0 4px', fontWeight: 600 }}>
-                ≈ 990 ₺/ay · %30 tasarruf
-              </p>
-              <div className="wlp-price-divider" />
-              {[
-                t('pricing_p_1') || 'Tüm modüller dahil',
-                t('pricing_p_2') || 'Sınırsız kullanıcı',
-                t('pricing_p_3') || 'Öncelikli destek',
-                '7/24 canlı destek hattı',
-                '256-bit SSL güvenlik',
-                'API entegrasyon desteği',
-              ].map((f, i) => (
-                <div key={i} className="wlp-price-feat-item">
-                  <Icon name="checkmark-circle" size={17} color="#818CF8" />
-                  <p className="wlp-price-feat-text" style={{ color: 'rgba(255,255,255,0.8)' }}>{f}</p>
+            {/* RIGHT: QUICK CONTACT CHANNELS */}
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
+              <div className="wlp-quote-card" style={{ padding: 28 }}>
+                <h3 style={{ color: '#fff', fontSize: 18, fontWeight: 700, marginTop: 0, marginBottom: 16 }}>
+                  Hızlı İletişim Kanalları
+                </h3>
+
+                {/* WhatsApp */}
+                <a 
+                  href={`https://wa.me/905057295868?text=${encodeURIComponent("Merhaba, Plantim ERP hakkında bilgi ve teklif almak istiyorum.")}`} 
+                  target="_blank" 
+                  rel="noreferrer"
+                  className="wlp-contact-channel whatsapp-channel"
+                >
+                  <div className="wlp-channel-icon" style={{ background: '#22C55E' }}>
+                    <Icon name="logo-whatsapp" size={24} color="#fff" />
+                  </div>
+                  <div>
+                    <h4 className="wlp-channel-title">WhatsApp Teklif Hattı</h4>
+                    <p className="wlp-channel-desc">Müşteri temsilcimiz ile anında canlı sohbet başlatın.</p>
+                  </div>
+                </a>
+
+                {/* Email Direct */}
+                <a 
+                  href={`mailto:plantimerp@gmail.com?subject=${encodeURIComponent("Plantim ERP Teklif Talebi")}`}
+                  className="wlp-contact-channel email-channel"
+                >
+                  <div className="wlp-channel-icon" style={{ background: '#6366F1' }}>
+                    <Icon name="mail" size={24} color="#fff" />
+                  </div>
+                  <div>
+                    <h4 className="wlp-channel-title">E-posta İle İletişim</h4>
+                    <p className="wlp-channel-desc">plantimerp@gmail.com adresine doğrudan mail atın.</p>
+                  </div>
+                </a>
+
+                {/* Direct Call / Info */}
+                <a 
+                  href="tel:+905057295868"
+                  className="wlp-contact-channel"
+                >
+                  <div className="wlp-channel-icon" style={{ background: 'rgba(255,255,255,0.1)' }}>
+                    <Icon name="call" size={24} color="#38BDF8" />
+                  </div>
+                  <div>
+                    <h4 className="wlp-channel-title">+90 505 729 58 68</h4>
+                    <p className="wlp-channel-desc">Hafta içi 09:00 - 18:00 arası bizi doğrudan arayın.</p>
+                  </div>
+                </a>
+              </div>
+
+              {/* Guarantees Box */}
+              <div className="wlp-quote-card" style={{ padding: 24, background: 'rgba(255,255,255,0.02)' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 12 }}>
+                  <Icon name="shield-checkmark" size={22} color="#34D399" />
+                  <span style={{ color: '#fff', fontWeight: 700, fontSize: 14 }}>Neden Esnek Fiyatlandırma?</span>
                 </div>
-              ))}
-              <button className="wlp-price-btn pro" onClick={goRegister}>
-                Hemen Başla →
-              </button>
+                <ul style={{ margin: 0, paddingLeft: 20, color: 'rgba(255,255,255,0.6)', fontSize: 13, lineHeight: 1.7 }}>
+                  <li>Sadece kullandığınız modüller için ödeme yapın.</li>
+                  <li>Kullanıcı sayısı arttıkça ek hacim indirimleri.</li>
+                  <li>Gizli maliyet, kurulum ücreti veya ek bakım maliyeti yok.</li>
+                </ul>
+              </div>
             </div>
           </div>
         </div>
