@@ -1,5 +1,6 @@
 import React, { useState, useContext, useMemo } from 'react';
 import { View, Text, StyleSheet, FlatList, TouchableOpacity, Modal, TextInput, ScrollView, Alert, Platform } from 'react-native';
+import { useNavigation } from '@react-navigation/native';
 import { Ionicons } from '@expo/vector-icons';
 import { AppContext } from '../AppContext';
 import { Colors } from '../Theme';
@@ -18,6 +19,7 @@ const PRIORITY_COLORS = {
 };
 
 export default function MaintenanceScreen() {
+    const navigation = useNavigation();
     const { maintenanceRequests, addMaintenanceRequest, updateMaintenanceRequest, closeMaintenanceRequest, deleteMaintenanceRequest, personnel } = useContext(AppContext);
 
     const [modalVisible, setModalVisible] = useState(false);
@@ -281,10 +283,16 @@ export default function MaintenanceScreen() {
                     <Text style={styles.pageTitle}>Bakım ve Servis Yönetimi</Text>
                     <Text style={styles.pageSubtitle}>{stats.open} açık talep • {stats.urgent} yüksek öncelikli</Text>
                 </View>
-                <TouchableOpacity style={styles.newBtn} onPress={() => handleOpenModal()}>
-                    <Ionicons name="add" size={18} color="#fff" />
-                    <Text style={styles.newBtnText}>Yeni Plan Oluştur</Text>
-                </TouchableOpacity>
+                <View style={{ flexDirection: 'row', gap: 8 }}>
+                    <TouchableOpacity style={[styles.newBtn, { backgroundColor: '#F1F5F9' }]} onPress={() => navigation.navigate('MaintenanceArchiveScreen')}>
+                        <Ionicons name="archive-outline" size={18} color="#64748B" />
+                        {isWeb && <Text style={[styles.newBtnText, { color: '#64748B' }]}>Arşiv</Text>}
+                    </TouchableOpacity>
+                    <TouchableOpacity style={styles.newBtn} onPress={() => handleOpenModal()}>
+                        <Ionicons name="add" size={18} color="#fff" />
+                        <Text style={styles.newBtnText}>Yeni Plan Oluştur</Text>
+                    </TouchableOpacity>
+                </View>
             </View>
 
             {/* Stats */}

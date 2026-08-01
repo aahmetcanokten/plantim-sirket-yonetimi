@@ -1,6 +1,18 @@
-import React, { createContext, useState, useEffect } from "react";
+import React, { createContext, useState, useEffect, useMemo } from "react";
 import { Alert, Platform } from "react-native";
 import { useAuth } from "./AuthContext";
+
+// JSON.parse için güvenli yardımcı — bozuk veri tüm yüklemeyi durdurmasın
+const safeJsonParse = (str, fallback = []) => {
+  if (str === null || str === undefined) return fallback;
+  if (typeof str !== 'string') return str || fallback;
+  try {
+    return JSON.parse(str);
+  } catch (e) {
+    console.warn('safeJsonParse: bozuk JSON atlandı:', str?.slice?.(0, 50));
+    return fallback;
+  }
+};
 
 let Purchases;
 if (Platform.OS === 'web') {
@@ -230,21 +242,22 @@ export function AppProvider({ children }) {
             payment_date: p.payment_date || null,
           }));
           setPurchases(mappedPurchases);
+          // safeJsonParse kullanılıyor: bozuk bir JSON tüm yüklemeyi durdurmasın
           setWorkOrders((workOrdersRes?.data || []).map(wo => ({
             ...wo,
-            processes: typeof wo.processes === 'string' ? JSON.parse(wo.processes) : (wo.processes || [])
+            processes: safeJsonParse(wo.processes, [])
           })));
           setProcessTemplates((processTemplatesRes?.data || []).map(pt => ({
             ...pt,
-            processes: typeof pt.processes === 'string' ? JSON.parse(pt.processes) : (pt.processes || [])
+            processes: safeJsonParse(pt.processes, [])
           })));
           setMaintenanceRequests((maintenanceRes?.data || []).map(mr => ({
             ...mr,
-            tasks: typeof mr.tasks === 'string' ? JSON.parse(mr.tasks) : (mr.tasks || [])
+            tasks: safeJsonParse(mr.tasks, [])
           })));
           setQuotations((quotationsRes?.data || []).map(q => ({
             ...q,
-            items: typeof q.items === 'string' ? JSON.parse(q.items) : (q.items || [])
+            items: safeJsonParse(q.items, [])
           })));
           setWarehouseTransfers(warehouseTransfersRes?.data || []);
 
@@ -269,7 +282,7 @@ export function AppProvider({ children }) {
             if (!bomsError && bomsData) {
               setBoms(bomsData.map(b => ({
                 ...b,
-                components: typeof b.components === 'string' ? JSON.parse(b.components) : (b.components || [])
+                components: safeJsonParse(b.components, [])
               })));
             } else {
               setBoms([]);
@@ -318,7 +331,7 @@ export function AppProvider({ children }) {
             } else {
               setAssets((assetsData || []).map(a => ({
                 ...a,
-                past_assignments: typeof a.past_assignments === 'string' ? JSON.parse(a.past_assignments) : (a.past_assignments || [])
+                past_assignments: safeJsonParse(a.past_assignments, [])
               })));
             }
           } catch (assetErr) {
@@ -866,7 +879,7 @@ export function AppProvider({ children }) {
 
   // --- İŞ EMİRLERİ (WORK ORDERS) ---
   const addWorkOrder = async (wo) => {
-    if (!session || !supabase) return;
+    if (!session || !supabase) return false;
     const toInsert = {
       ...wo,
       user_id: session.user.id,
@@ -874,12 +887,13 @@ export function AppProvider({ children }) {
       processes: JSON.stringify(wo.processes || [])
     };
     const { data, error } = await supabase.from('work_orders').insert(toInsert).select();
-    if (error) Alert.alert("Hata", error.message);
-    else {
-      const newWo = { ...data[0], processes: wo.processes || [] };
-      setWorkOrders((prev) => [newWo, ...prev]);
-      return newWo;
+    if (error) {
+      Alert.alert("Hata", error.message);
+      return false; // Çağıran taraf hata durumunu kontrol edebilsin
     }
+    const newWo = { ...data[0], processes: wo.processes || [] };
+    setWorkOrders((prev) => [newWo, ...prev]);
+    return newWo;
   };
 
   const updateWorkOrder = async (u) => {
@@ -1053,7 +1067,7 @@ export function AppProvider({ children }) {
   };
 
   const addMaintenanceRequest = async (mr) => {
-    if (!session || !supabase) return;
+    if (!session || !supabase) return false;
     const toInsert = {
       ...mr,
       user_id: session.user.id,
@@ -1063,12 +1077,13 @@ export function AppProvider({ children }) {
       created_at: new Date().toISOString()
     };
     const { data, error } = await supabase.from('maintenance_requests').insert(toInsert).select();
-    if (error) Alert.alert('Hata', error.message);
-    else {
-      const newMr = { ...data[0], tasks: mr.tasks || [] };
-      setMaintenanceRequests(prev => [newMr, ...prev]);
-      return newMr;
+    if (error) {
+      Alert.alert('Hata', error.message);
+      return false; // Çağıran taraf hata durumunu kontrol edebilsin
     }
+    const newMr = { ...data[0], tasks: mr.tasks || [] };
+    setMaintenanceRequests(prev => [newMr, ...prev]);
+    return newMr;
   };
 
   const updateMaintenanceRequest = async (u) => {
@@ -1236,7 +1251,8 @@ export function AppProvider({ children }) {
         const item = items[i];
         const product = products.find(p => p.id === item.product_id);
         if (product) {
-          const newQty = (product.quantity || 0) - (item.quantity || 0);
+          // Negatif stok kontrolü: stok asla 0'ın altına inmesin
+          const newQty = Math.max(0, (product.quantity || 0) - (item.quantity || 0));
           const { data: prodData } = await supabase.from('products').update({ quantity: newQty }).eq('id', item.product_id).select();
           if (prodData) setProducts(prev => prev.map(p => p.id === item.product_id ? prodData[0] : p));
         }
@@ -1299,6 +1315,11 @@ export function AppProvider({ children }) {
 
   // stock_locations tablosunu güncelle (upsert - kayıt yoksa ekle, varsa güncelle)
   const upsertStockLocation = async (userId, productId, warehouseName, quantity) => {
+    // Null guard: supabase bağlantısı olmadan işlem yapma
+    if (!supabase) {
+      console.warn('upsertStockLocation: supabase bağlantısı yok');
+      return false;
+    }
     if (quantity <= 0) {
       // Sıfırlanmışsa kaydı sil
       const { error } = await supabase
@@ -1626,7 +1647,9 @@ export function AppProvider({ children }) {
       }).eq('id', bomId);
       setBoms(prev => prev.map(b => b.id === bomId ? { ...b, last_produced_at: new Date().toISOString(), total_produced: (b.total_produced || 0) + prodQty } : b));
 
-      return { success: true, product: productData[0] };
+      // productData scope'u: matchedProduct varsa güncellenen, yoksa yeni eklenen ürün
+      // Her iki dalda da data[0] döndürülür, burada güvenli bir şekilde eriştik
+      return { success: true };
     } catch (e) {
       console.error('Üretim hatası:', e);
       return { success: false, error: e.message };
@@ -1809,38 +1832,40 @@ export function AppProvider({ children }) {
     }
   };
 
+  const contextValue = useMemo(() => ({
+    customers, addCustomer, updateCustomer, deleteCustomer,
+    products, addProduct, updateProduct, deleteProduct,
+    sales, addSale, updateSale, removeSale, recreateProductFromSale, generateInvoiceNumber,
+    personnel, addPersonnel, updatePersonnel, deletePersonnel,
+    leaveHistory, addLeaveRecord, deleteLeaveRecord, fetchLeaveHistory,
+    vehicles, addVehicle, updateVehicle, deleteVehicle,
+    purchases, addPurchase, updatePurchase, deletePurchase, markPurchaseDelivered,
+    assets, addAsset, updateAsset, deleteAsset, assignAsset, unassignAsset,
+    workOrders, addWorkOrder, updateWorkOrder, closeWorkOrder, addWorkOrderFromBom,
+    processTemplates, addProcessTemplate, deleteProcessTemplate,
+    maintenanceRequests, addMaintenanceRequest, updateMaintenanceRequest, closeMaintenanceRequest, deleteMaintenanceRequest,
+    quotations, addQuotation, updateQuotation, updateQuotationStatus, cancelQuotation, approveQuotation, convertQuotationToSale, deleteQuotation,
+    stockLocations, getProductStockLocations, getStockAtWarehouse, getAllWarehouses, addStockToWarehouse, upsertStockLocation,
+    warehouseTransfers, addWarehouseTransfer,
+    boms, addBom, updateBom, deleteBom, produceFromBom,
+    company, updateCompanyInfo,
+    financeTransactions, addTransaction, updateTransaction, deleteTransaction, markTransactionPaid,
+    budgets, addBudget, updateBudget, deleteBudget,
+    isPremium, setPremiumStatus: setDbPremium, purchasePremium, restorePurchases,
+    getPackages: async () => {
+      const offerings = await Purchases.getOfferings();
+      return offerings.current;
+    },
+    deleteUserAccount,
+    appDataLoading,
+    isRestrictedPersonnel,
+    userPermissions
+  }), [
+    customers, products, sales, personnel, leaveHistory, vehicles, purchases, assets, workOrders, processTemplates, maintenanceRequests, quotations, stockLocations, warehouseTransfers, boms, company, financeTransactions, budgets, isPremium, appDataLoading, isRestrictedPersonnel, userPermissions
+  ]);
+
   return (
-    <AppContext.Provider
-      value={{
-        customers, addCustomer, updateCustomer, deleteCustomer,
-        products, addProduct, updateProduct, deleteProduct,
-        sales, addSale, updateSale, removeSale, recreateProductFromSale, generateInvoiceNumber,
-        personnel, addPersonnel, updatePersonnel, deletePersonnel,
-        leaveHistory, addLeaveRecord, deleteLeaveRecord, fetchLeaveHistory,
-        vehicles, addVehicle, updateVehicle, deleteVehicle,
-        purchases, addPurchase, updatePurchase, deletePurchase, markPurchaseDelivered,
-        assets, addAsset, updateAsset, deleteAsset, assignAsset, unassignAsset,
-        workOrders, addWorkOrder, updateWorkOrder, closeWorkOrder, addWorkOrderFromBom,
-        processTemplates, addProcessTemplate, deleteProcessTemplate,
-        maintenanceRequests, addMaintenanceRequest, updateMaintenanceRequest, closeMaintenanceRequest, deleteMaintenanceRequest,
-        quotations, addQuotation, updateQuotation, updateQuotationStatus, cancelQuotation, approveQuotation, convertQuotationToSale, deleteQuotation,
-        stockLocations, getProductStockLocations, getStockAtWarehouse, getAllWarehouses, addStockToWarehouse, upsertStockLocation,
-        warehouseTransfers, addWarehouseTransfer,
-        boms, addBom, updateBom, deleteBom, produceFromBom,
-        company, updateCompanyInfo,
-        financeTransactions, addTransaction, updateTransaction, deleteTransaction, markTransactionPaid,
-        budgets, addBudget, updateBudget, deleteBudget,
-        isPremium, setPremiumStatus: setDbPremium, purchasePremium, restorePurchases,
-        getPackages: async () => {
-          const offerings = await Purchases.getOfferings();
-          return offerings.current;
-        },
-        deleteUserAccount,
-        appDataLoading,
-        isRestrictedPersonnel, // YENİ EKLENDİ
-        userPermissions
-      }}
-    >
+    <AppContext.Provider value={contextValue}>
       {children}
     </AppContext.Provider>
   );

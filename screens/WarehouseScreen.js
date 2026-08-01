@@ -244,157 +244,7 @@ export default function WarehouseScreen() {
                             <Text style={styles.emptyText}>Bu depoda ürün bulunamadı.</Text>
                         </View>
                     ) : (
-                        <FlatList
-                            data={filteredProducts}
-                            keyExtractor={i => i.id}
-                            scrollEnabled={false}
-                            renderItem={({ item, index }) => {
-                                const locs = getLocationsForProduct(item);
-                                const totalQty = locs.reduce((s, l) => s + l.quantity, 0) || item.quantity || 0;
-                                const isLow = totalQty > 0 && totalQty <= (item.criticalStockLimit || item.critical_stock_limit || 0);
-                                const isZero = totalQty <= 0;
-                                return (
-                                    <View style={[styles.tableRow, index % 2 === 0 ? styles.tableRowEven : styles.tableRowOdd]}>
-                                        <View style={[styles.tdCell, { flex: 2.5 }]}>
-                                            <Text style={styles.tdBold} numberOfLines={1}>{item.name}</Text>
-                                            {item.brand ? <Text style={styles.tdSub}>{item.brand}</Text> : null}
-                                        </View>
-                                        <View style={[styles.tdCell, { flex: 1.2 }]}>
-                                            <Text style={styles.tdText}>{item.code || '-'}</Text>
-                                        </View>
-                                        <View style={[styles.tdCell, { flex: 1.5 }]}>
-                                            <Text style={styles.tdText} numberOfLines={1}>{item.category || '-'}</Text>
-                                        </View>
-                                        <View style={[styles.tdCell, { flex: 0.8, alignItems: 'flex-end' }]}>
-                                            <Text style={[
-                                                styles.tdQtyText,
-                                                isZero ? { color: '#DC2626' } : isLow ? { color: '#D97706' } : { color: '#059669' }
-                                            ]}>
-                                                {totalQty}
-                                            </Text>
-                                        </View>
-                                        {/* Depo Dağılımı */}
-                                        <View style={[styles.tdCell, { flex: 3 }]}>
-                                            {locs.length === 0 ? (
-                                                <Text style={styles.tdSub}>Depo tanımsız</Text>
-                                            ) : (
-                                                <View style={{ gap: 4 }}>
-                                                    {locs.map((loc, li) => (
-                                                        <View key={loc.id || li} style={styles.excelLocRow}>
-                                                            <View style={styles.excelLocNameWrap}>
-                                                                <View style={styles.excelLocDot} />
-                                                                <Text style={styles.excelLocName} numberOfLines={1}>{loc.warehouse_name}</Text>
-                                                            </View>
-                                                            <View style={styles.excelLocRight}>
-                                                                <Text style={[styles.excelLocQty,
-                                                                    loc.quantity <= 0 ? { color: '#DC2626' } : loc.quantity <= 5 ? { color: '#D97706' } : { color: '#059669' }
-                                                                ]}>
-                                                                    {loc.quantity} <Text style={{ fontSize: 10, color: '#64748B', fontWeight: '500' }}>{item.unit || ''}</Text>
-                                                                </Text>
-                                                            </View>
-                                                        </View>
-                                                    ))}
-                                                </View>
-                                            )}
-                                        </View>
-                                        <View style={[styles.tdCellLast, { flex: 0.8, alignItems: 'center' }]}>
-                                            <TouchableOpacity
-                                                style={styles.cellTransferIconButton}
-                                                onPress={() => openTransferModal(item, null)}
-                                            >
-                                                <Ionicons name="swap-horizontal" size={16} color="#475569" />
-                                            </TouchableOpacity>
-                                        </View>
-                                    </View>
-                                );
-                            }}
-                        />
-                    )}
-                </View>
-            );
-        }
-
-        // Mobil kart görünümü
-        if (filteredProducts.length === 0) {
-            return (
-                <View style={styles.emptyRow}>
-                    <Ionicons name="cube-outline" size={32} color="#CBD5E1" />
-                    <Text style={styles.emptyText}>Bu depoda ürün bulunamadı.</Text>
-                </View>
-            );
-        }
-        return filteredProducts.map((item) => {
-            const locs = getLocationsForProduct(item);
-            const totalQty = locs.reduce((s, l) => s + l.quantity, 0) || item.quantity || 0;
-            const isExpanded = expandedProductId === item.id;
-            return (
-                <View key={item.id} style={styles.mobileCard}>
-                    <TouchableOpacity
-                        style={styles.mobileCardHeader}
-                        onPress={() => setExpandedProductId(isExpanded ? null : item.id)}
-                        activeOpacity={0.7}
-                    >
-                        <View style={{ flex: 1 }}>
-                            <Text style={styles.mobileCardTitle} numberOfLines={1}>{item.name}</Text>
-                            {item.code && <Text style={styles.mobileCardCode}>{item.code}</Text>}
-                        </View>
-                        <View style={styles.mobileTotalBadge}>
-                            <Text style={styles.mobileTotalText}>Toplam: {totalQty}</Text>
-                        </View>
-                        <Ionicons
-                            name={isExpanded ? 'chevron-up' : 'chevron-down'}
-                            size={16} color="#94A3B8" style={{ marginLeft: 8 }}
-                        />
-                    </TouchableOpacity>
-                    {isExpanded && (
-                        <View style={styles.mobileExpandedBody}>
-                            {locs.length === 0 ? (
-                                <Text style={styles.tdSub}>Depo konumu tanımsız</Text>
-                            ) : (
-                                locs.map((loc, li) => (
-                                    <View key={loc.id || li} style={styles.mobileLocRow}>
-                                        <View style={{ flex: 1 }}>
-                                            <Text style={styles.mobileLocName}>{loc.warehouse_name}</Text>
-                                            <Text style={[styles.mobileLocQty, { color: loc.quantity <= 0 ? '#B91C1C' : '#166534' }]}>
-                                                {loc.quantity} {item.unit || 'Adet'}
-                                            </Text>
-                                        </View>
-                                        <TouchableOpacity
-                                            style={styles.mobileTransferBtn}
-                                            onPress={() => openTransferModal(item, loc.warehouse_name)}
-                                        >
-                                            <Ionicons name="swap-horizontal-outline" size={14} color={Colors.primary} />
-                                            <Text style={styles.mobileTransferBtnText}>Transfer</Text>
-                                        </TouchableOpacity>
-                                    </View>
-                                ))
-                            )}
-                        </View>
-                    )}
-                </View>
-            );
-        });
-    };
-
-    const renderHistoryTable = () => {
-        if (isWeb && width > 768) {
-            return (
-                <View style={styles.tableContainer}>
-                    <View style={styles.tableHeader}>
-                        <View style={[styles.thCell, { flex: 1.2 }]}><Text style={styles.thCellText}>Tarih</Text></View>
-                        <View style={[styles.thCell, { flex: 2 }]}><Text style={styles.thCellText}>Ürün</Text></View>
-                        <View style={[styles.thCell, { flex: 0.8, alignItems: 'center' }]}><Text style={styles.thCellText}>Miktar</Text></View>
-                        <View style={[styles.thCell, { flex: 1.8 }]}><Text style={styles.thCellText}>Kaynak Depo</Text></View>
-                        <View style={[styles.thCell, { flex: 1.8 }]}><Text style={styles.thCellText}>Hedef Depo</Text></View>
-                        <View style={[styles.thCellLast, { flex: 2 }]}><Text style={styles.thCellText}>Not</Text></View>
-                    </View>
-                    {warehouseTransfers.length === 0 ? (
-                        <View style={styles.emptyRow}>
-                            <Ionicons name="swap-horizontal-outline" size={32} color="#CBD5E1" />
-                            <Text style={styles.emptyText}>Henüz transfer kaydı bulunmuyor.</Text>
-                        </View>
-                    ) : (
-                        <FlatList
+                        <FlatList initialNumToRender={10} maxToRenderPerBatch={10} windowSize={5} removeClippedSubviews={true}
                             data={warehouseTransfers}
                             keyExtractor={i => i.id}
                             scrollEnabled={false}
@@ -731,9 +581,9 @@ export default function WarehouseScreen() {
 // ── Stiller ───────────────────────────────────────────────────────
 
 const styles = StyleSheet.create({
-    container: { paddingBottom: 60, paddingHorizontal: isWeb ? 0 : 16 },
+    container: { paddingBottom: 60, backgroundColor: '#fff' },
 
-    statsRow: { flexDirection: 'row', gap: 16, marginBottom: 24, marginTop: 10 },
+    statsRow: { flexDirection: 'row', gap: 16, marginBottom: 24, marginTop: 10, paddingHorizontal: 16 },
     statCard: { 
         flex: 1, 
         borderRadius: 16, 
@@ -745,21 +595,21 @@ const styles = StyleSheet.create({
         ...Platform.select({ web: { boxShadow: '0 4px 12px rgba(0,0,0,0.03)' } })
     },
     statIconWrap: { width: 44, height: 44, borderRadius: 12, alignItems: 'center', justifyContent: 'center', marginBottom: 12 },
-    statValue: { fontSize: 28, fontWeight: '800', color: '#0F172A', letterSpacing: -0.5 },
+    statValue: { fontSize: 20, fontWeight: '800', color: '#0F172A', letterSpacing: -0.5 },
     statLabel: { fontSize: 13, color: '#64748B', fontWeight: '600', marginTop: 4 },
 
-    tabRow: { flexDirection: 'row', backgroundColor: '#F1F5F9', borderRadius: 12, padding: 4, marginBottom: 20 },
+    tabRow: { flexDirection: 'row', backgroundColor: '#F1F5F9', borderRadius: 12, padding: 4, marginBottom: 20, marginHorizontal: 16 },
     tab: { flex: 1, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', paddingVertical: 10, borderRadius: 10 },
     tabActive: { backgroundColor: Colors.primary, ...Platform.select({ web: { boxShadow: '0 2px 8px rgba(37,99,235,0.3)' } }) },
     tabText: { fontSize: 14, fontWeight: '600', color: '#64748B' },
     tabTextActive: { color: '#fff' },
 
-    searchRow: { marginBottom: 14 },
-    searchInputWrap: { flexDirection: 'row', alignItems: 'center', backgroundColor: '#fff', borderRadius: 12, borderWidth: 1, borderColor: '#E2E8F0', paddingHorizontal: 14, height: 46 },
+    searchRow: { marginBottom: 14, paddingHorizontal: 16 },
+    searchInputWrap: { flexDirection: 'row', alignItems: 'center', backgroundColor: '#F8FAFC', borderRadius: 10, paddingHorizontal: 14, height: 40 },
     searchInput: { flex: 1, fontSize: 14, color: '#1E293B' },
 
     filterScroll: { marginBottom: 14 },
-    filterScrollContent: { paddingRight: 20, gap: 8 },
+    filterScrollContent: { paddingRight: 20, paddingLeft: 16, gap: 8 },
     filterTab: { flexDirection: 'row', alignItems: 'center', paddingHorizontal: 14, paddingVertical: 8, borderRadius: 20, backgroundColor: '#F1F5F9', borderWidth: 1, borderColor: '#E2E8F0' },
     filterTabActive: { backgroundColor: Colors.primary, borderColor: Colors.primary },
     filterTabText: { fontSize: 13, fontWeight: '600', color: '#64748B', maxWidth: 120 },
@@ -772,7 +622,7 @@ const styles = StyleSheet.create({
     warehouseSummaryBanner: {
         flexDirection: 'row', alignItems: 'center', gap: 8,
         backgroundColor: '#EFF6FF', borderRadius: 10, paddingHorizontal: 14, paddingVertical: 10,
-        marginBottom: 14, borderWidth: 1, borderColor: '#BFDBFE',
+        marginBottom: 14, borderWidth: 1, borderColor: '#BFDBFE', marginHorizontal: 16
     },
     warehouseSummaryText: { fontSize: 13, color: '#1E40AF', flex: 1 },
 
@@ -811,15 +661,15 @@ const styles = StyleSheet.create({
     excelWarehouseBadgeRef: { backgroundColor: '#FEE2E2', paddingHorizontal: 8, paddingVertical: 3, borderRadius: 4, alignSelf: 'flex-start' },
     excelWarehouseBadgeText: { fontSize: 12, fontWeight: '600' },
 
-    // Mobil kart
-    mobileCard: { backgroundColor: '#fff', borderRadius: 12, borderWidth: 1, borderColor: '#E2E8F0', marginBottom: 10, overflow: 'hidden' },
-    mobileCardHeader: { flexDirection: 'row', alignItems: 'center', padding: 14, borderBottomWidth: 1, borderBottomColor: '#F1F5F9' },
-    mobileCardTitle: { fontSize: 15, fontWeight: '700', color: '#1E293B' },
+    // Mobil kart (Edge-to-Edge)
+    mobileCard: { backgroundColor: '#fff', borderBottomWidth: StyleSheet.hairlineWidth, borderBottomColor: '#E2E8F0' },
+    mobileCardHeader: { flexDirection: 'row', alignItems: 'center', padding: 16 },
+    mobileCardTitle: { fontSize: 16, fontWeight: '600', color: '#1E293B' },
     mobileCardCode: { fontSize: 12, color: '#94A3B8', marginTop: 2 },
     mobileTotalBadge: { backgroundColor: '#EFF6FF', paddingHorizontal: 10, paddingVertical: 4, borderRadius: 10 },
     mobileTotalText: { fontSize: 12, fontWeight: '700', color: Colors.primary },
-    mobileExpandedBody: { padding: 14, gap: 10 },
-    mobileLocRow: { flexDirection: 'row', alignItems: 'center', backgroundColor: '#F8FAFC', borderRadius: 10, padding: 12, borderWidth: 1, borderColor: '#E2E8F0' },
+    mobileExpandedBody: { paddingHorizontal: 16, paddingBottom: 16, gap: 10 },
+    mobileLocRow: { flexDirection: 'row', alignItems: 'center', backgroundColor: '#F8FAFC', borderRadius: 10, padding: 12 },
     mobileLocName: { fontSize: 14, fontWeight: '600', color: '#1E293B' },
     mobileLocQty: { fontSize: 13, fontWeight: '700', marginTop: 2 },
     mobileTransferBtn: { flexDirection: 'row', alignItems: 'center', backgroundColor: '#EFF6FF', paddingHorizontal: 10, paddingVertical: 6, borderRadius: 8, gap: 5 },

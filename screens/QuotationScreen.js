@@ -1,5 +1,5 @@
 import React, { useState, useContext, useMemo } from 'react';
-import { View, Text, StyleSheet, FlatList, TouchableOpacity, Modal, TextInput, ScrollView, Alert, Platform, Dimensions } from 'react-native';
+import { View, Text, StyleSheet, FlatList, TouchableOpacity, Modal, TextInput, ScrollView, Alert, Platform, Dimensions, KeyboardAvoidingView } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { AppContext } from '../AppContext';
 import { Colors } from '../Theme';
@@ -439,16 +439,7 @@ export default function QuotationScreen() {
                         <Text style={[styles.webHeaderCell, { flex: 1.4, textAlign: 'center' }]}>DURUM</Text>
                         <Text style={[styles.webHeaderCell, { flex: 1.5, textAlign: 'right' }]}>İŞLEMLER</Text>
                     </View>
-                    <FlatList
-                        data={filteredQuotations}
-                        keyExtractor={i => i.id.toString()}
-                        renderItem={({ item, index }) => <WebTableRow item={item} index={index} />}
-                        contentContainerStyle={{ paddingBottom: 40 }}
-                        ListEmptyComponent={<View style={styles.empty}><Text style={styles.emptyText}>Teklif bulunamadı.</Text></View>}
-                    />
-                </View>
-            ) : (
-                <FlatList
+                    <FlatList initialNumToRender={10} maxToRenderPerBatch={10} windowSize={5} removeClippedSubviews={true}
                     data={filteredQuotations}
                     keyExtractor={i => i.id.toString()}
                     contentContainerStyle={{ padding: 16, paddingBottom: 80 }}
@@ -458,8 +449,8 @@ export default function QuotationScreen() {
             )}
 
             {/* ===== YENİ/DÜZENLE TEKLİF MODALI ===== */}
-            <Modal visible={modalVisible} animationType={isWeb ? 'fade' : 'slide'} transparent>
-                <View style={styles.overlay}>
+            <Modal visible={modalVisible} animationType={isWeb ? 'fade' : 'slide'} transparent={isWeb} presentationStyle={isWeb ? 'overFullScreen' : 'pageSheet'}>
+                <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : 'height'} style={styles.overlay}>
                     <View style={[styles.modalBox, { maxWidth: 900 }]}>
                         <View style={styles.modalHead}>
                             <View>
@@ -641,11 +632,11 @@ export default function QuotationScreen() {
                             </TouchableOpacity>
                         </View>
                     </View>
-                </View>
+                </KeyboardAvoidingView>
             </Modal>
 
             {/* ===== DETAY MODALI ===== */}
-            <Modal visible={detailModalVisible} animationType={isWeb ? 'fade' : 'slide'} transparent>
+            <Modal visible={detailModalVisible} animationType={isWeb ? 'fade' : 'slide'} transparent={isWeb} presentationStyle={isWeb ? 'overFullScreen' : 'pageSheet'}>
                 <View style={styles.overlay}>
                     <View style={[styles.modalBox, { maxWidth: 800 }]}>
                         <View style={styles.modalHead}>
@@ -834,8 +825,8 @@ const styles = StyleSheet.create({
     emptyText: { marginTop: 12, fontSize: 15, color: '#94A3B8', textAlign: 'center' },
 
     // Modal
-    overlay: { flex: 1, backgroundColor: 'rgba(0,0,0,0.5)', justifyContent: 'center', alignItems: 'center' },
-    modalBox: { backgroundColor: '#fff', width: '94%', maxHeight: '92%', borderRadius: 20, overflow: 'hidden', ...Platform.select({ web: { boxShadow: '0 20px 60px rgba(0,0,0,0.25)' } }) },
+    overlay: { flex: 1, backgroundColor: isWeb ? 'rgba(0,0,0,0.5)' : '#fff', justifyContent: isWeb ? 'center' : 'flex-start', alignItems: isWeb ? 'center' : 'stretch' },
+    modalBox: { backgroundColor: '#fff', width: isWeb ? '94%' : '100%', maxHeight: isWeb ? '92%' : '100%', flex: isWeb ? undefined : 1, borderRadius: isWeb ? 20 : 0, overflow: 'hidden', ...Platform.select({ web: { boxShadow: '0 20px 60px rgba(0,0,0,0.25)' } }) },
     modalHead: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', padding: 24, paddingBottom: 16, borderBottomWidth: 1, borderBottomColor: '#F1F5F9' },
     modalTitle: { fontSize: 20, fontWeight: '800', color: '#0F172A' },
     modalSub: { fontSize: 13, color: Colors.iosBlue, fontWeight: '700', marginTop: 2 },

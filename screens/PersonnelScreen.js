@@ -1,4 +1,4 @@
-import React, { useContext, useState, useMemo } from "react";
+import React, { useContext, useState, useMemo, useEffect } from "react";
 import {
   View, Text, FlatList, TouchableOpacity, TextInput, Alert,
   ScrollView, StyleSheet, Modal, KeyboardAvoidingView, Platform,
@@ -38,9 +38,16 @@ export default function PersonnelScreen({ navigation }) {
   const [activeTab, setActiveTab] = useState("info");
   const [viewMode, setViewMode] = useState(Platform.OS === 'web' ? "table" : "card");
   const [searchQuery, setSearchQuery] = useState("");
+  const [debouncedSearch, setDebouncedSearch] = useState(""); // Performans: 200ms debounce
   const [sortAsc, setSortAsc] = useState(true);
   const [deptFilter, setDeptFilter] = useState("ALL");
   const [statusFilter, setStatusFilter] = useState("ALL");
+
+  // Arama debounce: kullanıcı yazmayı bırakınca 200ms sonra filtrele
+  useEffect(() => {
+    const timer = setTimeout(() => setDebouncedSearch(searchQuery), 200);
+    return () => clearTimeout(timer);
+  }, [searchQuery]);
 
   const [personnelModalVisible, setPersonnelModalVisible] = useState(false);
   const [taskModalVisible, setTaskModalVisible] = useState(false);
@@ -58,15 +65,15 @@ export default function PersonnelScreen({ navigation }) {
 
   const filteredPersonnel = useMemo(() => {
     let result = [...personnel];
-    if (searchQuery) {
-      const q = searchQuery.toLowerCase();
+    if (debouncedSearch) {
+      const q = debouncedSearch.toLowerCase();
       result = result.filter(p => p.name.toLowerCase().includes(q) || (p.role && p.role.toLowerCase().includes(q)) || (p.department && p.department.toLowerCase().includes(q)));
     }
     if (deptFilter !== "ALL") result = result.filter(p => p.department === deptFilter);
     if (statusFilter !== "ALL") result = result.filter(p => (p.status || "ACTIVE") === statusFilter);
     result.sort((a, b) => sortAsc ? a.name.localeCompare(b.name) : b.name.localeCompare(a.name));
     return result;
-  }, [personnel, searchQuery, sortAsc, deptFilter, statusFilter]);
+  }, [personnel, debouncedSearch, sortAsc, deptFilter, statusFilter]);
 
   const kpi = useMemo(() => ({
     total: personnel.length,
@@ -467,7 +474,7 @@ export default function PersonnelScreen({ navigation }) {
   );
 
   const renderPersonnelModal = () => (
-    <Modal visible={personnelModalVisible} animationType="slide" transparent>
+    <Modal visible={personnelModalVisible} animationType={Platform.OS === 'web' ? 'fade' : 'slide'} transparent={Platform.OS === 'web'} presentationStyle={Platform.OS === 'web' ? 'overFullScreen' : 'pageSheet'}>
       <KeyboardAvoidingView behavior={Platform.OS === "ios" ? "padding" : "height"} style={styles.modalContainer}>
         <View style={styles.modalContent}>
           <View style={styles.modalHeader}>
@@ -516,7 +523,7 @@ export default function PersonnelScreen({ navigation }) {
   );
 
   const renderTaskModal = () => (
-    <Modal visible={taskModalVisible} animationType="slide" transparent>
+    <Modal visible={taskModalVisible} animationType={Platform.OS === 'web' ? 'fade' : 'slide'} transparent={Platform.OS === 'web'} presentationStyle={Platform.OS === 'web' ? 'overFullScreen' : 'pageSheet'}>
       <KeyboardAvoidingView behavior={Platform.OS === "ios" ? "padding" : "height"} style={styles.modalContainer}>
         <View style={styles.modalContent}>
           <View style={styles.modalHeader}>
@@ -549,7 +556,7 @@ export default function PersonnelScreen({ navigation }) {
   );
 
   const renderLeaveModal = () => (
-    <Modal visible={leaveModalVisible} animationType="slide" transparent>
+    <Modal visible={leaveModalVisible} animationType={Platform.OS === 'web' ? 'fade' : 'slide'} transparent={Platform.OS === 'web'} presentationStyle={Platform.OS === 'web' ? 'overFullScreen' : 'pageSheet'}>
       <KeyboardAvoidingView behavior={Platform.OS === "ios" ? "padding" : "height"} style={styles.modalContainer}>
         <View style={styles.modalContent}>
           <View style={styles.modalHeader}>
@@ -665,8 +672,8 @@ const styles = StyleSheet.create({
   // Empty
   emptyText: { textAlign: "center", color: "#9ca3af", marginTop: 24, fontSize: 15 },
   // Modal
-  modalContainer: { flex: 1, justifyContent: "flex-end", backgroundColor: "rgba(0,0,0,0.5)" },
-  modalContent: { backgroundColor: "#fff", borderTopLeftRadius: 24, borderTopRightRadius: 24, padding: 24, maxHeight: "90%" },
+  modalContainer: { flex: 1, justifyContent: Platform.OS === 'web' ? "center" : "flex-start", backgroundColor: Platform.OS === 'web' ? "rgba(0,0,0,0.5)" : "#fff" },
+  modalContent: { backgroundColor: "#fff", borderRadius: Platform.OS === 'web' ? 24 : 0, padding: 24, flex: Platform.OS === 'web' ? undefined : 1, maxHeight: Platform.OS === 'web' ? "90%" : "100%", width: Platform.OS === 'web' ? '90%' : '100%', maxWidth: 700, alignSelf: 'center' },
   modalHeader: { flexDirection: "row", justifyContent: "space-between", alignItems: "center", marginBottom: 16 },
   modalTitle: { fontSize: 20, fontWeight: "800", color: "#1f2937" },
   inputLabel: { fontSize: 13, fontWeight: "600", color: "#374151", marginBottom: 6, marginTop: 12 },

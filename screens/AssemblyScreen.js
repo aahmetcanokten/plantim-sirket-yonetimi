@@ -880,7 +880,7 @@ function NativeAssemblyScreen({ navigation }) {
 
 // ─── NATIVE STİLLERİ ─────────────────────────────────────────────────────────
 const ns = StyleSheet.create({
-    container: { flex: 1, backgroundColor: "#fff", borderRadius: 16, overflow: "hidden", ...Platform.select({ web: { minHeight: "80vh", borderWidth: 1, borderColor: "#E2E8F0" } }) },
+    container: { flex: 1, backgroundColor: "#fff", overflow: "hidden", ...Platform.select({ web: { minHeight: "80vh", borderWidth: 1, borderColor: "#E2E8F0", borderRadius: 16 } }) },
     searchBox: { flexDirection: "row", alignItems: "center", backgroundColor: "#F2F5F9", margin: 16, marginBottom: 8, paddingHorizontal: 12, borderRadius: 10, height: 44 },
     searchInput: { flex: 1, marginLeft: 8, fontSize: 15, color: Colors.textPrimary },
     stepNote: { marginHorizontal: 16, marginBottom: 4, fontSize: 12, color: Colors.secondary, fontStyle: "italic" },
@@ -898,7 +898,7 @@ const ns = StyleSheet.create({
     empty: { textAlign: "center", marginTop: 60, color: Colors.secondary },
     costBox: { backgroundColor: "#F0F9FF", padding: 20, borderRadius: 16, marginBottom: 20, borderWidth: 1, borderColor: "#BAE6FD", alignItems: "center" },
     costTitle: { fontSize: 14, color: Colors.iosBlue, fontWeight: "600" },
-    costValue: { fontSize: 28, fontWeight: "900", color: Colors.iosBlue },
+    costValue: { fontSize: 22, fontWeight: "900", color: Colors.iosBlue },
     label: { fontSize: 14, fontWeight: "700", color: Colors.textPrimary, marginBottom: 8, marginTop: 14 },
     input: { borderWidth: 1, borderColor: "#E2E8F0", borderRadius: 10, padding: 12, fontSize: 15, backgroundColor: "#fff" },
     actionRow: { flexDirection: "row", marginTop: 32, gap: 12 },

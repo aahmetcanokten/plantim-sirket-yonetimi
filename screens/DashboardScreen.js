@@ -1,7 +1,7 @@
 import React, { useContext, useMemo } from 'react';
 import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Platform } from 'react-native';
 import { AppContext } from '../AppContext';
-import { Colors } from '../Theme';
+import { Colors, IOSShadow } from '../Theme';
 import { Ionicons } from '@expo/vector-icons';
 import { useNavigation } from '@react-navigation/native';
 import WebContainer from '../components/WebContainer';
@@ -203,7 +203,9 @@ export default function DashboardScreen() {
     } = useContext(AppContext);
 
     const navigation = useNavigation();
-    const today = new Date();
+    // Performans: today her render'da yeniden hesaplanmıyacak
+    // useMemo ile yalnızca bileşen mount edildiğinde oluşturulur
+    const today = useMemo(() => new Date(), []);
     const isMobileWeb = Platform.OS !== 'web' || (typeof window !== 'undefined' && window.innerWidth <= 1024);
 
     // ── KPI Hesaplamaları ─────────────────────────────────────
@@ -735,12 +737,13 @@ const styles = StyleSheet.create({
         justifyContent: 'space-between',
         alignItems: 'center',
         marginBottom: 24,
-    },
     welcomeTitle: {
-        fontSize: 24,
+        fontSize: 20,
         fontWeight: '800',
         color: PALETTE.text,
         letterSpacing: -0.5,
+        flexShrink: 1, // Uzun şirket isimlerinin sığması için
+        marginRight: 8,
     },
     welcomeSub: {
         fontSize: 13,
@@ -771,12 +774,15 @@ const styles = StyleSheet.create({
     },
     kpiCard: {
         flex: 1,
-        minWidth: 140,
+        minWidth: 130, // 140'tan düşürüldü ki iPhone SE/Mini'de yan yana sığsın
         backgroundColor: PALETTE.cardBg,
         borderRadius: 16,
-        padding: 16,
+        padding: 14,
         borderTopWidth: 3,
-        boxShadow: '0 2px 8px rgba(0,0,0,0.06)',
+        ...Platform.select({
+            web: { boxShadow: '0 2px 8px rgba(0,0,0,0.06)' },
+            default: IOSShadow,
+        }),
     },
     kpiIconWrap: {
         width: 36,
@@ -795,7 +801,7 @@ const styles = StyleSheet.create({
         marginBottom: 6,
     },
     kpiValue: {
-        fontSize: 22,
+        fontSize: 18,
         fontWeight: '900',
         letterSpacing: -0.5,
     },
@@ -816,7 +822,10 @@ const styles = StyleSheet.create({
         backgroundColor: PALETTE.cardBg,
         borderRadius: 16,
         padding: 16,
-        boxShadow: '0 2px 8px rgba(0,0,0,0.06)',
+        ...Platform.select({
+            web: { boxShadow: '0 2px 8px rgba(0,0,0,0.06)' },
+            default: IOSShadow,
+        }),
     },
 
     // Donut
@@ -873,7 +882,10 @@ const styles = StyleSheet.create({
         backgroundColor: PALETTE.cardBg,
         borderRadius: 16,
         padding: 16,
-        boxShadow: '0 2px 8px rgba(0,0,0,0.06)',
+        ...Platform.select({
+            web: { boxShadow: '0 2px 8px rgba(0,0,0,0.06)' },
+            default: IOSShadow,
+        }),
     },
     alertRow: {
         flexDirection: 'row',
@@ -922,7 +934,10 @@ const styles = StyleSheet.create({
         backgroundColor: PALETTE.cardBg,
         borderRadius: 16,
         padding: 16,
-        boxShadow: '0 2px 8px rgba(0,0,0,0.06)',
+        ...Platform.select({
+            web: { boxShadow: '0 2px 8px rgba(0,0,0,0.06)' },
+            default: IOSShadow,
+        }),
     },
 
     // Personel Grid
@@ -940,7 +955,7 @@ const styles = StyleSheet.create({
         alignItems: 'center',
     },
     personnelStatVal: {
-        fontSize: 24,
+        fontSize: 20,
         fontWeight: '900',
     },
     personnelStatLabel: {
@@ -967,7 +982,7 @@ const styles = StyleSheet.create({
         gap: 4,
     },
     summaryVal: {
-        fontSize: 22,
+        fontSize: 18,
         fontWeight: '900',
     },
     summaryLabel: {

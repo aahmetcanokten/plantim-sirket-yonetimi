@@ -10,6 +10,7 @@ import {
     Platform,
     Dimensions,
     ScrollView,
+    KeyboardAvoidingView,
 } from "react-native";
 import { useTranslation } from "react-i18next";
 import ImmersiveLayout from "../components/ImmersiveLayout";
@@ -19,7 +20,6 @@ import PurchaseItem from "../components/PurchaseItem";
 import SettingsButton from "../components/SettingsButton";
 import { Colors } from "../Theme";
 import { Ionicons } from "@expo/vector-icons";
-import KeyboardSafeView from "../components/KeyboardSafeView";
 import { useToast } from "../components/ToastProvider";
 
 const isWeb = Platform.OS === 'web';
@@ -365,32 +365,7 @@ export default function PurchasesScreen() {
                     </View>
 
                     {/* Tablo Satırları */}
-                    <FlatList
-                        data={filteredPurchases}
-                        keyExtractor={(i) => i.id}
-                        renderItem={({ item, index }) => <WebTableRow item={item} index={index} />}
-                        contentContainerStyle={{ paddingBottom: 40 }}
-                        ListEmptyComponent={
-                            <View style={styles.emptyState}>
-                                <Ionicons name="cart-outline" size={52} color="#CBD5E1" />
-                                <Text style={styles.emptyStateText}>
-                                    {filterStatus === "Açık" ? t('no_pending_orders') :
-                                        filterStatus === "Teslim" ? t('no_delivered_orders') :
-                                            t('no_purchase_orders')}
-                                </Text>
-                                <TouchableOpacity
-                                    style={styles.emptyAddBtn}
-                                    onPress={() => { setEditing(null); setAddVisible(true); }}
-                                >
-                                    <Text style={styles.emptyAddBtnText}>{t('new_order')}</Text>
-                                </TouchableOpacity>
-                            </View>
-                        }
-                    />
-                </View>
-            ) : (
-                /* Mobil: Kart Görünümü */
-                <FlatList
+                    <FlatList initialNumToRender={10} maxToRenderPerBatch={10} windowSize={5} removeClippedSubviews={true}
                     data={filteredPurchases}
                     keyExtractor={(i) => i.id}
                     contentContainerStyle={styles.listContent}
@@ -425,9 +400,8 @@ export default function PurchasesScreen() {
                     setEditing(null);
                 }}
             >
-                <KeyboardSafeView offsetIOS={0} disableScrollView={isWeb}>
-                    <View style={styles.modalOverlay}>
-                        <View style={styles.modalContent}>
+                <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : 'height'} style={styles.modalOverlay}>
+                    <View style={styles.modalContent}>
                             <View style={styles.modalHeader}>
                                 <View>
                                     <Text style={styles.modalTitle}>
@@ -457,8 +431,7 @@ export default function PurchasesScreen() {
                                 }}
                             />
                         </View>
-                    </View>
-                </KeyboardSafeView>
+                </KeyboardAvoidingView>
             </Modal>
         </ImmersiveLayout>
     );

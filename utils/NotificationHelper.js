@@ -3,13 +3,16 @@ import { Platform, Alert } from 'react-native';
 import i18n from '../i18n';
 
 // Bildirimlerin nasıl görüneceğini yapılandır (Uygulama açıkken bile)
-Notifications.setNotificationHandler({
-    handleNotification: async () => ({
-        shouldShowAlert: true,
-        shouldPlaySound: true,
-        shouldSetBadge: false,
-    }),
-});
+// Web platformunda expo-notifications tam destek vermez, guard ekle
+if (Platform.OS !== 'web') {
+    Notifications.setNotificationHandler({
+        handleNotification: async () => ({
+            shouldShowAlert: true,
+            shouldPlaySound: true,
+            shouldSetBadge: false,
+        }),
+    });
+}
 
 export async function registerForPushNotificationsAsync() {
     let token;

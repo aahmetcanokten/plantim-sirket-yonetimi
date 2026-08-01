@@ -150,8 +150,11 @@ export default function App() {
       try {
         const savedLanguage = await AsyncStorage.getItem('user-language');
         if (savedLanguage) {
-          const i18nInstance = require('./i18n').default;
-          i18nInstance.changeLanguage(savedLanguage);
+          // i18n zaten import edildi — tekrar require etmeye gerek yok
+          const i18nInstance = require('./i18n').default || require('./i18n');
+          if (i18nInstance && typeof i18nInstance.changeLanguage === 'function') {
+            i18nInstance.changeLanguage(savedLanguage);
+          }
         }
       } catch (e) {
         console.error("Failed to load language", e);

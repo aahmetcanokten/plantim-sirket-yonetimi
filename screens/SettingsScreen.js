@@ -401,7 +401,33 @@ export default function SettingsScreen({ navigation }) {
 
 
 
-        <Text style={styles.sectionHeader}>{t('management')}</Text>
+        <Text style={styles.sectionHeader}>Üretim ve Lojistik</Text>
+
+        <MenuLinkCard
+          title="Montaj ve Üretim"
+          subtitle="Reçeteli üretim ve montaj bandı"
+          icon="build"
+          color="#3B82F6"
+          onPress={() => navigation.navigate("AssemblyScreen")}
+        />
+
+        <MenuLinkCard
+          title="MRP (Malzeme İhtiyaç)"
+          subtitle="İhtiyaç planlama ve stok tedarik"
+          icon="layers"
+          color="#10B981"
+          onPress={() => navigation.navigate("MrpScreen")}
+        />
+
+        <MenuLinkCard
+          title="Depo Yönetimi"
+          subtitle="Depo transfer ve sevkiyat işlemleri"
+          icon="swap-horizontal"
+          color="#F59E0B"
+          onPress={() => navigation.navigate("WarehouseScreen")}
+        />
+
+        <Text style={[styles.sectionHeader, { marginTop: 16 }]}>{t('management')}</Text>
 
         <MenuLinkCard
           title={t('personnel_management')}

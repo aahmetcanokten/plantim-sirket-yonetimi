@@ -116,13 +116,10 @@ export default function PurchaseItem({ item, onDeliver, onEdit, onDelete }) {
 const styles = StyleSheet.create({
     container: {
         backgroundColor: "#fff",
-        borderRadius: 16, // Daha yuvarlak köşeler
-        padding: 12,
-        marginBottom: 12,
+        padding: 16,
         flexDirection: "row",
-        ...IOSShadow, // Gölge efekti
-        borderWidth: 1,
-        borderColor: '#F1F5F9',
+        borderBottomWidth: StyleSheet.hairlineWidth,
+        borderBottomColor: '#E2E8F0',
     },
     overdueContainer: {
         borderColor: Colors.critical,

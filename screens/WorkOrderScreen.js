@@ -1,5 +1,6 @@
 import React, { useState, useContext, useMemo } from 'react';
 import { View, Text, StyleSheet, FlatList, TouchableOpacity, Modal, TextInput, ScrollView, Alert, Platform } from 'react-native';
+import { useNavigation } from '@react-navigation/native';
 import { Ionicons } from '@expo/vector-icons';
 import { AppContext } from '../AppContext';
 import { Colors } from '../Theme';
@@ -8,6 +9,7 @@ import { useTranslation } from 'react-i18next';
 const isWeb = Platform.OS === 'web';
 
 export default function WorkOrderScreen() {
+    const navigation = useNavigation();
     const { t } = useTranslation();
     const { workOrders, addWorkOrder, updateWorkOrder, closeWorkOrder, products, processTemplates, addProcessTemplate, boms } = useContext(AppContext);
 
@@ -40,6 +42,12 @@ export default function WorkOrderScreen() {
     const [sortKey, setSortKey] = useState('date_desc'); // date_desc, date_asc, name_az, processes_desc
 
     // --- Stats ---
+    // Performans: productsMap ile O(1) ürün lookup (eskiden O(n) find())
+    const productsMap = useMemo(() =>
+        new Map((products || []).map(p => [p.id, p])),
+        [products]
+    );
+
     const stats = useMemo(() => {
         if (!Array.isArray(workOrders)) return { open: 0, totalProcesses: 0, avgCompletion: 0 };
         const open = workOrders.filter(w => w.status === 'OPEN');
@@ -55,7 +63,8 @@ export default function WorkOrderScreen() {
         let list = workOrders.filter(wo => {
             if (wo.status !== 'OPEN') return false;
             if (searchQuery) {
-                const product = products.find(p => p.id === wo.product_id);
+                // O(1) lookup — eskiden O(n) products.find() çağrısıydı
+                const product = productsMap.get(wo.product_id);
                 const pName = (product?.name || '').toLowerCase();
                 const woNum = (wo.wo_number || '').toLowerCase();
                 return pName.includes(searchQuery.toLowerCase()) || woNum.includes(searchQuery.toLowerCase());
@@ -65,14 +74,15 @@ export default function WorkOrderScreen() {
         switch (sortKey) {
             case 'date_asc': return [...list].sort((a, b) => new Date(a.created_at) - new Date(b.created_at));
             case 'name_az': return [...list].sort((a, b) => {
-                const pA = products.find(p => p.id === a.product_id)?.name || '';
-                const pB = products.find(p => p.id === b.product_id)?.name || '';
+                // O(1) lookup
+                const pA = productsMap.get(a.product_id)?.name || '';
+                const pB = productsMap.get(b.product_id)?.name || '';
                 return pA.localeCompare(pB);
             });
             case 'processes_desc': return [...list].sort((a, b) => (b.processes?.length || 0) - (a.processes?.length || 0));
             default: return [...list].sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
         }
-    }, [workOrders, searchQuery, sortKey, products]);
+    }, [workOrders, searchQuery, sortKey, productsMap]);
 
     // --- Helpers ---
     const getProcessCompletion = (wo) => {
@@ -258,10 +268,16 @@ export default function WorkOrderScreen() {
                     <Text style={styles.pageTitle}>Aktif İş Emirleri</Text>
                     <Text style={styles.pageSubtitle}>{stats.open} açık iş emri • Ortalama tamamlanma %{stats.avgCompletion}</Text>
                 </View>
-                <TouchableOpacity style={styles.newBtn} onPress={() => handleOpenModal()}>
-                    <Ionicons name="add" size={18} color="#fff" />
-                    <Text style={styles.newBtnText}>Yeni İş Emri</Text>
-                </TouchableOpacity>
+                <View style={{ flexDirection: 'row', gap: 8 }}>
+                    <TouchableOpacity style={[styles.newBtn, { backgroundColor: '#F1F5F9' }]} onPress={() => navigation.navigate('WorkOrderArchiveScreen')}>
+                        <Ionicons name="archive-outline" size={18} color="#64748B" />
+                        {isWeb && <Text style={[styles.newBtnText, { color: '#64748B' }]}>Arşiv</Text>}
+                    </TouchableOpacity>
+                    <TouchableOpacity style={styles.newBtn} onPress={() => handleOpenModal()}>
+                        <Ionicons name="add" size={18} color="#fff" />
+                        <Text style={styles.newBtnText}>Yeni İş Emri</Text>
+                    </TouchableOpacity>
+                </View>
             </View>
 
             {/* Stats */}
@@ -307,24 +323,7 @@ export default function WorkOrderScreen() {
                         <Text style={[styles.webHeaderCell, { flex: 1, textAlign: 'center' }]}>DURUM</Text>
                         <Text style={[styles.webHeaderCell, { flex: 1.4, textAlign: 'right' }]}>İŞLEMLER</Text>
                     </View>
-                    <FlatList
-                        data={activeWorkOrders}
-                        keyExtractor={i => i.id.toString()}
-                        renderItem={({ item, index }) => <WebTableRow item={item} index={index} />}
-                        contentContainerStyle={{ paddingBottom: 40 }}
-                        ListEmptyComponent={
-                            <View style={styles.empty}>
-                                <Ionicons name="construct-outline" size={52} color="#CBD5E1" />
-                                <Text style={styles.emptyText}>Aktif iş emri bulunamadı.</Text>
-                                <TouchableOpacity style={styles.emptyBtn} onPress={() => handleOpenModal()}>
-                                    <Text style={styles.emptyBtnText}>Yeni İş Emri Oluştur</Text>
-                                </TouchableOpacity>
-                            </View>
-                        }
-                    />
-                </View>
-            ) : (
-                <FlatList
+                    <FlatList initialNumToRender={10} maxToRenderPerBatch={10} windowSize={5} removeClippedSubviews={true}
                     data={activeWorkOrders}
                     keyExtractor={i => i.id.toString()}
                     contentContainerStyle={{ padding: 16, paddingBottom: 80 }}
@@ -334,7 +333,7 @@ export default function WorkOrderScreen() {
             )}
 
             {/* === YENİ İŞ EMRİ MODALI === */}
-            <Modal visible={modalVisible} animationType={isWeb ? 'fade' : 'slide'} transparent>
+            <Modal visible={modalVisible} animationType={isWeb ? 'fade' : 'slide'} transparent={isWeb} presentationStyle={isWeb ? 'overFullScreen' : 'pageSheet'}>
                 <View style={styles.overlay}>
                     <View style={[styles.modalBox, { maxWidth: 860 }]}>
                         <View style={styles.modalHead}>
@@ -527,7 +526,7 @@ export default function WorkOrderScreen() {
             </Modal>
 
             {/* === KAPATMA MODALI === */}
-            <Modal visible={closeModalVisible} animationType="fade" transparent>
+            <Modal visible={closeModalVisible} animationType={isWeb ? 'fade' : 'slide'} transparent={isWeb} presentationStyle={isWeb ? 'overFullScreen' : 'pageSheet'}>
                 <View style={styles.overlay}>
                     <View style={[styles.modalBox, { maxWidth: 680 }]}>
                         <View style={styles.modalHead}>
@@ -616,7 +615,7 @@ export default function WorkOrderScreen() {
             </Modal>
 
             {/* Şablon Modal */}
-            <Modal visible={templateModalVisible} transparent animationType="fade">
+            <Modal visible={templateModalVisible} animationType={isWeb ? 'fade' : 'slide'} transparent={isWeb} presentationStyle={isWeb ? 'overFullScreen' : 'pageSheet'}>
                 <View style={styles.overlay}>
                     <View style={[styles.modalBox, { maxWidth: 400 }]}>
                         <View style={styles.modalHead}>
@@ -713,8 +712,8 @@ const styles = StyleSheet.create({
     emptyBtnText: { color: '#fff', fontWeight: '700' },
 
     // Modal
-    overlay: { flex: 1, backgroundColor: 'rgba(0,0,0,0.5)', justifyContent: 'center', alignItems: 'center' },
-    modalBox: { backgroundColor: '#fff', width: '94%', maxHeight: '92%', borderRadius: 20, overflow: 'hidden', ...Platform.select({ web: { boxShadow: '0 20px 60px rgba(0,0,0,0.25)' } }) },
+    overlay: { flex: 1, backgroundColor: isWeb ? 'rgba(0,0,0,0.5)' : '#fff', justifyContent: isWeb ? 'center' : 'flex-start', alignItems: isWeb ? 'center' : 'stretch' },
+    modalBox: { backgroundColor: '#fff', width: isWeb ? '94%' : '100%', maxHeight: isWeb ? '92%' : '100%', flex: isWeb ? undefined : 1, borderRadius: isWeb ? 20 : 0, overflow: 'hidden', ...Platform.select({ web: { boxShadow: '0 20px 60px rgba(0,0,0,0.25)' } }) },
     modalHead: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', padding: 24, paddingBottom: 16, borderBottomWidth: 1, borderBottomColor: '#F1F5F9' },
     modalTitle: { fontSize: 20, fontWeight: '800', color: '#0F172A' },
     modalSub: { fontSize: 13, color: Colors.iosBlue, fontWeight: '700', marginTop: 2 },

@@ -387,7 +387,7 @@ export default function TaskListScreen({ navigation }) {
       ? Math.round((detailTask.actualHours / detailTask.estimatedHours) * 100) : null;
 
     return (
-      <Modal visible={detailModalVisible} animationType="slide" transparent onRequestClose={() => setDetailModalVisible(false)}>
+      <Modal visible={detailModalVisible} animationType={Platform.OS === 'web' ? 'fade' : 'slide'} transparent={Platform.OS === 'web'} presentationStyle={Platform.OS === 'web' ? 'overFullScreen' : 'pageSheet'} onRequestClose={() => setDetailModalVisible(false)}>
         <View style={styles.detailOverlay}>
           <View style={styles.detailSheet}>
             <View style={{ flexDirection: "row", justifyContent: "space-between", alignItems: "center", marginBottom: 12 }}>
@@ -484,7 +484,7 @@ export default function TaskListScreen({ navigation }) {
   );
 
   const renderTaskFormModal = () => (
-    <Modal visible={taskModalVisible} animationType="slide" transparent onRequestClose={() => setTaskModalVisible(false)}>
+    <Modal visible={taskModalVisible} animationType={Platform.OS === 'web' ? 'fade' : 'slide'} transparent={Platform.OS === 'web'} presentationStyle={Platform.OS === 'web' ? 'overFullScreen' : 'pageSheet'} onRequestClose={() => setTaskModalVisible(false)}>
       <KeyboardAvoidingView behavior={Platform.OS === "ios" ? "padding" : "height"} style={styles.modalOverlay}>
         <View style={styles.modalSheet}>
           <View style={styles.modalHeader}>
@@ -646,8 +646,8 @@ const styles = StyleSheet.create({
   // FAB
   fab: { position: "absolute", right: 20, bottom: 28, width: 54, height: 54, borderRadius: 27, backgroundColor: Colors.primary, alignItems: "center", justifyContent: "center", shadowColor: "#000", shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.3, shadowRadius: 8, elevation: 6 },
   // Modal
-  modalOverlay: { flex: 1, justifyContent: "flex-end", backgroundColor: "rgba(0,0,0,0.5)" },
-  modalSheet: { backgroundColor: "#fff", borderTopLeftRadius: 24, borderTopRightRadius: 24, padding: 24, maxHeight: "92%" },
+  modalOverlay: { flex: 1, justifyContent: Platform.OS === 'web' ? "center" : "flex-start", backgroundColor: Platform.OS === 'web' ? "rgba(0,0,0,0.5)" : "#fff" },
+  modalSheet: { backgroundColor: "#fff", borderRadius: Platform.OS === 'web' ? 24 : 0, padding: 24, flex: Platform.OS === 'web' ? undefined : 1, maxHeight: Platform.OS === 'web' ? "92%" : "100%", width: Platform.OS === 'web' ? '90%' : '100%', maxWidth: 700, alignSelf: 'center' },
   modalHeader: { flexDirection: "row", justifyContent: "space-between", alignItems: "center", marginBottom: 16 },
   modalTitle: { fontSize: 19, fontWeight: "800", color: "#1f2937" },
   inputLabel: { fontSize: 12, fontWeight: "700", color: "#374151", marginBottom: 6, marginTop: 12, textTransform: "uppercase", letterSpacing: 0.3 },
@@ -657,8 +657,8 @@ const styles = StyleSheet.create({
   saveBigBtn: { backgroundColor: Colors.primary, padding: 15, borderRadius: 14, alignItems: "center", marginTop: 24, marginBottom: 20, shadowColor: Colors.primary, shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.2, elevation: 4 },
   saveBigBtnText: { color: "#fff", fontWeight: "800", fontSize: 16 },
   // Detail sheet
-  detailOverlay: { flex: 1, justifyContent: "flex-end", backgroundColor: "rgba(0,0,0,0.5)" },
-  detailSheet: { backgroundColor: "#fff", borderTopLeftRadius: 24, borderTopRightRadius: 24, padding: 24, maxHeight: "88%" },
+  detailOverlay: { flex: 1, justifyContent: Platform.OS === 'web' ? "center" : "flex-start", backgroundColor: Platform.OS === 'web' ? "rgba(0,0,0,0.5)" : "#fff" },
+  detailSheet: { backgroundColor: "#fff", borderRadius: Platform.OS === 'web' ? 24 : 0, padding: 24, flex: Platform.OS === 'web' ? undefined : 1, maxHeight: Platform.OS === 'web' ? "90%" : "100%", width: Platform.OS === 'web' ? '90%' : '100%', maxWidth: 700, alignSelf: 'center' },
   detailInfoRow: { flexDirection: "row", justifyContent: "space-between", paddingVertical: 8, borderBottomWidth: 1, borderBottomColor: "#f9fafb" },
   detailInfoLabel: { fontSize: 13, color: "#6b7280", fontWeight: "600" },
   detailInfoValue: { fontSize: 13, color: "#1f2937", fontWeight: "700" },

@@ -44,8 +44,8 @@ export default function SalesScreen() {
   const [startDate, setStartDate] = useState(null);
   const [endDate, setEndDate] = useState(null);
   const [pageSize] = useState(20);
-  const [currentPage, setCurrentPage] = useState(0);
-  const [visibleData, setVisibleData] = useState([]);
+  // Performans: visibleData ve currentPage state kaldırıldı
+  // FlatList kendi initialNumToRender/onEndReached mekanizmasıyla yönetiyor
   const navigation = useNavigation();
 
   // YENİ STATE: Aktif Sekmeyi Yönetme
@@ -127,20 +127,10 @@ export default function SalesScreen() {
     return result;
   }, [sales, productFilter, customerFilter, startDate, endDate, activeTab, sortConfig]);
 
-  // Sayfalama ve görünür veriyi güncelleme
-  useEffect(() => {
-    setCurrentPage(0);
-    setVisibleData(filtered.slice(0, pageSize));
-  }, [filtered, pageSize]);
-
+  // Sayfalama: FlatList kendi load more mekanizmasıyla çalışıyor
+  // visibleData/currentPage state'i yerine FlatList'in initialNumToRender kullanılıyor
   const loadMoreItems = () => {
-    if (visibleData.length >= filtered.length || filtered.length === 0) return;
-    const nextPage = currentPage + 1;
-    const nextData = filtered.slice(nextPage * pageSize, (nextPage + 1) * pageSize);
-    if (nextData.length > 0) {
-      setCurrentPage(nextPage);
-      setVisibleData((prevData) => [...prevData, ...nextData]);
-    }
+    // Gelecekte ihtiyaç duyulursa lazy fetch burada tetiklenebilir
   };
 
   // Satış İptali İşlevi
@@ -447,7 +437,7 @@ export default function SalesScreen() {
 
       {/* 3. Satış Listesi */}
       {appDataLoading ? (
-        <View style={{ paddingHorizontal: 4 }}>
+        <View style={{ paddingHorizontal: 0 }}>
           {[1, 2, 3, 4, 5].map((key) => (
             <SkeletonProductItem key={key} />
           ))}
@@ -492,155 +482,17 @@ export default function SalesScreen() {
                 </View>
               </View>
               <FlatList
-                data={visibleData}
+                initialNumToRender={20}
+                maxToRenderPerBatch={15}
+                windowSize={7}
+                removeClippedSubviews={true}
+                data={filtered}
                 keyExtractor={(item) => item.id}
-                scrollEnabled={false}
-                ListEmptyComponent={
-                  <View style={styles.emptyState}>
-                    <View style={styles.emptyIconContainer}>
-                      <Ionicons name={activeTab === 'active' ? "cube-outline" : "checkmark-done-circle-outline"} size={48} color={Colors.muted} />
-                    </View>
-                    <Text style={styles.emptyListText}>
-                      {activeTab === 'active' ? t('no_waiting_shipment') : t('no_completed_sales')}
-                    </Text>
-                  </View>
-                }
-                renderItem={({ item, index }) => {
-                  const profit = calculateProfit(item);
-                  const saleDate = new Date(item.dateISO).toLocaleDateString("tr-TR", {
-                    day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit'
-                  });
-                  const isCriticalShipment = activeTab === 'active' && item.shipmentDate && new Date(item.shipmentDate) < new Date();
-                  const productCode = item.productCode || products.find(p => p.id === item.productId)?.code;
-
-                  return (
-                    <View style={[styles.webTableRow, index % 2 === 0 ? styles.webTableRowEven : styles.webTableRowOdd]}>
-                      <View style={{ flex: 1.2, justifyContent: 'center' }}>
-                        <Text style={styles.webCellText}>{saleDate}</Text>
-                      </View>
-                      <View style={{ flex: 1.8, justifyContent: 'center', paddingRight: 8 }}>
-                        <Text style={styles.webCellTextBold} numberOfLines={1}>{item.customerName}</Text>
-                      </View>
-                      <View style={{ flex: 1.8, justifyContent: 'center', paddingRight: 8 }}>
-                        <Text style={styles.webCellTextBold} numberOfLines={1}>{item.productName}</Text>
-                        {productCode && <Text style={styles.webCellSubText}>#{productCode}</Text>}
-                      </View>
-                      <View style={{ flex: 0.8, justifyContent: 'center', alignItems: 'center' }}>
-                        <View style={styles.webQuantityBadge}>
-                          <Text style={styles.webQuantityText}>x{item.quantity}</Text>
-                        </View>
-                      </View>
-                      <View style={{ flex: 1, justifyContent: 'center', alignItems: 'flex-end', paddingRight: 10 }}>
-                        <Text style={[styles.webCellTextBold, { color: Colors.iosBlue }]}>
-                          {Number(item.price ?? 0).toLocaleString('tr-TR', { minimumFractionDigits: 2 })} ₺
-                        </Text>
-                      </View>
-                      <View style={{ flex: 1, justifyContent: 'center', alignItems: 'flex-end', paddingRight: 10 }}>
-                        <Text style={[styles.webCellTextBold, { color: profit >= 0 ? Colors.iosGreen : Colors.critical }]}>
-                          {profit >= 0 ? '+' : ''}{profit.toLocaleString('tr-TR', { minimumFractionDigits: 2 })} ₺
-                        </Text>
-                      </View>
-                      <View style={{ flex: 1.5, justifyContent: 'center', alignItems: 'center', gap: 4, paddingHorizontal: 4 }}>
-                        {item.invoiceNumber ? (
-                          <View style={[styles.webSmallBadge, { backgroundColor: '#E3F2FD', borderColor: '#BBDEFB' }]}>
-                            <Text style={[styles.webSmallBadgeText, { color: Colors.iosBlue }]}>{t('inv_abbr')}: {item.invoiceNumber}</Text>
-                          </View>
-                        ) : (
-                          <View style={[styles.webSmallBadge, { backgroundColor: '#F1F5F9', borderColor: '#E2E8F0' }]}>
-                            <Text style={[styles.webSmallBadgeText, { color: Colors.muted }]}>{t('no_invoice')}</Text>
-                          </View>
-                        )}
-                        {item.source_quote_id && (
-                          <View style={[styles.webSmallBadge, { backgroundColor: '#FFFBEB', borderColor: '#FDE68A' }]}>
-                            <Text style={[styles.webSmallBadgeText, { color: '#D97706' }]}>📋 Tekliften</Text>
-                          </View>
-                        )}
-                      </View>
-                      <View style={{ flex: 1.5, justifyContent: 'center', alignItems: 'center', paddingHorizontal: 4 }}>
-                        {activeTab === 'active' && item.shipmentDate ? (
-                          <View style={[styles.webSmallBadge, { backgroundColor: '#F8FAFC', borderColor: '#E2E8F0' }]}>
-                            <Text style={[styles.webSmallBadgeText, { color: isCriticalShipment ? Colors.critical : '#475569' }]}>
-                              📅 {formatShipmentDate(item.shipmentDate)}
-                            </Text>
-                          </View>
-                        ) : (
-                           activeTab === 'active' && <Text style={{ fontSize: 11, color: Colors.muted }}>-</Text>
-                        )}
-                      </View>
-                      <View style={{ flex: 2.4, flexDirection: 'row', justifyContent: 'center', alignItems: 'center', gap: 6 }}>
-                        <TouchableOpacity 
-                          onPress={() => openSaleDetails(item)} 
-                          style={[styles.webActionBtn, { backgroundColor: '#F3F4F6', borderColor: '#E5E7EB' }]}
-                          dataSet={{ title: t('view_details') }}
-                        >
-                          <Ionicons name="eye-outline" size={16} color="#4B5563" />
-                        </TouchableOpacity>
-                        {activeTab === 'active' && (
-                          <TouchableOpacity 
-                            onPress={() => markAsShipped(item)} 
-                            style={[styles.webActionBtn, { backgroundColor: '#E8F5E9', borderColor: '#C8E6C9' }]}
-                            dataSet={{ title: t('mark_as_shipped') }}
-                          >
-                            <Ionicons name="checkmark" size={16} color={Colors.iosGreen} />
-                          </TouchableOpacity>
-                        )}
-                        {activeTab === 'active' && Platform.OS === 'web' && (
-                          <TouchableOpacity 
-                            onPress={() => handleCreateWorkOrder(item)} 
-                            style={[styles.webActionBtn, { backgroundColor: '#FFF3E0', borderColor: '#FFE0B2' }]}
-                            dataSet={{ title: t('create_work_order') }}
-                          >
-                            <Ionicons name="hammer-outline" size={16} color="#FF9800" />
-                          </TouchableOpacity>
-                        )}
-                        <TouchableOpacity 
-                          onPress={() => openInvoiceEditor(item)} 
-                          style={[styles.webActionBtn, { backgroundColor: '#E3F2FD', borderColor: '#BBDEFB' }]}
-                          dataSet={{ title: t('invoice_number') }}
-                        >
-                          <Ionicons name="document-text" size={16} color={Colors.iosBlue} />
-                        </TouchableOpacity>
-                        <TouchableOpacity 
-                          onPress={() => handlePrintForm(item)} 
-                          style={[styles.webActionBtn, { backgroundColor: '#F3E5F5', borderColor: '#E1BEE7' }]}
-                          dataSet={{ title: t('print_form') }}
-                        >
-                          <Ionicons name="print-outline" size={16} color="#9C27B0" />
-                        </TouchableOpacity>
-                        <TouchableOpacity 
-                          onPress={() => confirmCancel(item)} 
-                          style={[styles.webActionBtn, { backgroundColor: '#FFEBEE', borderColor: '#FFCDD2' }]}
-                          dataSet={{ title: t('cancel_sale') }}
-                        >
-                          <Ionicons name="trash-outline" size={16} color={Colors.critical} />
-                        </TouchableOpacity>
-                      </View>
-                    </View>
-                  );
-                }}
-                ListFooterComponent={() => {
-                  const hasMore = visibleData.length < filtered.length;
-                  if (hasMore) {
-                    return (
-                      <TouchableOpacity onPress={loadMoreItems} style={styles.loadMoreButton}>
-                        <Text style={styles.loadMoreText}>{t('show_more')}</Text>
-                      </TouchableOpacity>
-                    );
-                  }
-                  if (visibleData.length > 0 && !hasMore) {
-                    return <Text style={styles.footerText}>{t('all_records_loaded')}</Text>;
-                  }
-                  return <View style={{ height: 20 }} />;
-                }}
-              />
-            </View>
-          ) : (
-            <FlatList
-              data={visibleData}
-              keyExtractor={(item) => item.id}
-              scrollEnabled={false} // İç içe scroll sorununu önlemek için
-              contentContainerStyle={{ paddingBottom: 100, paddingHorizontal: 4 }}
-              showsVerticalScrollIndicator={false}
+                scrollEnabled={false} // İç içe scroll sorununu önlemek için
+                contentContainerStyle={{ paddingBottom: 100, paddingHorizontal: 0 }}
+                showsVerticalScrollIndicator={false}
+                onEndReached={loadMoreItems}
+                onEndReachedThreshold={0.3}
               ListEmptyComponent={
                 <View style={styles.emptyState}>
                   <View style={styles.emptyIconContainer}>
@@ -854,6 +706,7 @@ const styles = StyleSheet.create({
   // --- Üst Alan ---
   headerContainer: {
     marginBottom: 15,
+    paddingHorizontal: 16,
   },
   analyzeButton: {
     flexDirection: 'row',
@@ -946,6 +799,7 @@ const styles = StyleSheet.create({
   // --- Arama ---
   searchContainer: {
     marginBottom: 15,
+    paddingHorizontal: 16,
   },
   searchInputWrapper: {
     flexDirection: 'row',
@@ -970,14 +824,9 @@ const styles = StyleSheet.create({
   // --- Liste ve Kartlar ---
   card: {
     backgroundColor: '#fff',
-    borderRadius: 14,
-    marginBottom: 14,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.08,
-    shadowRadius: 2,
-    elevation: 2,
-    overflow: 'hidden',
+    borderBottomWidth: StyleSheet.hairlineWidth,
+    borderBottomColor: '#E2E8F0',
+    padding: 16,
     ...Platform.select({
       web: {
         cursor: 'pointer',

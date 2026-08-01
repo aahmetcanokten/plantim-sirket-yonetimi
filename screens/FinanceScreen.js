@@ -1,7 +1,8 @@
-import React, { useState, useContext, useMemo, useEffect } from 'react';
+import React, { useState, useContext, useMemo, useEffect, useCallback, memo } from 'react';
+import { FlatList } from 'react-native';
 import {
     View, Text, StyleSheet, ScrollView, TouchableOpacity,
-    TextInput, Modal, Platform, Alert
+    TextInput, Modal, Platform, Alert, KeyboardAvoidingView
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { AppContext } from '../AppContext';
@@ -138,7 +139,7 @@ function TransactionModal({ visible, onClose, onSave, editItem, type }) {
             statusBarTranslucent
         >
             {/* Backdrop - ayrı bir TouchableOpacity, kutudan önce */}
-            <View style={mStyles.overlay}>
+            <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : 'height'} style={mStyles.overlay}>
                 {/* Backdrop tıklaması */}
                 <TouchableOpacity
                     style={StyleSheet.absoluteFillObject}
@@ -330,7 +331,7 @@ function TransactionModal({ visible, onClose, onSave, editItem, type }) {
                         </TouchableOpacity>
                     </View>
                 </View>
-            </View>
+            </KeyboardAvoidingView>
         </Modal>
     );
 }
@@ -500,7 +501,8 @@ function BarChart({ data }) {
 
 // ─── Tablo Satırı Bileşeni (Gelir/Gider) ────────────────────────────────────
 
-function TransactionTableRow({ item, color, onEdit, onDelete, isDerived }) {
+// TransactionTableRow — React.memo ile gereksiz re-render engellendi
+const TransactionTableRow = memo(function TransactionTableRow({ item, color, onEdit, onDelete, isDerived }) {
     const isIncome = item.type === 'INCOME';
     const sign = isIncome ? '+' : '-';
     const iconBg = isIncome ? '#D1FAE5' : '#FEE2E2';
@@ -583,7 +585,7 @@ function TransactionTableRow({ item, color, onEdit, onDelete, isDerived }) {
             </View>
         </View>
     );
-}
+});
 
 // ─── SEKME 1: GENEL BAKIŞ ────────────────────────────────────────────────────
 
@@ -796,13 +798,18 @@ function IncomeTab({ transactions, sales, addTransaction, updateTransaction, del
                 {isWeb && <TxTableHeader />}
             </View>
 
-            {/* Liste - ScrollView kullanıyoruz (FlatList yerine, overflow sorununu önlemek için) */}
-            <ScrollView
+            {/* Liste - FlatList ile virtualization */}
+            <FlatList
                 style={styles.listScroll}
                 contentContainerStyle={styles.listContent}
                 showsVerticalScrollIndicator={false}
-            >
-                {filtered.length === 0 ? (
+                data={filtered}
+                keyExtractor={(item) => String(item.id)}
+                initialNumToRender={20}
+                maxToRenderPerBatch={15}
+                windowSize={7}
+                removeClippedSubviews={true}
+                ListEmptyComponent={
                     <View style={styles.emptyState}>
                         <Ionicons name="trending-up-outline" size={48} color="#CBD5E1" />
                         <Text style={styles.emptyTitle}>Gelir kaydı bulunamadı</Text>
@@ -812,8 +819,9 @@ function IncomeTab({ transactions, sales, addTransaction, updateTransaction, del
                                 : '"+ Gelir Ekle" butonunu kullanarak yeni kayıt ekleyin.'}
                         </Text>
                     </View>
-                ) : isWeb ? (
-                    filtered.map((item) => (
+                }
+                renderItem={({ item }) =>
+                    isWeb ? (
                         <TransactionTableRow
                             key={String(item.id)}
                             item={item}
@@ -821,9 +829,7 @@ function IncomeTab({ transactions, sales, addTransaction, updateTransaction, del
                             onEdit={() => { setEditItem(item); setShowModal(true); }}
                             onDelete={() => handleDelete(item.id)}
                         />
-                    ))
-                ) : (
-                    filtered.map((item) => (
+                    ) : (
                         <MobileTransactionRow
                             key={String(item.id)}
                             item={item}
@@ -831,10 +837,10 @@ function IncomeTab({ transactions, sales, addTransaction, updateTransaction, del
                             onEdit={() => { setEditItem(item); setShowModal(true); }}
                             onDelete={() => handleDelete(item.id)}
                         />
-                    ))
-                )}
-                <View style={{ height: 24 }} />
-            </ScrollView>
+                    )
+                }
+            />
+            <View style={{ height: 24 }} />
 
             <TransactionModal
                 visible={showModal}
@@ -849,7 +855,8 @@ function IncomeTab({ transactions, sales, addTransaction, updateTransaction, del
 
 // ─── Mobil için Satır Bileşeni ───────────────────────────────────────────────
 
-function MobileTransactionRow({ item, isDerived, onEdit, onDelete }) {
+// MobileTransactionRow — React.memo ile gereksiz re-render engellendi
+const MobileTransactionRow = memo(function MobileTransactionRow({ item, isDerived, onEdit, onDelete }) {
     const isIncome = item.type === 'INCOME';
     const sign = isIncome ? '+' : '-';
     const iconBg = isIncome ? '#D1FAE5' : '#FEE2E2';
@@ -892,7 +899,7 @@ function MobileTransactionRow({ item, isDerived, onEdit, onDelete }) {
             </View>
         </View>
     );
-}
+});
 
 // ─── SEKME 3: GİDERLER ───────────────────────────────────────────────────────
 
@@ -1023,12 +1030,18 @@ function ExpenseTab({ transactions, purchases, addTransaction, updateTransaction
                 {isWeb && <TxTableHeader />}
             </View>
 
-            <ScrollView
+            {/* Liste - FlatList ile virtualization */}
+            <FlatList
                 style={styles.listScroll}
                 contentContainerStyle={styles.listContent}
                 showsVerticalScrollIndicator={false}
-            >
-                {filtered.length === 0 ? (
+                data={filtered}
+                keyExtractor={(item) => String(item.id)}
+                initialNumToRender={20}
+                maxToRenderPerBatch={15}
+                windowSize={7}
+                removeClippedSubviews={true}
+                ListEmptyComponent={
                     <View style={styles.emptyState}>
                         <Ionicons name="trending-down-outline" size={48} color="#CBD5E1" />
                         <Text style={styles.emptyTitle}>Gider kaydı bulunamadı</Text>
@@ -1038,8 +1051,9 @@ function ExpenseTab({ transactions, purchases, addTransaction, updateTransaction
                                 : '"+ Gider Ekle" butonunu kullanarak yeni kayıt ekleyin.'}
                         </Text>
                     </View>
-                ) : isWeb ? (
-                    filtered.map((item) => (
+                }
+                renderItem={({ item }) =>
+                    isWeb ? (
                         <TransactionTableRow
                             key={String(item.id)}
                             item={item}
@@ -1047,9 +1061,7 @@ function ExpenseTab({ transactions, purchases, addTransaction, updateTransaction
                             onEdit={() => { setEditItem(item); setShowModal(true); }}
                             onDelete={() => handleDelete(item.id)}
                         />
-                    ))
-                ) : (
-                    filtered.map((item) => (
+                    ) : (
                         <MobileTransactionRow
                             key={String(item.id)}
                             item={item}
@@ -1057,10 +1069,10 @@ function ExpenseTab({ transactions, purchases, addTransaction, updateTransaction
                             onEdit={() => { setEditItem(item); setShowModal(true); }}
                             onDelete={() => handleDelete(item.id)}
                         />
-                    ))
-                )}
-                <View style={{ height: 24 }} />
-            </ScrollView>
+                    )
+                }
+            />
+            <View style={{ height: 24 }} />
 
             <TransactionModal
                 visible={showModal}
@@ -1602,37 +1614,34 @@ const styles = StyleSheet.create({
     contentArea: { flex: 1 },
 
     // Sekme içerik alanları
-    tabContent: { flex: 1, paddingHorizontal: 24, paddingTop: 20 },
-    tabPadding: { paddingHorizontal: 24, paddingTop: 20 },
+    tabContent: { flex: 1, paddingHorizontal: 0, paddingTop: 20 },
+    tabPadding: { paddingHorizontal: 0, paddingTop: 20 },
     listScroll: { flex: 1 },
-    listContent: { paddingHorizontal: 24 },
+    listContent: { paddingHorizontal: 0 },
 
     // Kart
     card: {
-        backgroundColor: '#fff', borderRadius: 16, padding: 18, marginBottom: 16,
-        borderWidth: 1, borderColor: '#F1F5F9',
-        boxShadow: '0 2px 12px rgba(0,0,0,0.04)',
+        backgroundColor: '#fff', padding: 18,
+        borderBottomWidth: StyleSheet.hairlineWidth, borderBottomColor: '#E2E8F0',
     },
     groupLabel: { fontSize: 11, fontWeight: '700', color: '#94A3B8', letterSpacing: 0.8, marginBottom: 10, marginTop: 4 },
 
     // KPI
     kpiRow: { flexDirection: 'row', flexWrap: 'wrap', gap: 12, marginBottom: 20 },
     kpiCard: {
-        flex: 1, minWidth: 180, backgroundColor: '#fff', borderRadius: 16, padding: 18,
-        borderWidth: 1, borderColor: '#F1F5F9',
-        boxShadow: '0 2px 12px rgba(0,0,0,0.04)',
+        flex: 1, minWidth: 180, backgroundColor: '#fff', borderRadius: 12, padding: 18,
+        borderWidth: 1, borderColor: '#E2E8F0',
     },
     kpiTop: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 12 },
     kpiIconBg: { width: 40, height: 40, borderRadius: 12, alignItems: 'center', justifyContent: 'center' },
     kpiLabel: { fontSize: 12, color: '#64748B', fontWeight: '600', marginTop: 4 },
-    kpiValue: { fontSize: 22, fontWeight: '800', letterSpacing: -0.5 },
+    kpiValue: { fontSize: 18, fontWeight: '800', letterSpacing: -0.5 },
     kpiSubtitle: { fontSize: 11, color: '#94A3B8', marginTop: 4 },
 
     // Mini Card
     miniCard: {
-        flex: 1, backgroundColor: '#fff', borderRadius: 14, padding: 14,
-        borderTopWidth: 3, borderWidth: 1, borderColor: '#F1F5F9',
-        boxShadow: '0 1px 8px rgba(0,0,0,0.04)',
+        flex: 1, backgroundColor: '#fff', borderRadius: 10, padding: 14,
+        borderTopWidth: 3, borderWidth: 1, borderColor: '#E2E8F0',
     },
     miniCardLabel: { fontSize: 11, color: '#94A3B8', fontWeight: '600', marginBottom: 4 },
     miniCardValue: { fontSize: 18, fontWeight: '800' },

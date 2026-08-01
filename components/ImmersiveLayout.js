@@ -1,5 +1,5 @@
 import React, { useRef } from "react";
-import { Animated, View, Text, StyleSheet, Platform, TouchableOpacity, SafeAreaView, StatusBar, ScrollView } from "react-native";
+import { Animated, View, Text, StyleSheet, Platform, TouchableOpacity, SafeAreaView, StatusBar, ScrollView, useWindowDimensions } from "react-native";
 import { useNavigation } from "@react-navigation/native";
 import { Ionicons } from "@expo/vector-icons";
 import { Colors } from "../Theme";
@@ -29,6 +29,9 @@ const LIGHT_CONTAINER_BG = '#FFFFFF'; // İçerik arka planı beyaz
 export default function ImmersiveLayout(props) {
   const { title, subtitle, right, useBlur = true, children, noScrollView = false } = props;
   const navigation = useNavigation();
+  // Performans + SSR güvenli: useWindowDimensions ile reaktif genişlik
+  const { width: windowWidth } = useWindowDimensions();
+  const isNarrow = windowWidth <= 768;
 
   // navigation helper: root Stack içerisinde 'Ayarlar' ekranı varsa oraya gitmeyi dener.
   const navigateToSettings = () => {
@@ -176,7 +179,7 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     alignItems: "center",
     justifyContent: 'space-between',
-    paddingHorizontal: Platform.OS === 'web' && typeof window !== 'undefined' && window.innerWidth <= 768 ? 16 : 32,
+    paddingHorizontal: Platform.OS === 'web' ? (isNarrow ? 16 : 32) : 16,
     paddingBottom: 8,
     // Web iyileştirmesi: Başlığı ortala ve çok genişlemesini engelle
     maxWidth: Platform.OS === 'web' ? 1440 : '100%',
@@ -210,7 +213,7 @@ const styles = StyleSheet.create({
     backgroundColor: '#F8FAFC',
   },
   innerContentCompact: {
-    paddingHorizontal: Platform.OS === 'web' && typeof window !== 'undefined' && window.innerWidth <= 768 ? 16 : 32,
+    paddingHorizontal: 16, // Dinamik değer bileşen içinde uygulanıyor
     paddingVertical: 10,
     // Web iyileştirmesi: İçeriği ortala ve çok genişlemesini engelle
     maxWidth: Platform.OS === 'web' ? 1440 : '100%',

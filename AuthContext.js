@@ -12,11 +12,19 @@ import { createClient } from '@supabase/supabase-js';
 const supabaseUrl = process.env.EXPO_PUBLIC_SUPABASE_URL || 'https://wzaxmplzambkjriqtweq.supabase.co';
 const supabaseAnonKey = process.env.EXPO_PUBLIC_SUPABASE_ANON_KEY || 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Ind6YXhtcGx6YW1ia2pyaXF0d2VxIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjI4MzQzNTQsImV4cCI6MjA3ODQxMDM1NH0.bpQWqzOoEYC8wi4jTh097OK7ogYOK4xDkvrXpTQaDUs';
 
+// Web ortamında window'un tanımlı olup olmadığını güvenli şekilde kontrol et
+const getWebStorage = () => {
+    if (typeof window !== 'undefined' && window.localStorage) {
+        return window.localStorage;
+    }
+    return AsyncStorage; // Fallback: AsyncStorage
+};
+
 // Supabase İstemcisini Oluşturun
 // Bu, uygulamanızın Supabase ile iletişim kurmasını sağlayan tekil istemcidir.
 const supabase = createClient(supabaseUrl, supabaseAnonKey, {
     auth: {
-        storage: Platform.OS === 'web' ? window.localStorage : AsyncStorage,
+        storage: Platform.OS === 'web' ? getWebStorage() : AsyncStorage,
         autoRefreshToken: true,
         persistSession: true,
         detectSessionInUrl: true,
@@ -63,10 +71,10 @@ export function AuthProvider({ children }) {
                     setIsPasswordReset(false);
                 }
 
-                // Auth state değişikliği olduğunda yükleniyor durumunu bitir
-                if (loading) {
-                    setLoading(false);
-                }
+                // Stale closure hatasını önlemek için koşulsuz setLoading çağır.
+                // Eski yaklaşım (if (loading)) closure'da capture edilen eski
+                // değeri okuyabilir ve loading'i hiç false yapmayabilirdi.
+                setLoading(false);
             }
         );
 

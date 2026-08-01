@@ -14,7 +14,7 @@ import {
 import { Ionicons } from "@expo/vector-icons";
 import { Colors } from "../Theme";
 import { AppContext } from "../AppContext";
-import KeyboardSafeView from "./KeyboardSafeView";
+import { KeyboardAvoidingView } from "react-native";
 import DatePickerButton from "./DatePickerButton";
 import { scheduleShipmentNotification } from "../utils/NotificationHelper";
 import { useTranslation } from "react-i18next";
@@ -583,9 +583,8 @@ export default function CompositeSaleModal({ visible, onClose, onComplete }) {
 
     return (
         <Modal visible={visible} animationType="slide" transparent onRequestClose={onClose}>
-            <KeyboardSafeView offsetIOS={0} disableScrollView={true}>
-                <View style={styles.overlay}>
-                    <View style={styles.container}>
+            <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : 'height'} style={styles.overlay}>
+                <View style={styles.container}>
                         <View style={styles.header}>
                             <TouchableOpacity onPress={step === 0 ? onClose : () => setStep(0)} style={styles.closeBtn}>
                                 <Ionicons name={step === 0 ? "close" : "arrow-back"} size={24} color={Colors.textPrimary} />
@@ -636,8 +635,7 @@ export default function CompositeSaleModal({ visible, onClose, onComplete }) {
                         )}
                     </View>
                     <View style={{ height: Platform.OS === 'ios' ? 34 : 0, backgroundColor: '#fff' }} />
-                </View>
-            </KeyboardSafeView>
+            </KeyboardAvoidingView>
 
             <QuantityInputModal visible={qtyModalVisible} value={qtyInputValue} onChangeText={setQtyInputValue} onClose={closeQtyModal} onSave={handleManualQtyUpdate} productName={qtyTargetItem?.product?.name} t={t} />
         </Modal>
