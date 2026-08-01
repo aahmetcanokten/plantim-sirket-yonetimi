@@ -113,7 +113,7 @@ export default function ImmersiveLayout(props) {
       {/* Sabit Header (Üst Menü) */}
       <View style={headerStyle}>
         {HeaderBackground}
-        <View style={styles.headerContentCompact}>
+        <View style={[styles.headerContentCompact, { paddingHorizontal: Platform.OS === 'web' ? (isNarrow ? 16 : 32) : 16 }]}>
           <View style={styles.textContainer}>
             <Text numberOfLines={1} style={titleStyle}>
               {title}
@@ -179,7 +179,7 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     alignItems: "center",
     justifyContent: 'space-between',
-    paddingHorizontal: Platform.OS === 'web' ? (isNarrow ? 16 : 32) : 16,
+    paddingHorizontal: 16,
     paddingBottom: 8,
     // Web iyileştirmesi: Başlığı ortala ve çok genişlemesini engelle
     maxWidth: Platform.OS === 'web' ? 1440 : '100%',
