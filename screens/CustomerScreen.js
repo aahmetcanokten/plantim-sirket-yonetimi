@@ -5,9 +5,9 @@ import ImmersiveLayout from "../components/ImmersiveLayout";
 import { Colors, CardRadius, ButtonRadius, IOSShadow } from "../Theme";
 import { AppContext } from "../AppContext";
 import { useToast } from "../components/ToastProvider";
+import KeyboardSafeView from "../components/KeyboardSafeView";
 import { Ionicons } from "@expo/vector-icons";
 import { SkeletonCustomerItem } from "../components/Skeleton";
-import { KeyboardAvoidingView } from "react-native";
 
 
 // --- Müşteri Ekleme/Düzenleme Modalı ---
@@ -97,12 +97,13 @@ const CustomerFormModal = ({ visible, onClose, onSave, initialData = null }) => 
             visible={visible}
             animationType={Platform.OS === 'web' ? "fade" : "slide"}
             presentationStyle={Platform.OS === 'web' ? "overFullScreen" : "pageSheet"}
-            transparent={Platform.OS === 'web'}
+            transparent={true}
             onRequestClose={onClose}
         >
-            <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : 'height'} style={styles.webModalOverlay}>
+            <View style={styles.webModalOverlay}>
                 <View style={styles.webModalWrapper}>
-                    <View style={[styles.modalContainer, Platform.OS === 'web' && styles.webModalContainer]}>
+                    <KeyboardSafeView offsetIOS={20} disableScrollView={Platform.OS === 'web'}>
+                        <View style={[styles.modalContainer, Platform.OS === 'web' && styles.webModalContainer]}>
                             <View style={styles.modalHeaderRow}>
                                 <Text style={styles.modalHeaderTitle}>{initialData ? t('edit_customer') : t('new_customer_card')}</Text>
                                 <TouchableOpacity onPress={onClose} style={styles.closeButton}>
@@ -234,8 +235,9 @@ const CustomerFormModal = ({ visible, onClose, onSave, initialData = null }) => 
                                 </TouchableOpacity>
                             </ScrollView>
                         </View>
+                    </KeyboardSafeView>
                 </View>
-            </KeyboardAvoidingView>
+            </View>
         </Modal>
     );
 };
@@ -501,7 +503,75 @@ export default function CustomerScreen() {
                                 <Text style={[styles.webHeaderCell, { flex: 1.5 }]}>{t('email')}</Text>
                                 <Text style={[styles.webHeaderCell, { flex: 1, textAlign: 'center' }]}>{t('actions')}</Text>
                             </View>
-                            <FlatList initialNumToRender={10} maxToRenderPerBatch={10} windowSize={5} removeClippedSubviews={true}
+                            <FlatList
+                                data={filteredCustomers}
+                                keyExtractor={(i) => i.id}
+                                renderItem={({ item, index }) => {
+                                    const orderCount = sales ? sales.filter(s => s.customerId === item.id).length : 0;
+                                    return (
+                                        <View style={[styles.webTableRow, index % 2 === 0 ? styles.webTableRowEven : styles.webTableRowOdd]}>
+                                            <View style={{ flex: 2, justifyContent: 'center' }}>
+                                                <View style={{flexDirection: 'row', alignItems: 'center'}}>
+                                                    <Text style={styles.webCellTextBold}>{item.companyName || item.name}</Text>
+                                                    {item.status && (
+                                                        <View style={[styles.orderBadgeMini, { backgroundColor: item.status === 'ACTIVE' ? '#F0FDF4' : item.status === 'PASSIVE' ? '#FEF2F2' : '#FFFBEB', marginLeft: 6 }]}>
+                                                            <Text style={[styles.orderBadgeTextMini, { color: item.status === 'ACTIVE' ? '#15803D' : item.status === 'PASSIVE' ? '#B91C1C' : '#B45309' }]}>
+                                                                {item.status === 'ACTIVE' ? 'Aktif' : item.status === 'PASSIVE' ? 'Pasif' : 'Aday'}
+                                                            </Text>
+                                                        </View>
+                                                    )}
+                                                </View>
+                                                <View style={{flexDirection: 'row', alignItems: 'center', marginTop: 4}}>
+                                                    {item.customerType && (
+                                                        <View style={[styles.orderBadgeMini, { backgroundColor: item.customerType === 'B2B' ? '#EFF6FF' : '#F5F3FF', marginTop: 0, marginRight: 6 }]}>
+                                                            <Text style={[styles.orderBadgeTextMini, { color: item.customerType === 'B2B' ? '#1D4ED8' : '#6D28D9' }]}>{item.customerType}</Text>
+                                                        </View>
+                                                    )}
+                                                    {orderCount > 0 && (
+                                                        <View style={[styles.orderBadgeMini, {marginTop: 0}]}>
+                                                            <Text style={styles.orderBadgeTextMini}>{orderCount} {t('order')}</Text>
+                                                        </View>
+                                                    )}
+                                                </View>
+                                            </View>
+                                            <View style={{ flex: 1.5, justifyContent: 'center' }}>
+                                                <Text style={styles.webCellText}>{item.contactName || '-'}</Text>
+                                            </View>
+                                            <View style={{ flex: 1, justifyContent: 'center' }}>
+                                                <Text style={styles.webCellCode}>{item.cariCode || '-'}</Text>
+                                            </View>
+                                            <View style={{ flex: 1.5, justifyContent: 'center' }}>
+                                                <TouchableOpacity onPress={() => item.phone && Linking.openURL(`tel:${item.phone}`)}>
+                                                    <Text style={[styles.webCellText, item.phone && { color: Colors.iosBlue, fontWeight: '500' }]}>{item.phone || '-'}</Text>
+                                                </TouchableOpacity>
+                                            </View>
+                                            <View style={{ flex: 1.5, justifyContent: 'center' }}>
+                                                <Text style={styles.webCellText} numberOfLines={1}>{item.email || '-'}</Text>
+                                            </View>
+                                            <View style={{ flex: 1, flexDirection: 'row', justifyContent: 'center', alignItems: 'center', gap: 8 }}>
+                                                <TouchableOpacity onPress={() => handleOpenEditModal(item)} style={styles.webActionBtn}>
+                                                    <Ionicons name="create-outline" size={18} color={Colors.iosBlue} />
+                                                </TouchableOpacity>
+                                                <TouchableOpacity onPress={() => confirmDelete(item.id, item.companyName || item.name)} style={[styles.webActionBtn, { backgroundColor: '#FEF2F2', borderColor: '#FEE2E2' }]}>
+                                                    <Ionicons name="trash-outline" size={18} color={Colors.critical} />
+                                                </TouchableOpacity>
+                                            </View>
+                                        </View>
+                                    );
+                                }}
+                                scrollEnabled={false}
+                                ListEmptyComponent={
+                                    <View style={styles.emptyState}>
+                                        <Ionicons name="people-outline" size={50} color={Colors.secondary} />
+                                        <Text style={styles.emptyStateText}>
+                                            {searchQuery ? t('no_customer_found') : t('no_registered_customer')}
+                                        </Text>
+                                    </View>
+                                }
+                            />
+                        </View>
+                    ) : (
+                        <FlatList
                             data={filteredCustomers}
                             keyExtractor={(i) => i.id}
                             renderItem={({ item }) => (
@@ -569,7 +639,7 @@ const styles = StyleSheet.create({
         marginBottom: 4
     },
     statValue: {
-        fontSize: 20,
+        fontSize: 24,
         fontWeight: '800',
         color: Colors.textPrimary
     },
@@ -852,17 +922,16 @@ const styles = StyleSheet.create({
     },
     webModalOverlay: {
         flex: 1,
-        backgroundColor: Platform.OS === 'web' ? 'rgba(0,0,0,0.5)' : '#fff',
-        justifyContent: Platform.OS === 'web' ? 'center' : 'flex-start',
+        backgroundColor: 'rgba(0,0,0,0.5)',
+        justifyContent: Platform.OS === 'web' ? 'center' : 'flex-end',
         alignItems: Platform.OS === 'web' ? 'center' : 'stretch',
     },
     webModalWrapper: {
         width: '100%',
         maxWidth: 700,
-        maxHeight: Platform.OS === 'web' ? '90%' : '100%',
-        flex: Platform.OS === 'web' ? undefined : 1,
+        maxHeight: '90%',
         backgroundColor: '#fff',
-        borderRadius: Platform.OS === 'web' ? 16 : 0,
+        borderRadius: 16,
         overflow: 'hidden',
         ...Platform.select({
             web: {
@@ -959,8 +1028,16 @@ const styles = StyleSheet.create({
 const customerListStyles = StyleSheet.create({
     card: {
         backgroundColor: '#fff',
-        borderBottomWidth: StyleSheet.hairlineWidth,
-        borderBottomColor: '#E2E8F0',
+        borderRadius: 12,
+        marginBottom: 14,
+        shadowColor: "#000",
+        shadowOffset: { width: 0, height: 1 },
+        shadowOpacity: 0.08,
+        shadowRadius: 2,
+        elevation: 2,
+        borderWidth: 1,
+        borderColor: '#E2E8F0',
+        overflow: 'hidden',
     },
     cardHeader: {
         flexDirection: 'row',
