@@ -1,6 +1,6 @@
 // Tam Entegre Edilmiş StockScreen.js - (Görsel ve Klavye İyileştirmeleri)
 
-import React, { useContext, useState, useMemo, useCallback, useEffect } from "react";
+import React, { useContext, useState, useMemo, useCallback } from "react";
 import {
   View,
   Text,
@@ -13,13 +13,13 @@ import {
   Platform,
   ScrollView,
   Dimensions,
-  KeyboardAvoidingView,
 } from "react-native";
 import { useTranslation } from "react-i18next";
 import ImmersiveLayout from "../components/ImmersiveLayout";
 import { Ionicons } from "@expo/vector-icons";
 import { Colors } from "../Theme";
 import { AppContext } from "../AppContext";
+import KeyboardSafeView from "../components/KeyboardSafeView";
 import InvoiceModal from "../components/InvoiceModal";
 import { useToast } from "../components/ToastProvider";
 import BarcodeScannerModal from "../components/BarcodeScannerModal";
@@ -48,7 +48,6 @@ export default function StockScreen({ navigation }) {
 
   // --- State Yönetimi ---
   const [searchQuery, setSearchQuery] = useState("");
-  const [debouncedSearch, setDebouncedSearch] = useState(""); // Performans: 200ms debounce
   const [selectedProduct, setSelectedProduct] = useState(null);
   const [editModalVisible, setEditModalVisible] = useState(false);
   const [editProduct, setEditProduct] = useState(null);
@@ -61,13 +60,7 @@ export default function StockScreen({ navigation }) {
   const [scannerVisible, setScannerVisible] = useState(false);
   const [assemblyModalVisible, setAssemblyModalVisible] = useState(false);
 
-  // Arama debounce: kullanıcı yazmayı bırakınca 200ms sonra filtrele
-  useEffect(() => {
-    const timer = setTimeout(() => setDebouncedSearch(searchQuery), 200);
-    return () => clearTimeout(timer);
-  }, [searchQuery]);
-
-  const openCustomerSelection = useCallback((product) => {
+  const openCustomerSelection = (product) => {
     if (!isPremium && sales.length >= 20) {
       if (Platform.OS === 'web') {
         if (window.confirm(t('sales_limit_message'))) {
@@ -90,9 +83,9 @@ export default function StockScreen({ navigation }) {
     setSaleQuantity("1");
     setSalePrice(product.price ? String(product.price) : "");
     setSellModalVisible(true);
-  }, [isPremium, sales.length, t, navigation]);
+  };
 
-  const onEdit = useCallback((prod) => {
+  const onEdit = (prod) => {
     if (isPremium) {
       navigation.navigate("AddProductScreen", { product: prod });
       return;
@@ -113,9 +106,8 @@ export default function StockScreen({ navigation }) {
         ]
       );
     }
-  }, [isPremium, navigation, t]);
-
-  const confirmDelete = useCallback((id, name) => {
+  };
+  const confirmDelete = (id, name) => {
     triggerHaptic(HapticType.WARNING);
     if (Platform.OS === 'web') {
       if (window.confirm(`${name} ${t('delete_product_confirmation')}`)) {
@@ -134,7 +126,7 @@ export default function StockScreen({ navigation }) {
         }
       ]);
     }
-  }, [deleteProduct, toast, t]);
+  };
   const proceedToInvoice = (product, customer, quantity, price) => {
     const q = parseInt(quantity, 10) || 1; const p = parseFloat(price) || 0;
     if (q <= 0) { Alert.alert(t('error'), t('quantity_must_be_positive')); return; }
@@ -194,30 +186,6 @@ export default function StockScreen({ navigation }) {
     triggerHaptic(HapticType.SUCCESS);
   };
 
-  // --- Performans: bomsSet ve stockLocsMap ile O(1) lookup ---
-  // Eskiden her renderProductItem çağrısında tüm boms/stockLocations taranıyordu (O(n²))
-  // Şimdi Map/Set yapıları ile O(1) erişim sağlanıyor
-  const bomsSet = useMemo(() => {
-    const byCode = new Set();
-    const byName = new Set();
-    (boms || []).forEach(b => {
-      if (b.product_code) byCode.add(b.product_code);
-      if (b.product_name) byName.add(b.product_name.toLowerCase());
-    });
-    return { byCode, byName };
-  }, [boms]);
-
-  const stockLocsMap = useMemo(() => {
-    const map = new Map();
-    (stockLocations || []).forEach(sl => {
-      if (sl.quantity > 0) {
-        if (!map.has(sl.product_id)) map.set(sl.product_id, []);
-        map.get(sl.product_id).push(sl);
-      }
-    });
-    return map;
-  }, [stockLocations]);
-
   const sortedProducts = useMemo(() => {
     let list = [...products];
     switch (sortOption) {
@@ -229,20 +197,21 @@ export default function StockScreen({ navigation }) {
   }, [products, sortOption]);
 
   const filteredAndSortedProducts = useMemo(() => {
-    if (!debouncedSearch) return sortedProducts;
-    const lowerCaseQuery = debouncedSearch.toLowerCase();
+    if (!searchQuery) return sortedProducts;
+    const lowerCaseQuery = searchQuery.toLowerCase();
     return sortedProducts.filter(
       (p) => (p.name || "").toLowerCase().includes(lowerCaseQuery) || ((p.category || "").toLowerCase().includes(lowerCaseQuery)) || ((p.serialNumber || "").toLowerCase().includes(lowerCaseQuery)) || ((p.code || "").toLowerCase().includes(lowerCaseQuery))
     );
-  }, [sortedProducts, debouncedSearch]);
+  }, [sortedProducts, searchQuery]);
 
   const renderProductItem = useCallback(({ item }) => {
-    // O(1) lookup — artık O(n) boms.some() çağrısı yok
-    const hasBom = (item.code && bomsSet.byCode.has(item.code)) ||
-      (item.name && bomsSet.byName.has(item.name.toLowerCase()));
-    const itemLocs = stockLocsMap.get(item.id) || [];
+    const hasBom = (boms || []).some(b =>
+      (b.product_code && item.code && b.product_code === item.code) ||
+      (b.product_name && item.name && b.product_name.toLowerCase() === item.name.toLowerCase())
+    );
+    const itemLocs = (stockLocations || []).filter(sl => sl.product_id === item.id && sl.quantity > 0);
     return <StockListItem item={item} onSell={openCustomerSelection} onEdit={onEdit} onDelete={confirmDelete} hasBom={hasBom} stockLocs={itemLocs} />;
-  }, [openCustomerSelection, confirmDelete, onEdit, bomsSet, stockLocsMap]);
+  }, [openCustomerSelection, confirmDelete, onEdit, boms, stockLocations]);
 
   const navigateToDetailedStock = () => { if (navigation && navigation.navigate) { navigation.navigate('DetailedStockScreen'); } };
   const navigateToAddProduct = () => { if (navigation && navigation.navigate) { navigation.navigate('AddProductScreen'); } };
@@ -396,7 +365,193 @@ export default function StockScreen({ navigation }) {
               </View>
 
               {/* Tablo Satırları */}
-              <FlatList initialNumToRender={10} maxToRenderPerBatch={10} windowSize={5} removeClippedSubviews={true}
+              <FlatList
+                data={filteredAndSortedProducts}
+                keyExtractor={(i) => i.id}
+                renderItem={({ item, index }) => {
+                  const hasBom = (boms || []).some(b =>
+                    (b.product_code && item.code && b.product_code === item.code) ||
+                    (b.product_name && item.name && b.product_name.toLowerCase() === item.name.toLowerCase())
+                  );
+                  const isCritical = item.quantity <= (item.criticalStockLimit || 0);
+                  const isZeroStock = item.quantity <= 0;
+                  const locs = (stockLocations || []).filter(sl => sl.product_id === item.id && sl.quantity > 0);
+                  return (
+                    <View style={[
+                      styles.webTableRow,
+                      index % 2 === 0 ? styles.webTableRowEven : styles.webTableRowOdd,
+                      isZeroStock ? styles.webTableRowZero : null,
+                    ]}>
+                      {/* Ürün Adı */}
+                      <View style={[styles.webCell, { flex: 2.2 }]}>
+                        <View style={{ flexDirection: 'row', alignItems: 'center', flexWrap: 'wrap', gap: 6 }}>
+                          <Text style={styles.webCellTextBold} numberOfLines={2}>{item.name}</Text>
+                          {hasBom && (
+                            <View style={styles.webBomBadge}>
+                              <Text style={styles.webBomBadgeText}>BOM</Text>
+                            </View>
+                          )}
+                        </View>
+                        {item.serialNumber ? (
+                          <Text style={styles.webCellSubText} numberOfLines={1}>SN: {item.serialNumber}</Text>
+                        ) : null}
+                      </View>
+
+                      {/* Ürün Kodu */}
+                      <View style={[styles.webCell, { flex: 0.9 }]}>
+                        {item.code ? (
+                          <View style={styles.webCodeBadge}>
+                            <Ionicons name="barcode-outline" size={11} color={'#6366F1'} style={{ marginRight: 3 }} />
+                            <Text style={styles.webCodeText} numberOfLines={1}>{item.code}</Text>
+                          </View>
+                        ) : (
+                          <Text style={styles.webCellMuted}>—</Text>
+                        )}
+                      </View>
+
+                      {/* Marka */}
+                      <View style={[styles.webCell, { flex: 0.8 }]}>
+                        <Text style={styles.webCellText} numberOfLines={1}>{item.brand || '—'}</Text>
+                      </View>
+
+                      {/* Kategori */}
+                      <View style={[styles.webCell, { flex: 0.9 }]}>
+                        {item.category ? (
+                          <View style={styles.webCategoryChip}>
+                            <Text style={styles.webCategoryChipText} numberOfLines={1}>{item.category}</Text>
+                          </View>
+                        ) : (
+                          <Text style={styles.webCellMuted}>—</Text>
+                        )}
+                      </View>
+
+                      {/* Stok Miktarı */}
+                      <View style={[styles.webCell, { flex: 1, alignItems: 'center' }]}>
+                        <View style={[
+                          styles.webStockBadge,
+                          isZeroStock ? styles.webStockBadgeZero : isCritical ? styles.webStockBadgeCritical : styles.webStockBadgeOk
+                        ]}>
+                          <View style={[
+                            styles.webStockDot,
+                            isZeroStock ? { backgroundColor: '#DC2626' } : isCritical ? { backgroundColor: '#D97706' } : { backgroundColor: '#16A34A' }
+                          ]} />
+                          <Text style={[
+                            styles.webStockBadgeText,
+                            isZeroStock ? { color: '#B91C1C' } : isCritical ? { color: '#92400E' } : { color: '#15803D' }
+                          ]}>{item.quantity} {t(item.unit || 'uom_pcs')}</Text>
+                        </View>
+                      </View>
+
+                      {/* Satış Fiyatı */}
+                      <View style={[styles.webCell, { flex: 0.9, alignItems: 'flex-end' }]}>
+                        <Text style={styles.webPriceText}>
+                          {Number(item.price ?? 0).toLocaleString('tr-TR', { minimumFractionDigits: 2 })} ₺
+                        </Text>
+                        {item.cost ? (
+                          <Text style={styles.webCostText}>
+                            Maliyet: {Number(item.cost ?? 0).toLocaleString('tr-TR', { minimumFractionDigits: 2 })} ₺
+                          </Text>
+                        ) : null}
+                      </View>
+
+                      {/* Depo Dağılımı */}
+                      <View style={[styles.webCell, { flex: 1.4 }]}>
+                        {locs.length === 0 ? (
+                          (() => {
+                            const fallback = item.warehouseLocation || item.warehouse_location;
+                            return fallback ? (
+                              <View style={styles.webLocChip}>
+                                <Ionicons name="location-outline" size={10} color="#6366F1" style={{ marginRight: 3 }} />
+                                <Text style={styles.webLocChipText} numberOfLines={1}>{fallback}</Text>
+                              </View>
+                            ) : (
+                              <Text style={styles.webCellMuted}>—</Text>
+                            );
+                          })()
+                        ) : (
+                          <View style={{ gap: 4 }}>
+                            {locs.slice(0, 3).map((loc, li) => (
+                              <View key={loc.id || li} style={styles.webLocRow}>
+                                <View style={styles.webLocChip}>
+                                  <Ionicons name="business-outline" size={10} color="#6366F1" style={{ marginRight: 3 }} />
+                                  <Text style={styles.webLocChipText} numberOfLines={1}>{loc.warehouse_name}</Text>
+                                </View>
+                                <View style={[
+                                  styles.webLocQtyBadge,
+                                  loc.quantity <= 0 ? { backgroundColor: '#FEE2E2' } :
+                                  loc.quantity <= 5 ? { backgroundColor: '#FEF3C7' } :
+                                  { backgroundColor: '#DCFCE7' }
+                                ]}>
+                                  <Text style={[
+                                    styles.webLocQtyText,
+                                    loc.quantity <= 0 ? { color: '#B91C1C' } :
+                                    loc.quantity <= 5 ? { color: '#92400E' } :
+                                    { color: '#166534' }
+                                  ]}>{loc.quantity}</Text>
+                                </View>
+                              </View>
+                            ))}
+                            {locs.length > 3 && (
+                              <Text style={styles.webLocMoreText}>+{locs.length - 3} depo</Text>
+                            )}
+                          </View>
+                        )}
+                      </View>
+
+                      {/* Aksiyonlar */}
+                      <View style={[styles.webCell, { flex: 1, flexDirection: 'row', justifyContent: 'center', alignItems: 'center', gap: 6, borderRightWidth: 0 }]}>
+                        <TouchableOpacity
+                          onPress={() => onEdit(item)}
+                          style={[styles.webActionBtn, styles.webActionBtnEdit]}
+                          title="Düzenle"
+                        >
+                          <Ionicons name="create-outline" size={15} color={Colors.iosBlue} />
+                        </TouchableOpacity>
+                        <TouchableOpacity
+                          onPress={() => openCustomerSelection(item)}
+                          style={[styles.webActionBtn, styles.webActionBtnSell]}
+                          disabled={isZeroStock}
+                        >
+                          <Ionicons name="cart-outline" size={15} color="#fff" />
+                        </TouchableOpacity>
+                        <TouchableOpacity
+                          onPress={() => confirmDelete(item.id, item.name)}
+                          style={[styles.webActionBtn, styles.webActionBtnDelete]}
+                        >
+                          <Ionicons name="trash-outline" size={15} color={Colors.critical} />
+                        </TouchableOpacity>
+                      </View>
+                    </View>
+                  );
+                }}
+                ListEmptyComponent={
+                  <View style={styles.webTableEmpty}>
+                    <Ionicons name="cube-outline" size={40} color="#CBD5E1" />
+                    <Text style={styles.webTableEmptyText}>{t('no_products_in_stock')}</Text>
+                  </View>
+                }
+                scrollEnabled={false}
+              />
+
+              {/* Tablo Alt Bilgisi */}
+              {filteredAndSortedProducts.length > 0 && (
+                <View style={styles.webTableFooter}>
+                  <Text style={styles.webTableFooterText}>
+                    Toplam {filteredAndSortedProducts.length} ürün listeleniyor
+                  </Text>
+                  <Text style={styles.webTableFooterText}>
+                    Toplam Stok Değeri:{' '}
+                    <Text style={styles.webTableFooterValue}>
+                      {filteredAndSortedProducts
+                        .reduce((sum, p) => sum + (p.quantity || 0) * (p.cost || 0), 0)
+                        .toLocaleString('tr-TR', { minimumFractionDigits: 2 })} ₺
+                    </Text>
+                  </Text>
+                </View>
+              )}
+            </View>
+          ) : (
+            <FlatList
               data={filteredAndSortedProducts}
               keyExtractor={(i) => i.id}
               renderItem={renderProductItem}
@@ -411,7 +566,8 @@ export default function StockScreen({ navigation }) {
 
       {/* --- SATIŞ MODALI (DÜZELTİLDİ) --- */}
       <Modal visible={sellModalVisible} animationType="slide" transparent onRequestClose={() => setSellModalVisible(false)}>
-        <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : 'height'} style={styles.modalOverlay}>
+        <KeyboardSafeView offsetIOS={0} disableScrollView={true}>
+          <View style={styles.modalOverlay}>
             <View style={styles.sellModalContent}>
               <View style={styles.modalHandle} />
               <Text style={styles.modalTitle}>{selectedProduct?.name}</Text>
@@ -426,7 +582,7 @@ export default function StockScreen({ navigation }) {
 
                 <Text style={[styles.inputLabel, { marginTop: 20 }]}>{t('select_customer')}</Text>
                 <View style={styles.customerListContainer}>
-                  <FlatList initialNumToRender={10} maxToRenderPerBatch={10} windowSize={5} removeClippedSubviews={true}
+                  <FlatList
                     data={customers}
                     keyExtractor={(i) => i.id}
                     renderItem={({ item }) => (
@@ -448,7 +604,8 @@ export default function StockScreen({ navigation }) {
             </View>
             {/* GÜVENLİ ALAN KAPATICI: iPhone X ve üzeri için alt boşluğu kapatan görünmez bir view */}
             <View style={{ height: Platform.OS === 'ios' ? 34 : 0, backgroundColor: '#fff' }} />
-        </KeyboardAvoidingView>
+          </View>
+        </KeyboardSafeView>
       </Modal>
 
       {/* --- DÜZENLEME MODALI (DÜZELTİLDİ) --- */}
@@ -749,8 +906,16 @@ const styles = StyleSheet.create({
   // --- KURUMSAL ERP KART TASARIMI ---
   card: {
     backgroundColor: '#fff',
-    borderBottomWidth: StyleSheet.hairlineWidth,
-    borderBottomColor: '#E2E8F0',
+    borderRadius: 12,
+    marginBottom: 14,
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.08,
+    shadowRadius: 2,
+    elevation: 2,
+    borderWidth: 1,
+    borderColor: '#E2E8F0',
+    overflow: 'hidden',
     ...Platform.select({
       web: {
         cursor: 'pointer',
